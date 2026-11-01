@@ -10,7 +10,7 @@ use crate::app::App;
 use crate::i18n::{Locale, gettext, ngettext};
 use crate::model::{
     Action, Dialog, DragTrack, Loadable, Page, PagedList, RowContext, RowPick, SortColumn,
-    TableItem, TableRowsCache, TableSort,
+    TableItem, TableRowsCache, TableSort, TopPeriod,
 };
 use crate::theme::{self, Icon, Palette};
 use crate::util;
@@ -30,6 +30,8 @@ pub(super) struct Hero<'a> {
     pub title: &'a str,
     pub description: Option<String>,
     pub byline: Vec<(String, Option<Page>)>,
+    /// A tooltip for the byline entry at an index
+    pub byline_tooltip: Option<(usize, String)>,
     /// The owner's picture, drawn before the byline's first entry. A hero
     /// without an owner, an album or an artist say, draws nothing.
     pub avatar: Option<Avatar>,
@@ -231,16 +233,21 @@ pub(super) fn hero(app: &mut App, ui: &mut egui::Ui, hero: Hero<'_>) {
                     if index > 0 {
                         theme::text(ui, "•", theme::regular(13.5), palette.secondary);
                     }
-                    match page {
+                    let response = match page {
                         Some(page) => {
-                            if theme::link(ui, text, theme::semibold(13.5), palette.text).clicked()
-                            {
+                            let response =
+                                theme::link(ui, text, theme::semibold(13.5), palette.text);
+                            if response.clicked() {
                                 app.actions.push(Action::Open(page.clone()));
                             }
+                            response
                         }
-                        None => {
-                            theme::text(ui, text, theme::regular(13.5), palette.secondary);
-                        }
+                        None => theme::text(ui, text, theme::regular(13.5), palette.secondary),
+                    };
+                    if let Some((at, tooltip)) = &hero.byline_tooltip
+                        && *at == index
+                    {
+                        response.on_hover_text(tooltip);
                     }
                 }
             });
@@ -541,7 +548,9 @@ pub struct TableCache {
     /// Vacuum's seed when the order was worked out, as sorts follow the
     /// names shown.
     pub vacuum: Option<String>,
-    /// Playback positions for visible rows; unavailable rows have no position.
+    /// Playback positions in `view_uris`, by item index: a finite table's
+    /// rows are server slots, not view rows. Unplayable and filtered-out
+    /// items have no position.
     pub view_positions: Arc<[Option<usize>]>,
 }
 
@@ -672,13 +681,14 @@ pub fn prepare_table_view(
         let mut view_positions = Vec::new();
         let view_uris = (sort.is_some() || !needle.is_empty() || plays_shown_rows).then(|| {
             let mut uris = Vec::new();
+            view_positions.resize(items.len(), None);
             for &index in &visible {
                 let item = &items[index].0;
-                view_positions.push(app.row_playable(item).then(|| {
+                view_positions[index] = app.row_playable(item).then(|| {
                     let position = uris.len();
                     uris.push(item.uri().to_string());
                     position
-                }));
+                });
             }
             Arc::<[String]>::from(uris)
         });
@@ -964,7 +974,7 @@ fn table_contents(app: &mut App, ui: &mut egui::Ui, table: Table<'_>) {
             app,
             TrackRow {
                 index: if entry.view_uris.is_some() {
-                    entry.view_positions[row].unwrap_or(row)
+                    entry.view_positions[index].unwrap_or(row)
                 } else {
                     actual_index
                 },
@@ -1623,13 +1633,23 @@ pub fn top_songs(app: &mut App, ui: &mut egui::Ui) {
     ui.add_space(4.0);
     theme::text(
         ui,
-        gettext(
-            app.locale,
-            "Your most-played tracks from the last four weeks.",
-        ),
+        app.home.top_period.subtitle(app.locale),
         theme::regular(13.5),
         palette.secondary,
     );
+    ui.add_space(12.0);
+
+    let labels: Vec<_> = TopPeriod::ALL
+        .iter()
+        .map(|p| (*p, p.label(app.locale)))
+        .collect();
+    let options: Vec<(TopPeriod, &str)> = labels
+        .iter()
+        .map(|(period, label)| (*period, label.as_ref()))
+        .collect();
+    if let Some(period) = widgets::chips(ui, &palette, &options, app.home.top_period) {
+        app.actions.push(Action::SetTopPeriod(period));
+    }
     ui.add_space(18.0);
 
     let tracks = match &app.home.top_songs {
@@ -1790,6 +1810,7 @@ pub fn local_files(app: &mut App, ui: &mut egui::Ui) {
                 .into_owned(),
             ),
             byline: vec![(byline, None)],
+            byline_tooltip: None,
             avatar: None,
             round: false,
         },
@@ -2494,6 +2515,7 @@ fn playlist_hero<'a>(
             title: &title,
             description: playlist.shown_description(),
             byline,
+            byline_tooltip: None,
             avatar,
             round: false,
         },
@@ -2597,7 +2619,17 @@ fn album_hero(
             )
         })
         .collect();
+    let mut byline_tooltip = None;
     if let Some(year) = album.year() {
+        // Populate tooltip: If we know the full release
+        // date, YYYY-MM-DD (10 chars/bytes), show formatted date,
+        // otherwise just show year.
+        let date = album
+            .release_date
+            .as_deref()
+            .filter(|date| date.len() >= 10)
+            .unwrap_or(year);
+        byline_tooltip = Some((byline.len(), util::format_date(app.locale, date)));
         byline.push((year.to_string(), None));
     }
     let count = album.total_tracks.unwrap_or(tracks.items.len() as u32);
@@ -2639,6 +2671,7 @@ fn album_hero(
             title: &title,
             description: None,
             byline,
+            byline_tooltip,
             avatar: None,
             round: false,
         },
@@ -2726,6 +2759,7 @@ pub fn liked(app: &mut App, ui: &mut egui::Ui) {
             title: &liked_title,
             description: None,
             byline: vec![(user, None), (count_text, None)],
+            byline_tooltip: None,
             avatar: None,
             round: false,
         },
@@ -2777,11 +2811,11 @@ pub fn liked(app: &mut App, ui: &mut egui::Ui) {
         .collect::<Vec<_>>()
         .into();
     let context = match collection_uri {
-        Some(uri) if app.library.liked.is_complete() => RowContext::Context {
+        Some(uri) => RowContext::Context {
             uri,
             editable_playlist: None,
         },
-        _ => RowContext::Uris(uris),
+        None => RowContext::Uris(uris),
     };
     let loading = app.library.liked.loading;
     let error = app.library.liked.error.clone();
@@ -3018,6 +3052,88 @@ mod tests {
         assert_eq!(owner_name(&app, &playlist), "Alice Smith");
     }
 
+    /// Hovering an album's year, shows the whole date it
+    /// was released, or the year when Spotify knows no day.
+    #[test]
+    fn an_albums_year_shows_its_release_date_on_hover() {
+        fn texts(shape: &egui::epaint::Shape, found: &mut Vec<(String, egui::Pos2)>) {
+            match shape {
+                egui::epaint::Shape::Text(text) => found.push((
+                    text.galley.text().to_string(),
+                    text.pos + text.galley.rect.center().to_vec2(),
+                )),
+                egui::epaint::Shape::Vec(shapes) => {
+                    shapes.iter().for_each(|shape| texts(shape, found));
+                }
+                _ => {}
+            }
+        }
+        /// The text on screen while the pointer rests on the year.
+        fn hovering_the_year(release_date: &str) -> Vec<String> {
+            let mut app = test_app();
+            let single = Album {
+                name: "Lead Single".into(),
+                uri: "spotify:album:single".into(),
+                album_type: Some("single".into()),
+                release_date: Some(release_date.into()),
+                artists: vec![ArtistRef {
+                    name: "Artist".into(),
+                    ..Default::default()
+                }],
+                ..Album::default()
+            };
+            let tracks = PagedList::default();
+            let ctx = egui::Context::default();
+            theme::install(&ctx);
+            ctx.global_style_mut(|style| style.interaction.tooltip_delay = 0.0);
+            let mut time = 0.0;
+            let mut draw = |app: &mut App, events: Vec<egui::Event>| {
+                time += 1.0;
+                let mut output = ctx.run_ui(
+                    egui::RawInput {
+                        screen_rect: Some(Rect::from_min_size(
+                            egui::Pos2::ZERO,
+                            vec2(1000.0, 600.0),
+                        )),
+                        time: Some(time),
+                        events,
+                        ..Default::default()
+                    },
+                    |ui| album_hero(app, ui, &single, &tracks, None),
+                );
+                output.textures_delta.clear();
+                let mut found = Vec::new();
+                output
+                    .shapes
+                    .iter()
+                    .for_each(|clipped| texts(&clipped.shape, &mut found));
+                found
+            };
+            let year = draw(&mut app, Vec::new())
+                .into_iter()
+                .find_map(|(text, pos)| (text == "2026").then_some(pos))
+                .expect("the byline shows the year");
+            for _ in 0..3 {
+                draw(&mut app, vec![egui::Event::PointerMoved(year)]);
+            }
+            let shown = draw(&mut app, vec![egui::Event::PointerMoved(year)]);
+            app.backend.shutdown();
+            shown.into_iter().map(|(text, _)| text).collect()
+        }
+
+        let shown = hovering_the_year("2026-10-05");
+        assert!(shown.iter().any(|text| text == "Oct 5, 2026"), "{shown:?}");
+        // Known only to the month or the year: the tooltip gives the year.
+        for date in ["2026-10", "2026"] {
+            let shown = hovering_the_year(date);
+            assert_eq!(
+                shown.iter().filter(|text| *text == "2026").count(),
+                2,
+                "{date}: {shown:?}"
+            );
+        }
+    }
+
     #[test]
     fn saves_read_as_the_playlist_view_counts_them() {
         assert_eq!(saves_text(Locale::English, 1_845_680), "1,845,680 saves");
@@ -3178,6 +3294,108 @@ mod tests {
         assert!(app.actions.iter().any(|action| matches!(action,
             Action::LoadWindow { page: Page::Playlist(id), position } if id == "finite" && *position > 650 && *position < 750
         )), "a jump must request the distant rows, not the next sequential page");
+    }
+
+    /// A playlist with hidden songs plays the rows on screen, so each row
+    /// looks up its place in that list. An empty slot and a song without a
+    /// URI both show as Unavailable and play nothing; the rows below them
+    /// must still play their own song, the last one without running off
+    /// the list (#1041).
+    #[test]
+    fn rows_below_unavailable_entries_play_their_own_song() {
+        let mut app = test_app();
+        let songs = make_large_tracks(3);
+        app.hidden_songs.insert(
+            "spotify:playlist:hiding".into(),
+            std::iter::once(songs[0].0.uri().to_string()).collect(),
+        );
+        let entries = [None, Some(PlayableItem::Track(Track::default()))]
+            .into_iter()
+            .chain(songs.into_iter().map(|(item, _, _)| Some(item)))
+            .map(|item| crate::api::models::PlaylistItem {
+                item,
+                ..Default::default()
+            })
+            .collect();
+        app.playlist_pages.insert(
+            "hiding".into(),
+            PlaylistPage {
+                playlist: Loadable::Loaded(Playlist {
+                    id: "hiding".into(),
+                    name: "Hiding".into(),
+                    uri: "spotify:playlist:hiding".into(),
+                    tracks: Some(crate::api::models::TrackCount { total: 5 }),
+                    ..Default::default()
+                }),
+                items: PagedList {
+                    items: entries,
+                    total: Some(5),
+                    loaded_once: true,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        );
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        theme::install(&ctx);
+        let frame = |app: &mut App, events| {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(900.0, 1000.0))),
+                    events,
+                    ..Default::default()
+                },
+                |ui| {
+                    egui::ScrollArea::vertical()
+                        .animated(false)
+                        .show(ui, |ui| playlist(app, ui, "hiding"));
+                },
+            );
+            output.textures_delta.clear();
+            output.platform_output.accesskit_update.unwrap()
+        };
+        frame(&mut app, vec![]);
+        let tree = frame(&mut app, vec![]);
+        let last = tree
+            .nodes
+            .iter()
+            .find(|(_, node)| {
+                node.label().is_some_and(|label| {
+                    label.starts_with("Play Nested metadata song 2 with a longer title,")
+                })
+            })
+            .expect("the last song's row")
+            .0;
+        app.actions.clear();
+        frame(
+            &mut app,
+            vec![egui::Event::AccessKitActionRequest(
+                egui::accesskit::ActionRequest {
+                    action: egui::accesskit::Action::Click,
+                    target_tree: egui::accesskit::TreeId::ROOT,
+                    target_node: last,
+                    data: None,
+                },
+            )],
+        );
+        let (uris, index) = app
+            .actions
+            .iter()
+            .find_map(|action| match action {
+                Action::PlayFromRow {
+                    context: RowContext::View { uris, .. },
+                    index,
+                    ..
+                } => Some((Arc::clone(uris), *index)),
+                _ => None,
+            })
+            .expect("the click plays the shown rows");
+        assert_eq!(
+            uris.get(index as usize).map(String::as_str),
+            Some("spotify:track:large-2"),
+            "the played index must point at the clicked song"
+        );
     }
 
     #[test]

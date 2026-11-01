@@ -22,8 +22,8 @@
 Sirensong is a Spotify client written in Rust with
 [egui](https://www.egui.rs) and [fastframe](https://fastframe.dev), the
 framework behind a family of native desktop apps. It plays music through
-[librespot](https://github.com/librespot-org/librespot), typically uses
-100–250 MB of RAM, starts in well under a second, and has no browser engine.
+[Spotify Soloist](https://spotifast.rocks/soloist/) or the built-in
+[librespot](https://github.com/librespot-org/librespot) player, and has no browser engine.
 
 Sirensong is a fork of [Spotifast](https://github.com/crmne/spotifast) by
 Carmine Paolino. It adds Vacuum, which hides who you are listening to behind
@@ -48,13 +48,38 @@ https://github.com/user-attachments/assets/a5f669ce-b3b7-4f8e-9933-976a78876c7e
 
 [Features](#your-music-on-your-desktop) · [Install](#install) · [First playback](#start-listening) · [Mini player](#the-winamp-mini-player) · [MilkDrop](#music-in-motion) · [Help](#guides-and-help)
 
+Since 0.15, setup leads with Spotify's
+[Soloist player](https://spotifast.rocks/soloist/), with guided key setup,
+one-time pairing and automatic renewal of expiring builds. New listeners and
+people updating see this choice once after sign-in on supported platforms.
+**Use the built-in player** keeps librespot, with Sirensong's EQ, visualizers,
+local files and full queue editing. The choice is remembered.
+On Linux with PipeWire, Soloist also supports Sirensong’s EQ and visualizers
+through a private audio route. [Native audio support](https://spotifast.rocks/soloist/#native-audio)
+adds EQ and visualizers on macOS 14.2 or newer, and visualizers on Windows 11,
+including MilkDrop. Windows Soloist playback does not support audible EQ.
+The Mac route keeps Soloist at full volume after redirecting its output,
+then applies Sirensong’s volume after the visualizers, including mute. Phone
+volume changes adjust that output level; Spotify’s indicator returns to 100%.
+Windows visuals follow Soloist’s source volume and stop when it is muted.
+When enabled, Soloist appears as **This computer**; settings show the controls
+that apply to it. Turning it off restores the built-in player's preferences.
+While Soloist starts and its account is verified, the Spotify loading screen shows
+**Verifying Soloist…** and waits to accept playback commands. **Set up Soloist**
+opens setup if pairing needs attention. After downloading, the wizard focuses on
+choosing the named device in Spotify, with the built-in player available as a
+quiet alternative below the card. **Settings → Account → Spotify access**
+connects the separate Spotify session for Made for you, listening activity and
+Spotify lyrics without changing players.
+
 ## Your music, on your desktop
 
 | Feature | What you can do |
 |---|---|
 | **Library and search** | Browse playlists, Liked Songs, albums, artists, and podcasts. Search the catalogue and edit playlists you own. |
-| **Local files** | Play songs from the folders and files you add, in their own Local Files list and in your playlists, at any sample rate. |
-| **Spotify Connect** | Play on this computer or control playback on your other devices, including Google Cast speakers and groups. Cast devices appear as they are discovered; frequently and recently chosen outputs rise to the top. |
+| **Local files** | Play songs from the folders and files you add, in their own Local Files list and in your playlists, at any sample rate. Names show spaces and accents correctly, including in cached playlists. |
+| **Lyrics** | Spotify lyrics when the playback session is signed in, with LRCLIB as fallback. Temporary LRCLIB overloads retry and try search; older cached lyrics remain available during outages. |
+| **Spotify Connect** | Play on this computer or control playback on your other devices, including Google Cast speakers and groups. Cast devices appear as they are discovered; frequently and recently chosen outputs rise to the top. Remote volume keeps your chosen level while Spotify updates. |
 | **Queue** | Add songs to the queue, or choose **Play next** to put a song or selection first when playing on this computer. |
 | **Themes** | Choose light, dark, system appearance, or custom colours, with one theme for light mode and one for dark mode that switch with the system. On Omarchy, follow your desktop theme. |
 | **Desktop controls** | Use keyboard shortcuts and media keys. Keep music playing from the tray when supported by your desktop and settings, and start Sirensong with your computer, with its window or in the tray. |
@@ -73,11 +98,17 @@ https://github.com/user-attachments/assets/a5f669ce-b3b7-4f8e-9933-976a78876c7e
 
 ## Start listening
 
-1. Open Sirensong and choose **Sign in with Spotify**. Approve access in your
-   browser, then return to the app to see your library.
-2. To listen on this computer, open the device menu in the bottom player bar
+1. Make your own free Spotify app, as the sign-in screen shows: in the
+   [Spotify developer dashboard](https://developer.spotify.com/dashboard),
+   create an app with the redirect URI `http://127.0.0.1:8989/login` and
+   **Web API** ticked. Spotify requires Premium on the account that creates
+   it. [Getting started](https://spotifast.rocks/getting-started/#make-a-spotify-app)
+   has the steps.
+2. Paste its Client ID into Sirensong and choose **Sign in with Spotify**.
+   Approve access in your browser, then return to the app to see your library.
+3. To listen on this computer, open the device menu in the bottom player bar
    and choose **Set up playback here**, also available in Settings.
-3. Complete the separate playback approval in your browser. Your computer
+4. Complete the separate playback approval in your browser. Your computer
    appears as a Spotify Connect device named **Sirensong**.
 
 Library access and local playback have separate approvals. Sirensong remembers
@@ -90,6 +121,7 @@ and [How it connects](https://spotifast.rocks/how-it-connects/) for the details.
 A classic look for your music, with Winamp 2 `.wsz` skins, an equalizer,
 a playlist, and animated sound displays. Switch with **Ctrl+M**
 (**Cmd+Shift+M** on macOS), the shrink button, or Settings.
+The spectrum analyser and oscilloscope also work in the collapsed title bar.
 
 <p align="center">
   <img src="docs/assets/images/winamp.png" alt="Sirensong's Winamp mini player with the built-in skin, equalizer, and playlist" width="320">
@@ -121,6 +153,7 @@ The complete guide lives at **[spotifast.rocks](https://spotifast.rocks/)**.
 | Learn shortcuts, command-line controls, and updates | [Everyday use](https://spotifast.rocks/using-spotifast/) |
 | Find configuration and stored files | [Settings and files](https://spotifast.rocks/settings-and-files/) |
 | Understand scrolling performance and reduce loading delays | [Make it even faster](https://spotifast.rocks/make-it-even-faster/) |
+| Fix "Spotify refused the audio key" or "Spotify is being slow" | [When something goes wrong](https://spotifast.rocks/troubleshooting/) |
 | Understand what is stored and sent | [Privacy](https://spotifast.rocks/privacy/) · [How it connects](https://spotifast.rocks/how-it-connects/) |
 | Check Spotify and librespot limitations | [What Spotify allows](https://spotifast.rocks/what-spotify-allows/) |
 | Understand account risk | [Will my account get banned?](https://spotifast.rocks/what-is-spotifast/#will-my-spotify-account-get-banned) |

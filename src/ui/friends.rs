@@ -104,6 +104,24 @@ fn contents(app: &mut App, ui: &mut egui::Ui) {
         );
         return;
     }
+    if app.settings.soloist_enabled
+        && !app.local_ready
+        && app.friends.get().is_none_or(Vec::is_empty)
+    {
+        let galley = crate::bidi::layout(
+            ui.painter(),
+            &gettext(locale, "Connect Spotify to see listening activity."),
+            theme::regular(13.0),
+            palette.secondary,
+            ui.available_width(),
+            usize::MAX,
+            None,
+        );
+        ui.add(egui::Label::new(galley));
+        ui.add_space(8.0);
+        super::settings::spotify_access_control(app, ui);
+        return;
+    }
     match &app.friends {
         Loadable::NotLoaded | Loadable::Loading => widgets::loading_row(ui, &palette, locale),
         Loadable::Failed(error) => {

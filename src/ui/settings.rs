@@ -351,7 +351,14 @@ fn section(
         )
         .stroke(Stroke::new(1.0, palette.outline))
         .corner_radius(CornerRadius::same(theme::RADIUS + 2))
-        .inner_margin(Margin::symmetric(20, 16))
+        // Every row leaves 10 points below itself for the next one, so the
+        // bottom margin is that much less than the top one (#1037).
+        .inner_margin(Margin {
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: 6,
+        })
         .show(ui, |ui| {
             ui.set_width(ui.available_width().min(760.0));
             add_contents(ui);
@@ -461,6 +468,51 @@ fn local_files_sources(app: &mut App, ui: &mut egui::Ui, open_folder: &str) {
     }
 }
 
+/// Soloist supplies audio, while this separate Spotify approval supplies
+/// library features. Reuse the existing grant without changing players.
+pub(super) fn spotify_access_control(app: &mut App, ui: &mut egui::Ui) {
+    use crate::backend::LocalPlayback;
+    let locale = app.locale;
+    let palette = app.palette;
+    let (status, busy, action) = match &app.local_playback {
+        LocalPlayback::Ready { .. } => (gettext(locale, "Connected"), false, None),
+        LocalPlayback::Authorizing => (
+            gettext(locale, "Finish authorizing in your browser."),
+            true,
+            None,
+        ),
+        LocalPlayback::Connecting => (gettext(locale, "Connecting to Spotify…"), true, None),
+        LocalPlayback::WaitingForNetwork => (gettext(locale, "Waiting for network…"), true, None),
+        LocalPlayback::Unavailable => ("".into(), false, Some(gettext(locale, "Authorize"))),
+        LocalPlayback::Failed(_) => ("".into(), false, Some(gettext(locale, "Try again"))),
+    };
+    if let Some(action) = action {
+        let mut response = theme::pill_button(ui, &palette, &action, true);
+        if let LocalPlayback::Failed(error) = &app.local_playback {
+            response = response.on_hover_text(error);
+        }
+        if response.clicked() {
+            app.actions.push(Action::EnablePlayback);
+        }
+    } else {
+        ui.horizontal_wrapped(|ui| {
+            if busy {
+                ui.add(egui::Spinner::new().size(14.0).color(palette.secondary));
+            }
+            let galley = crate::bidi::layout(
+                ui.painter(),
+                &status,
+                theme::regular(13.0),
+                palette.secondary,
+                ui.available_width(),
+                usize::MAX,
+                None,
+            );
+            ui.add(egui::Label::new(galley));
+        });
+    }
+}
+
 pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let palette = app.palette;
     let locale = app.locale;
@@ -501,6 +553,16 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .unwrap_or(false);
     let mut changed = false;
     let mut any_visible = false;
+    let soloist = gettext(locale, "Spotify Soloist");
+    if row_matches(
+        &needle,
+        &soloist,
+        &gettext(locale, "Playback lossless setup key download updates"),
+    ) {
+        any_visible = true;
+        section(ui, &palette, &soloist, |ui| super::soloist::show(app, ui));
+    }
+
     let open_folder = gettext(locale, "Open folder");
 
     let wanted = app
@@ -518,10 +580,17 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let account_rows = [
         RowText::new(
             gettext(locale, "Personal Spotify app"),
-            gettext(
-                locale,
-                "Use a personal Development Mode app for a separate API quota. The shared app stays active.",
-            ),
+            if app.shared_grant && !in_use {
+                gettext(
+                    locale,
+                    "You're still signed in through the shared app Sirensong used before, which Spotify can stop accepting at any time. Set up your own app to keep listening.",
+                )
+            } else {
+                gettext(
+                    locale,
+                    "Sirensong signs in through your own free Spotify app.",
+                )
+            },
         ),
         RowText::new(
             gettext(locale, "Create an app"),
@@ -533,10 +602,14 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .when(!in_use),
         RowText::new(
             gettext(locale, "Personal app ready"),
-            gettext(
-                locale,
-                "Supported requests use your app. Other requests use the shared app.",
-            ),
+            if app.shared_grant {
+                gettext(
+                    locale,
+                    "Supported requests use your app. Other requests use the shared app.",
+                )
+            } else {
+                gettext(locale, "Sirensong uses your app for Spotify's Web API.")
+            },
         )
         .when(in_use),
         RowText::new(
@@ -547,12 +620,15 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             ),
         )
         .when(!in_use && wanted.is_some()),
-        RowText::new(
-            gettext(locale, "Remove personal app"),
-            gettext(locale, "Shared access remains signed in."),
-        )
-        .when(!in_use && wanted.is_none() && app.web_app.is_some()),
         RowText::new(sign_out.clone(), account.clone()),
+        RowText::new(
+            gettext(locale, "Spotify access"),
+            gettext(
+                locale,
+                "Made for you, listening activity and Spotify lyrics.",
+            ),
+        )
+        .when(app.settings.soloist_enabled),
     ];
     if section_matches(&needle, &account, &account_rows) {
         any_visible = true;
@@ -608,7 +684,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 });
                 ui.add_space(10.0);
             }
-            let mut client_id = app.settings.web_client_id.clone().unwrap_or_default();
+            // What is typed stays a draft while it is empty: clearing the
+            // field must not forget the app the session signs in with.
+            let draft_id = egui::Id::new("personal-web-client-id-draft");
+            let mut client_id = ui
+                .data(|data| data.get_temp::<String>(draft_id))
+                .unwrap_or_else(|| app.settings.web_client_id.clone().unwrap_or_default());
             filtered_row(ui, &palette, &needle, &account, &account_rows[0], |ui| {
                 let response = Frame::new()
                     .fill(palette.surface)
@@ -639,8 +720,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 }
                 if response.changed() {
                     let trimmed = client_id.trim().to_string();
-                    app.settings.web_client_id = (!trimmed.is_empty()).then_some(trimmed);
-                    changed = true;
+                    if trimmed.is_empty() {
+                        ui.data_mut(|data| data.insert_temp(draft_id, client_id.clone()));
+                    } else {
+                        ui.data_mut(|data| data.remove_temp::<String>(draft_id));
+                        app.settings.web_client_id = Some(trimmed);
+                        changed = true;
+                    }
                 }
             });
             filtered_row(ui, &palette, &needle, &account, &account_rows[1], |ui| {
@@ -648,18 +734,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     .clicked()
                 {
                     app.actions.push(Action::OpenUrl(
-                        "https://spotifast.rocks/make-it-even-faster/#make-a-spotify-app".into(),
+                        "https://spotifast.rocks/getting-started/#make-a-spotify-app".into(),
                     ));
                 }
             });
             if in_use {
-                filtered_row(ui, &palette, &needle, &account, &account_rows[2], |ui| {
-                    if theme::pill_button(ui, &palette, &gettext(locale, "Remove"), false).clicked()
-                    {
-                        app.settings.web_client_id = None;
-                        app.actions.push(Action::ConfigurePersonalWebApp);
-                    }
-                });
+                filtered_row(ui, &palette, &needle, &account, &account_rows[2], |_| {});
             } else if wanted.is_some() {
                 filtered_row(ui, &palette, &needle, &account, &account_rows[3], |ui| {
                     if theme::pill_button(ui, &palette, &gettext(locale, "Authorize"), true)
@@ -668,14 +748,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                         app.actions.push(Action::ConfigurePersonalWebApp);
                     }
                 });
-            } else if app.web_app.is_some() {
-                filtered_row(ui, &palette, &needle, &account, &account_rows[4], |ui| {
-                    if theme::pill_button(ui, &palette, &gettext(locale, "Remove"), false).clicked()
-                    {
-                        app.actions.push(Action::ConfigurePersonalWebApp);
-                    }
-                });
             }
+            filtered_row(ui, &palette, &needle, &account, &account_rows[5], |ui| {
+                spotify_access_control(app, ui);
+            });
         });
     }
 
@@ -717,7 +793,14 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             Some(gettext(locale, "Enable playback here")),
         ),
     };
-    let playback = gettext(locale, "Playback on this computer");
+    let built_in = !app.settings.soloist_enabled;
+    let audio_processing = app.audio_processing_available();
+    let visualizers = app.visualizers_available();
+    let playback = if built_in {
+        gettext(locale, "Playback on this computer")
+    } else {
+        gettext(locale, "Application")
+    };
     let normalize_volume = gettext(locale, "Normalize volume");
     let autoplay = gettext(locale, "Autoplay");
     let gapless = gettext(locale, "Gapless playback");
@@ -739,7 +822,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let start_available = app
         .autostart
         .is_some_and(|state| state != fastframe_autostart::State::Unsupported);
-    let playback_rows = [
+    let mut playback_rows = [
         RowText::new(
             // Translators: {status} is a playback state such as Ready or Not set up.
             gettext(locale, "Status: {status}").replace("{status}", &status),
@@ -772,9 +855,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     locale,
                     "Sirensong hides to the system tray. Quit from the tray menu or with Ctrl+Q.",
                 ),
+                // macOS has a menu bar where the others have a tray (#1006).
                 &gettext(
                     locale,
-                    "Sirensong hides to the system tray. Quit from the tray menu or with Cmd+Q.",
+                    "Sirensong hides to the menu bar. Quit from its menu-bar icon or with Cmd+Q.",
                 ),
             )
             .to_owned(),
@@ -829,6 +913,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .when(!cfg!(target_os = "macos")),
         RowText::new(start_with_computer.clone(), start_detail).when(start_available),
     ];
+    for index in [0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 14] {
+        playback_rows[index].available &= built_in;
+    }
     if section_matches(&needle, &playback, &playback_rows) {
         any_visible = true;
         section(ui, &palette, &playback, |ui| {
@@ -1166,9 +1253,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 });
             });
             ui.add_space(4.0);
-            if playback_dirty
-                || playback_rows[10].matches(&needle, &playback)
-                || playback_rows[11].matches(&needle, &playback)
+            if built_in
+                && (playback_dirty
+                    || playback_rows[10].matches(&needle, &playback)
+                    || playback_rows[11].matches(&needle, &playback))
             {
                 ui.horizontal(|ui| {
                     if playback_dirty {
@@ -1228,7 +1316,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         let detail = theme::pair_detail(&app.custom_themes, locale, &app.settings.theme_pair, base);
         RowText::new(title, if detail.is_empty() { usage } else { detail }).when(show_pair)
     };
-    let appearance_rows = [
+    let mut appearance_rows = [
         RowText::new(theme_title.clone(), {
             let detail = theme::catalog_detail(
                 &app.custom_themes,
@@ -1348,6 +1436,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         )
         .when(show_custom_titlebar),
     ];
+    for index in [8, 9, 10] {
+        appearance_rows[index].available &= visualizers;
+    }
     if section_matches(&needle, &appearance, &appearance_rows) {
         any_visible = true;
         section(ui, &palette, &appearance, |ui| {
@@ -2131,7 +2222,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 .join(" "),
         ),
     ];
-    if section_matches(&needle, "MilkDrop", &milkdrop_rows) {
+    if visualizers && section_matches(&needle, "MilkDrop", &milkdrop_rows) {
         any_visible = true;
         section(ui, &palette, "MilkDrop", |ui| {
             filtered_row(ui, &palette, &needle, "MilkDrop", &milkdrop_rows[0], |ui| {
@@ -2266,7 +2357,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 .join(" "),
         ),
     ];
-    if section_matches(&needle, &equalizer, &equalizer_rows) {
+    if audio_processing && section_matches(&needle, &equalizer, &equalizer_rows) {
         any_visible = true;
         section(ui, &palette, &equalizer, |ui| {
             filtered_row(
@@ -2689,7 +2780,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 "{folder}",
                 &app.dirs.audio_cache_dir().display().to_string(),
             ),
-        ),
+        )
+        .when(built_in),
         RowText::new(
             gettext(locale, "Play history"),
             gettext(
@@ -2884,7 +2976,14 @@ fn start_with_computer_choices(
     [
         (None, pgettext(locale, "start with your computer", "Off")),
         (Some(Start::Window), gettext(locale, "With the window")),
-        (Some(Start::Hidden), gettext(locale, "In the tray")),
+        (
+            Some(Start::Hidden),
+            if cfg!(target_os = "macos") {
+                gettext(locale, "In the menu bar")
+            } else {
+                gettext(locale, "In the tray")
+            },
+        ),
     ]
 }
 
@@ -2904,9 +3003,21 @@ fn start_with_computer_detail(
             "Allow Sirensong in System Settings, General, Login Items.",
         )
     } else if choice == Some(Start::Hidden) && !keeps_running {
+        if cfg!(target_os = "macos") {
+            gettext(
+                locale,
+                "Starting in the menu bar needs Keep music playing when the window closes. Until then, the window opens.",
+            )
+        } else {
+            gettext(
+                locale,
+                "Starting in the tray needs Keep music playing when the window closes. Until then, the window opens.",
+            )
+        }
+    } else if cfg!(target_os = "macos") {
         gettext(
             locale,
-            "Starting in the tray needs Keep music playing when the window closes. Until then, the window opens.",
+            "Open Sirensong when you log in, with its window or in the menu bar.",
         )
     } else {
         gettext(
@@ -3169,6 +3280,39 @@ fn eq_curve(ui: &mut egui::Ui, palette: &Palette, settings: &crate::eq::EqSettin
 #[cfg(test)]
 mod tests {
     use super::{RELEASE_NOTES_URL, RowText, row_matches, section_matches};
+
+    /// macOS has a menu bar where Linux and Windows have a tray, and the
+    /// start-up choices say so (#1006).
+    #[test]
+    fn starting_hidden_names_the_menu_bar_on_macos_and_the_tray_elsewhere() {
+        use fastframe_autostart::{Start, State};
+        let locale = crate::i18n::Locale::English;
+        let [_, _, (_, hidden)] = super::start_with_computer_choices(locale);
+        let texts = [
+            hidden.into_owned(),
+            super::start_with_computer_detail(
+                locale,
+                Some(State::On(Start::Hidden)),
+                Some(Start::Hidden),
+                false,
+            )
+            .into_owned(),
+            super::start_with_computer_detail(locale, Some(State::Off), None, true).into_owned(),
+        ];
+        for text in texts {
+            if cfg!(target_os = "macos") {
+                assert!(
+                    text.contains("menu bar") && !text.contains("tray"),
+                    "{text}"
+                );
+            } else {
+                assert!(
+                    text.contains("tray") && !text.contains("menu bar"),
+                    "{text}"
+                );
+            }
+        }
+    }
 
     /// Save preset saves the typed name, and the saved preset in use offers
     /// its Delete (#702).

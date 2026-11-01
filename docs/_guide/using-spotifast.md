@@ -38,7 +38,7 @@ fill the rest.
 your account, in Spotify's order, when local playback and a current Web API
 Home grant for that playback account are available. If local playback is
 unavailable, the session read fails, or the grant check fails, the same shelf
-shows approximate matches found through the shared Web API. Shared access can
+shows approximate matches found through a Web API playlist search, which can
 be rate-limited. If a refresh fails, cards already on screen remain available;
 **Retry** is shown when the first load fails. Spotify DJ is left out because
 Sirensong cannot play its special context.
@@ -166,6 +166,10 @@ When you start a song from a sorted playlist or Liked Songs, it appears in
 the player bar straight away while playback connects. Sorting changes the
 order you hear without rearranging the playlist saved on Spotify.
 
+Local songs show readable titles, artists, and albums, including spaces and
+accented characters. Names saved in older playlist caches are corrected
+automatically when the cache is read.
+
 Sorted and filtered views omit unavailable songs and local files from playback.
 The rows stay visible, and selecting a repeated song starts that occurrence. Filtering a playlist or Liked Songs plays only the matching songs,
 including repeated entries. Play is disabled when the view has no playable
@@ -184,6 +188,12 @@ while it plays from a playlist you can edit.
 Click the cover at the top of a playlist, album, artist, or podcast page to
 see it enlarged, at the largest size Spotify has. Click anywhere or press
 `Esc` to return to the page.
+
+## Release dates
+
+Hover over the year at the top of an album, single or EP page to see its full release
+date, like "Oct 5, 2026". Spotify knows some releases only to the year, for 
+those, hovering will just show the year.
 
 ## Refreshing a playlist
 
@@ -262,8 +272,11 @@ this playlist**. On macOS, both `Delete` and `Fn+Delete` work. Text fields,
 dialogs and open menus keep Delete from acting on the list.
 
 Press and hold the player bar's volume slider to update local volume without
-moving the pointer. Remote volume is sent on release. The seek slider previews
-on press and seeks on release.
+moving the pointer. Remote volume is sent on release and keeps your chosen
+level while Spotify updates, including during rate limits. Fresh updates
+can confirm the level or show a change made on another device. If the volume
+request fails, an error appears and the slider returns to the reported level.
+The seek slider previews on press and seeks on release.
 
 The default local output smooths volume and mute changes over 30 ms. Explicit
 track changes and play/pause/stop use nominal 50 ms fades. Stopping can shorten
@@ -296,6 +309,8 @@ Winamp skins do not yet have equivalent accessibility coverage.
 | `Ctrl+F` or `/` | Search |
 | `Ctrl+B` | Show or hide the sidebar |
 | `Alt+←` / `Alt+→` | Back or forward |
+| `Page Up` / `Page Down` | Scroll the main page one page |
+| `Home` / `End` | Top or bottom of the main page |
 | `Ctrl+H` / `Ctrl+L` | Home / Liked Songs |
 | `Ctrl+Shift+A` / `Ctrl+Shift+B` | Playing artist / album |
 | `Ctrl+A` | Select every song in a playlist, album or Liked Songs |
@@ -309,6 +324,11 @@ Winamp skins do not yet have equivalent accessibility coverage.
 
 On macOS, `Cmd` replaces `Ctrl`. A focused text field keeps its usual keys
 for its own text.
+
+Repeat cycles through off, the whole list, and one song. As in Spotify's own
+apps, choosing another song while one song repeats (Next, Previous, or playing
+a song) turns Repeat One back into repeating the whole list. Previous that
+restarts the song keeps it repeating.
 
 ## Controlling it from the command line
 
@@ -510,7 +530,7 @@ bullet; each artist name remains a separate link.
 **Settings > Playback on this computer > Start with your computer** opens
 Sirensong when you log in. **With the window** opens it as you would;
 **In the tray** starts it without a window, ready for media keys and the tray
-icon. **Off** leaves your login alone.
+icon; on macOS it reads **In the menu bar**. **Off** leaves your login alone.
 
 The setting is your system's own list of what starts at login, read back each
 time Settings opens, so turning Sirensong off there (System Settings on macOS,
@@ -635,6 +655,12 @@ resume playback directly from the notch.
 To turn on the notch overlay, check **MacBook notch widget** in
 Settings under **Playback on this computer**.
 
+## Where the music is playing from
+
+Above the current song, the queue panel says what it is playing from: the
+playlist, album, artist or other page. Click the name to open that page. A
+radio has no page, so its name is plain text.
+
 ## Recent
 
 The queue panel's second tab combines Spotify's history with tracks played
@@ -662,6 +688,12 @@ by this listening time.
 On Windows, the main window's minimize, maximize, and close buttons share the
 top bar with Sirensong's controls. Drag an empty part of that bar to move or
 snap the window, and drag a window edge or corner to resize it.
+
+## When Spotify won't play a song here {#audio-key}
+
+If a song shows up as playing but nothing plays, and a banner says Spotify
+won't let this computer play this song right now, see
+[Spotify refused the audio key](/troubleshooting/#audio-key).
 
 ## Choosing the audio output
 
@@ -781,10 +813,10 @@ use a personal Spotify app, reconnect it in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 14 · Spotifast 0.14.1`,
+Spotifast release it is built on, such as `Sirensong mod 15 · Spotifast 0.15.0`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.14.1 · mod 14` in the top bar instead, beside
+Settings → Appearance, puts `0.15.0 · mod 15` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

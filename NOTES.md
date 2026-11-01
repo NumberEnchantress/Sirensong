@@ -120,7 +120,28 @@ record its own decisions and three rounds of adversarial grading.
 - **Translations:** the name is not translated anywhere. Korean particles
   and Turkish suffixes follow the new name (이/을/은/과, 'un/'u/'a).
 
+### Upstream 0.15.0, 1 November 2026
+
+- **Decision (the user):** upstream releases come in by merging their tag
+  into `main`, not by rebasing the fork onto them. This one is mod 15, built
+  on Spotifast 0.15.0.
+- **Names:** upstream's new text follows the Sirensong rename: the
+  translation catalogs, the Soloist setup and settings, the Soloist guide,
+  the names of the audio devices Soloist creates (`Sirensong Soloist`), and
+  the Soloist preview build's app, zip and read-me, which ship this fork's
+  binary.
+  Update notices and the download and packaging pages still describe
+  upstream, as before.
+- **Soloist** (Spotify's own player, which upstream offers after sign-in)
+  is taken as upstream ships it. Vacuum and the guessing game hide names
+  where Sirensong draws them; they cannot change what Soloist itself
+  reports.
+
 ### Still open
+
+- Soloist, not verified here: whether Spotify's Soloist player shows the
+  playing song to the system's media controls while Vacuum or the game
+  hides it. Until checked, use the built-in player with Vacuum or the game.
 
 - Sirensong, not verified here: the Linux packaging tests, the MSI and Inno
   Setup builds, and macOS. A Mac build of the fork would still take

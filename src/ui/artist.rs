@@ -393,6 +393,7 @@ fn artist_hero(app: &mut App, ui: &mut egui::Ui, artist: &Artist, preview: Optio
             title: &title,
             description: None,
             byline,
+            byline_tooltip: None,
             avatar: None,
             round: true,
         },

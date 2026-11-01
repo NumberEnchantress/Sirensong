@@ -281,7 +281,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 
             // The badges sit at the right end but grow with their text, so
             // measure them here, before the search field takes its share.
-            let remote_now = app.now_playing().filter(|now| !now.local);
+            let remote_now = app
+                .now_playing()
+                .filter(|now| !now.local && !app.targets_own_soloist());
             let device_icon = remote_now
                 .as_ref()
                 .and_then(|now| now.device_kind.as_deref())
@@ -343,6 +345,11 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     }
             };
             let controls = RIGHT_CONTROLS_WIDTH
+                - if !app.visualizers_available() {
+                    ICON_BUTTON_SIZE + ITEM_SPACING
+                } else {
+                    0.0
+                }
                 + if !app.network_reachable {
                     ICON_BUTTON_SIZE + 4.0
                 } else {
@@ -508,23 +515,26 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     .show(|ui| {
                         ui.set_width(200.0);
                         ui.add_space(4.0);
+                        // The plan sits right under the name, as one block:
+                        // a row of its own each would put a control's height
+                        // between them (#1038).
                         ui.horizontal(|ui| {
                             ui.add_space(10.0);
-                            theme::text(ui, &name, theme::semibold(14.0), palette.text);
-                        });
-                        if let Some(product) =
-                            app.user.as_ref().and_then(|user| user.product.clone())
-                        {
-                            ui.horizontal(|ui| {
-                                ui.add_space(10.0);
-                                theme::text(
-                                    ui,
-                                    capitalize(&product),
-                                    theme::regular(12.0),
-                                    palette.secondary,
-                                );
+                            ui.vertical(|ui| {
+                                ui.spacing_mut().item_spacing.y = 2.0;
+                                theme::text(ui, &name, theme::semibold(14.0), palette.text);
+                                if let Some(product) =
+                                    app.user.as_ref().and_then(|user| user.product.clone())
+                                {
+                                    theme::text(
+                                        ui,
+                                        capitalize(&product),
+                                        theme::regular(12.0),
+                                        palette.secondary,
+                                    );
+                                }
                             });
-                        }
+                        });
                         super::widgets::menu_separator(ui, &palette);
                         if super::widgets::menu_item(
                             ui,
@@ -618,22 +628,23 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 {
                     app.actions.push(Action::Open(Page::Settings));
                 }
-                if theme::icon_button(
-                    ui,
-                    Icon::AudioLines,
-                    ICON_BUTTON_ICON,
-                    if app.settings.milkdrop_open {
-                        palette.accent
-                    } else {
-                        palette.secondary
-                    },
-                    palette.text,
-                    super::keys::platform_shortcut(
-                        &gettext(locale, "MilkDrop visualiser (Ctrl+Shift+K)"),
-                        &gettext(locale, "MilkDrop visualiser (Cmd+Shift+K)"),
-                    ),
-                )
-                .clicked()
+                if app.visualizers_available()
+                    && theme::icon_button(
+                        ui,
+                        Icon::AudioLines,
+                        ICON_BUTTON_ICON,
+                        if app.settings.milkdrop_open {
+                            palette.accent
+                        } else {
+                            palette.secondary
+                        },
+                        palette.text,
+                        super::keys::platform_shortcut(
+                            &gettext(locale, "MilkDrop visualiser (Ctrl+Shift+K)"),
+                            &gettext(locale, "MilkDrop visualiser (Cmd+Shift+K)"),
+                        ),
+                    )
+                    .clicked()
                 {
                     app.actions.push(Action::ToggleWinampMilkdrop);
                 }
