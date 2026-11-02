@@ -137,6 +137,28 @@ record its own decisions and three rounds of adversarial grading.
   where Sirensong draws them; they cannot change what Soloist itself
   reports.
 
+### Sidebar icons, 2 November 2026
+
+- **Decision (the user):** a crowded sidebar swaps words for small icons,
+  reused from the app where it has one and drawn in Lucide's line style
+  where it does not. Playlists: the queue's list with a play button.
+  Albums: the record the app uses for albums elsewhere. Artists: Lucide's
+  singer's microphone. Podcasts: the lyrics microphone. By You: the person
+  from listening activity. Orders: a 1 above a 2 (Library order, drawn), a
+  clock (Recently played), a clock with a plus (Recently added), the letter A
+  (Name, drawn), a paintbrush (Local custom order) and a wireless signal
+  (Spotify custom order).
+- **When:** each row decides for itself. The kinds turn to icons where their
+  names would not fit on one line, which is already the case in the default
+  width; the order and By You where theirs would wrap. Home and Search share
+  one row as icons below 480 points of sidebar height.
+- **Views:** list, grid, the map as circles and the map as a tree, side by
+  side in the Library's header, one click each, with icons drawn from the
+  user's sketches. They take the Library heading's room in the default width;
+  the heading comes back in a wider sidebar. Below the room for all four the
+  single Show as button opens them. The sidebar's map drops its own Tree and
+  Circles chips; Home's map keeps them.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

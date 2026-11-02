@@ -569,11 +569,13 @@ note says where it is and where it would land, such as `Curated\People →
 Archive\People`; Escape, or letting go where it cannot go or inside the
 folder it is in already, or outside the map, leaves it where it was.
 
-The **Show as** button beside the Library's heading shows how the Library
-is shown, and opens a menu with the other ways: **Show as list**, **Show as
-grid** (`"sidebar_grid"`) and **Show as map**. Shown as the map, the
-sidebar holds the map in place of the Library's rows or cards, with the same
-choices above it. The sidebar is wider for it and keeps that width of its
+Four buttons in the Library's header choose how the Library is shown, one
+click each: **Show as list**, **Show as grid** (`"sidebar_grid"`), and the
+map as **Show as circles** or **Show as tree**. Where the header has no room
+for all four, in the narrowest sidebar, one **Show as** button shows the
+current view and opens the four. Shown as the map, the sidebar holds the
+map in place of the Library's rows or cards, with the same choices above it
+but the layout, which the header's buttons choose. The sidebar is wider for it and keeps that width of its
 own (`"sidebar_map_width"`). Clicking a playlist, album, artist or podcast
 opens it beside the map, as a row would. It is kept as `"sidebar_map"`. The
 choices are kept as `"home": {"map_layout": "tree"}` (or `"circles"`),

@@ -409,6 +409,16 @@ the choice, and which kinds are ticked. One kind alone keeps its own order, Spot
 rows of several kinds cannot be dragged into a new order. A folder you open
 lists only what it holds, whatever else is ticked.
 
+Where the sidebar is too narrow to name the kinds on one line, they show as
+icons instead: a list with a play button for **Playlists**, a record for
+**Albums**, a singer's microphone for **Artists** and a microphone for
+**Podcasts**. The order button and **By You** do the same when their names
+would wrap: **Library order** is a 1 above a 2, **Recently played** a clock,
+**Recently added** a clock with a plus, **Name** the letter A, **Local custom
+order** a paintbrush, **Spotify custom order** a wireless signal and **By
+You** a person. Pointing at an icon names it, and screen readers say the name.
+In a short window, Home and Search share one row as icons.
+
 Select **By You** under Playlists to show only playlists owned by your signed-in
 account, alongside Liked Songs. Followed playlists and collaborative playlists
 owned by someone else are hidden, including pinned ones. Search and the selected
@@ -813,10 +823,10 @@ use a personal Spotify app, reconnect it in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 15 · Spotifast 0.15.0`,
+Spotifast release it is built on, such as `Sirensong mod 16 · Spotifast 0.15.0`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.15.0 · mod 15` in the top bar instead, beside
+Settings → Appearance, puts `0.15.0 · mod 16` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

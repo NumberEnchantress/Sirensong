@@ -1992,8 +1992,9 @@ mod tests {
     }
 
     /// #576: the Library heading never runs under the header's buttons. It
-    /// shrinks a little for a long translation and gives way entirely in
-    /// the narrowest sidebar, but stays where there is room.
+    /// shrinks a little for a long translation and gives way entirely where
+    /// the four views take its room, as they do in the default width, but
+    /// stays in a wider sidebar.
     #[test]
     fn the_library_heading_never_overlaps_its_buttons() {
         fn texts(shape: &egui::epaint::Shape, out: &mut Vec<(String, egui::Rect)>) {
@@ -2055,7 +2056,7 @@ mod tests {
                         button.x0
                     );
                 }
-                if width >= 250.0 {
+                if width >= 420.0 {
                     assert!(
                         label.is_some(),
                         "{locale:?} at {width}: the heading has room"
@@ -3839,6 +3840,8 @@ mod tests {
     #[test]
     fn several_library_kinds_share_one_order_menu() {
         let (ctx, mut app) = accessible_app("library-mixed-menu");
+        // Wide enough for the kinds to be named in words.
+        app.settings.sidebar_width = 420.0;
         let view = crate::ui::sidebar::show;
         view_frame(&ctx, &mut app, vec![], view);
         let painted = view_frame(&ctx, &mut app, vec![], view);
@@ -3890,6 +3893,8 @@ mod tests {
     #[test]
     fn the_podcasts_shelf_leaves_out_audiobooks() {
         let (ctx, mut app) = accessible_app("library-podcasts-audiobooks");
+        // Wide enough for the kinds to be named in words.
+        app.settings.sidebar_width = 420.0;
         let view = crate::ui::sidebar::show;
         view_frame(&ctx, &mut app, vec![], view);
         let painted = view_frame(&ctx, &mut app, vec![], view);
@@ -3929,47 +3934,220 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// The sidebar's screen-reader tree and the words it paints, after two
+    /// frames in a window of `size`.
+    fn sidebar_frame(
+        ctx: &egui::Context,
+        app: &mut App,
+        size: egui::Vec2,
+        events: Vec<egui::Event>,
+    ) -> (egui::accesskit::TreeUpdate, Vec<String>) {
+        fn texts(shape: &egui::epaint::Shape, x: f32, out: &mut Vec<String>) {
+            match shape {
+                egui::epaint::Shape::Text(text) if text.pos.x < x => {
+                    out.push(text.galley.job.text.clone())
+                }
+                egui::epaint::Shape::Vec(shapes) => {
+                    shapes.iter().for_each(|shape| texts(shape, x, out))
+                }
+                _ => {}
+            }
+        }
+        let mut last = None;
+        for events in [events, Vec::new()] {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                    events,
+                    ..Default::default()
+                },
+                |ui| app.frame_ui(ui),
+            );
+            output.textures_delta.clear();
+            last = Some(output);
+        }
+        let output = last.unwrap();
+        let mut painted = Vec::new();
+        let edge = app.settings.sidebar_width;
+        output
+            .shapes
+            .iter()
+            .for_each(|shape| texts(&shape.shape, edge, &mut painted));
+        (output.platform_output.accesskit_update.unwrap(), painted)
+    }
+
+    /// A sidebar too narrow for the kinds' names on one line shows them as
+    /// icons, and the order and By You too where their words would wrap.
+    /// Each keeps its name for screen readers and still works; a wide
+    /// sidebar keeps the words.
+    #[test]
+    fn a_narrow_sidebar_shows_its_filters_as_icons() {
+        use egui::accesskit::{Action as AccessibleAction, Role};
+        let (ctx, mut app) = accessible_app("sidebar-icons");
+        let size = egui::vec2(1280.0, 800.0);
+        let words = ["Playlists", "Albums", "Artists", "Podcasts", "By You"];
+
+        app.settings.sidebar_width = 420.0;
+        let (_, painted) = sidebar_frame(&ctx, &mut app, size, vec![]);
+        for word in words.into_iter().chain(["Recently played"]) {
+            assert!(
+                painted.iter().any(|text| text == word),
+                "{word}: {painted:?}"
+            );
+        }
+
+        app.settings.sidebar_width = crate::ui::SIDEBAR_MIN_WIDTH;
+        let (tree, painted) = sidebar_frame(&ctx, &mut app, size, vec![]);
+        for word in words.into_iter().chain(["Recently played"]) {
+            assert!(
+                !painted.iter().any(|text| text == word),
+                "{word}: {painted:?}"
+            );
+        }
+        for kind in &words[..4] {
+            accessible_node(&tree, kind, Role::CheckBox);
+        }
+        accessible_node(&tree, "Recently played", Role::Button);
+        let artists = accessible_node(&tree, "Artists", Role::CheckBox);
+        sidebar_frame(
+            &ctx,
+            &mut app,
+            size,
+            vec![accessible_action(artists, AccessibleAction::Click, None)],
+        );
+        assert!(
+            app.settings
+                .library_kinds
+                .contains(&crate::settings::LibraryShelf::Artists),
+            "{:?}",
+            app.settings.library_kinds
+        );
+        app.apply(Action::SetLibraryKinds(Vec::new()), &ctx);
+        let (tree, _) = sidebar_frame(&ctx, &mut app, size, vec![]);
+        let by_you = accessible_node(&tree, "By You", Role::Button);
+        sidebar_frame(
+            &ctx,
+            &mut app,
+            size,
+            vec![accessible_action(by_you, AccessibleAction::Click, None)],
+        );
+        assert!(app.settings.library_by_you);
+        app.backend.shutdown();
+    }
+
+    /// In a short window Home and Search share one row, as icons, and keep
+    /// their names for screen readers; in a tall one each has its row.
+    #[test]
+    fn a_short_sidebar_puts_home_and_search_on_one_row() {
+        use egui::accesskit::Role;
+        let (ctx, mut app) = accessible_app("sidebar-short");
+        let rows = |app: &mut App, height: f32| {
+            let (tree, painted) = sidebar_frame(&ctx, app, egui::vec2(1280.0, height), vec![]);
+            let at = |label: &str| {
+                let id = accessible_node(&tree, label, Role::Button);
+                let node = tree.nodes.iter().find(|(node, _)| *node == id).unwrap();
+                node.1.bounds().expect("placed")
+            };
+            let named = painted.iter().any(|text| text == "Home");
+            (at("Home"), at("Search"), named)
+        };
+        let (home, search, named) = rows(&mut app, 800.0);
+        assert!(named, "a tall sidebar names Home");
+        assert!(
+            search.y0 >= home.y1,
+            "Search below Home: {home:?} {search:?}"
+        );
+
+        let (home, search, named) = rows(&mut app, 540.0);
+        assert!(!named, "a short sidebar shows Home as an icon");
+        assert_eq!(home.y0, search.y0, "one row");
+        assert!(
+            search.x0 >= home.x1,
+            "Search beside Home: {home:?} {search:?}"
+        );
+        app.backend.shutdown();
+    }
+
     #[test]
     fn library_grid_toggle_is_accessible_and_persistent() {
+        use crate::settings::MapLayout;
+        use egui::accesskit::Toggled;
         use egui::accesskit::{Action as AccessibleAction, Role};
         let (ctx, mut app) = accessible_app("library-grid-toggle");
-        // One button shows how the Library is shown; its menu offers the
-        // other ways.
+        // The four views sit side by side in the header: one click each.
         let choose = |app: &mut App, choice: &str| {
             let tree = accessible_frame(&ctx, app, vec![]);
-            let view = accessible_node(&tree, "Show as", Role::Button);
+            let view = accessible_node(&tree, choice, Role::RadioButton);
             accessible_frame(
                 &ctx,
                 app,
                 vec![accessible_action(view, AccessibleAction::Click, None)],
             );
-            let tree = accessible_frame(&ctx, app, vec![]);
-            let item = accessible_node(&tree, choice, Role::Button);
-            accessible_frame(
-                &ctx,
-                app,
-                vec![accessible_action(item, AccessibleAction::Click, None)],
-            );
             accessible_frame(&ctx, app, vec![])
         };
-        choose(&mut app, "Show as grid");
+        let chosen = |tree: &egui::accesskit::TreeUpdate| {
+            tree.nodes
+                .iter()
+                .filter(|(_, node)| {
+                    node.role() == Role::RadioButton
+                        && node.toggled() == Some(Toggled::True)
+                        && node
+                            .label()
+                            .is_some_and(|label| label.starts_with("Show as"))
+                })
+                .filter_map(|(_, node)| node.label().map(str::to_owned))
+                .collect::<Vec<_>>()
+        };
+        let tree = choose(&mut app, "Show as grid");
         assert!(app.settings.sidebar_grid);
+        assert_eq!(chosen(&tree), ["Show as grid"]);
 
-        let tree = choose(&mut app, "Show as map");
+        let tree = choose(&mut app, "Show as circles");
         assert!(app.settings.sidebar_map, "the map stands in for the cards");
+        assert_eq!(app.settings.home.map_layout, MapLayout::Circles);
+        assert_eq!(chosen(&tree), ["Show as circles"]);
         assert!(
             tree.nodes
                 .iter()
-                .all(|(_, node)| node.label() != Some("Show as map")),
-            "the menu closed"
+                .all(|(_, node)| node.label() != Some("Circles")),
+            "the header chooses the layout, so the sidebar's map has no chips for it"
         );
+
+        let tree = choose(&mut app, "Show as tree");
+        assert!(app.settings.sidebar_map);
+        assert_eq!(app.settings.home.map_layout, MapLayout::Tree);
+        assert_eq!(chosen(&tree), ["Show as tree"]);
 
         let tree = choose(&mut app, "Show as list");
         assert!(!app.settings.sidebar_grid);
         assert!(!app.settings.sidebar_map);
+        assert_eq!(chosen(&tree), ["Show as list"]);
         assert!(tree.nodes.iter().any(|(_, node)| {
             node.role() == Role::Button && node.label() == Some("Discover Weekly")
         }));
+
+        // The narrowest sidebar has no room for four: one button for the
+        // current view opens them.
+        app.settings.sidebar_width = crate::ui::SIDEBAR_MIN_WIDTH;
+        let tree = accessible_frame(&ctx, &mut app, vec![]);
+        assert!(chosen(&tree).is_empty(), "the views wait in the menu");
+        let view = accessible_node(&tree, "Show as", Role::Button);
+        accessible_frame(
+            &ctx,
+            &mut app,
+            vec![accessible_action(view, AccessibleAction::Click, None)],
+        );
+        let tree = choose(&mut app, "Show as grid");
+        assert!(app.settings.sidebar_grid);
+        assert!(
+            tree.nodes
+                .iter()
+                .all(|(_, node)| node.role() != Role::RadioButton
+                    || !node
+                        .label()
+                        .is_some_and(|label| label.starts_with("Show as"))),
+            "choosing a view closes the menu, from a screen reader too"
+        );
         app.backend.shutdown();
     }
 
@@ -4376,6 +4554,8 @@ mod tests {
             let (ctx, mut app) = accessible_app(&format!("library-sort-paging-{shelf:?}"));
             let view = crate::ui::sidebar::show;
             app.settings.library_sort.insert(shelf, LibrarySort::Name);
+            // Wide enough for the kinds to be named in words.
+            app.settings.sidebar_width = 420.0;
             app.library.albums.next_offset = Some(50);
             app.library.artists.complete = false;
             app.library.artists.after = Some("next".into());
@@ -4385,7 +4565,7 @@ mod tests {
             let position = painted
                 .iter()
                 .find(|(text, _)| text == label)
-                .unwrap()
+                .unwrap_or_else(|| panic!("{label} not drawn: {painted:?}"))
                 .1
                 .center();
             view_frame(
@@ -8394,10 +8574,11 @@ mod tests {
             "the map is in the sidebar: {shown:?}"
         );
         assert!(
-            tree.nodes
-                .iter()
-                .all(|(_, node)| node.label() != Some("Show as grid")),
-            "the grid gives way to the map"
+            tree.nodes.iter().any(|(_, node)| {
+                node.label() == Some("Show as tree")
+                    && node.toggled() == Some(egui::accesskit::Toggled::True)
+            }),
+            "the map stands in for the Library's rows"
         );
         let (_, bounds) = shown
             .iter()

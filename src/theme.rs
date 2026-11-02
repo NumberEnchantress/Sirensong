@@ -710,6 +710,7 @@ fastframe_icons::icons! {
         BadgeCheck => "badge-check",
         Bookmark => "bookmark",
         BookmarkFilled => "bookmark-filled",
+        Brush => "brush",
         Car => "car",
         Cast => "cast",
         Check => lucide "check",
@@ -723,6 +724,7 @@ fastframe_icons::icons! {
         CirclePlus => "circle-plus",
         CircleX => lucide "circle-x",
         Clock => lucide "clock",
+        ClockPlus => "clock-plus",
         Compass => "compass",
         Copy => lucide "copy",
         Disc => "disc-3",
@@ -740,6 +742,7 @@ fastframe_icons::icons! {
         House => "house",
         Info => lucide "info",
         Laptop => "laptop",
+        LetterA => "letter-a",
         Library => "library",
         LayoutGrid => "layout-grid",
         LayoutList => "layout-list",
@@ -750,7 +753,10 @@ fastframe_icons::icons! {
         Loader => "loader-circle",
         Lock => lucide "lock",
         LogOut => lucide "log-out",
+        MapCircles => "map-circles",
+        MapTree => "map-tree",
         Mic => lucide "mic",
+        MicVocal => "mic-vocal",
         Minus => lucide "minus",
         Monitor => lucide "monitor",
         Moon => lucide "moon",
@@ -778,6 +784,7 @@ fastframe_icons::icons! {
         SkipForward => "skip-forward",
         SkipForwardFilled => "skip-forward-filled",
         Smartphone => lucide "smartphone",
+        SortOneTwo => "sort-one-two",
         Sparkles => "sparkles",
         Speaker => "speaker",
         Square => "square",
@@ -794,6 +801,7 @@ fastframe_icons::icons! {
         Volume2 => lucide "volume-2",
         VolumeX => lucide "volume-x",
         Watch => "watch",
+        Wifi => "wifi",
         WifiOff => "wifi-off",
         X => lucide "x",
         Zap => "zap",
@@ -1048,6 +1056,43 @@ pub fn soft_button_dismiss(
 pub fn soft_button_width(ui: &egui::Ui, label: &str) -> f32 {
     let galley = crate::bidi::layout_line(ui.painter(), label, medium(13.0), Color32::WHITE);
     galley.size().x + 24.0
+}
+
+/// A [`soft_button`] showing only its icon, for a row too narrow for the
+/// words: as tall as one with words, which stay its tooltip and the name
+/// screen readers say.
+pub fn soft_icon_button(
+    ui: &mut egui::Ui,
+    palette: &Palette,
+    icon: Icon,
+    label: &str,
+    active: bool,
+) -> Response {
+    let edge = soft_icon_button_width(ui);
+    let (rect, response) = ui.allocate_exact_size(Vec2::new(edge, edge - 8.0), Sense::click());
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
+    });
+    if ui.is_rect_visible(rect) {
+        let fill = if active {
+            palette.text
+        } else if response.hovered() {
+            palette.surface_hover
+        } else {
+            palette.surface
+        };
+        ui.painter().rect_filled(rect, rect.height() / 2.0, fill);
+        let color = if active { palette.window } else { palette.text };
+        paint_icon(ui, icon, rect, 15.0, color);
+    }
+    focus_ring(ui, &response);
+    response.on_hover_text(label)
+}
+
+/// The width of a [`soft_icon_button`]: a little wider than tall.
+pub fn soft_icon_button_width(ui: &egui::Ui) -> f32 {
+    let line = crate::bidi::layout_line(ui.painter(), "Ag", medium(13.0), Color32::WHITE);
+    line.size().y + 14.0 + 8.0
 }
 
 fn soft_button_inner(

@@ -4531,10 +4531,15 @@ msgstr "Yalnızca istediklerim"
 msgid "Hide what Spotify suggests: Made for you, top mixes, new releases, Recommended for you, Fans also like, and Autoplay."
 msgstr "Spotify'ın önerdiklerini gizler: Senin İçin Hazırlandı, en çok dinlediğin mix'ler, yeni çıkanlar, Senin için önerilenler, Hayranlar bunları da beğendi ve otomatik çalma."
 
-#. Translators: Library sidebar button: show the Library as the playlist map in place of its rows.
-#: src/ui/sidebar.rs:2028
-msgid "Show as map"
-msgstr "Harita olarak göster"
+#. Translators: Library sidebar view: the playlist map, each folder a circle around what it holds.
+#: src/ui/sidebar.rs:2056
+msgid "Show as circles"
+msgstr "Daireler olarak göster"
+
+#. Translators: Library sidebar view: the playlist map as a round tree, each level of folders a ring further out.
+#: src/ui/sidebar.rs:2058
+msgid "Show as tree"
+msgstr "Ağaç olarak göster"
 
 #: src/ui/playlist_map.rs:1138
 msgid "Scroll to zoom, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."

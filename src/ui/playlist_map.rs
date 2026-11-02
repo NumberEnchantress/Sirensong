@@ -1028,8 +1028,9 @@ fn fit(nodes: &[Node], places: &[Place], size: Vec2, circles: bool, whole: bool)
 }
 
 /// The choices above the map: its layout, and what to do with what lies
-/// outside an open folder or the Library's filters.
-fn toolbar(app: &mut App, ui: &mut egui::Ui) {
+/// outside an open folder or the Library's filters. In the sidebar the
+/// layout is chosen with the Library's other views, in its header.
+fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
     let palette = app.palette;
     let locale = app.locale;
     let home = app.settings.home;
@@ -1042,23 +1043,25 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     };
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
-        // Translators: Home map layout: a round tree, each level of folders a ring further out.
-        if choice(
-            ui,
-            &gettext(locale, "Tree"),
-            home.map_layout == MapLayout::Tree,
-        ) {
-            app.actions.push(Action::SetMapLayout(MapLayout::Tree));
+        if !side {
+            // Translators: Home map layout: a round tree, each level of folders a ring further out.
+            if choice(
+                ui,
+                &gettext(locale, "Tree"),
+                home.map_layout == MapLayout::Tree,
+            ) {
+                app.actions.push(Action::SetMapLayout(MapLayout::Tree));
+            }
+            // Translators: Home map layout: each folder a circle around what it holds.
+            if choice(
+                ui,
+                &gettext(locale, "Circles"),
+                home.map_layout == MapLayout::Circles,
+            ) {
+                app.actions.push(Action::SetMapLayout(MapLayout::Circles));
+            }
+            ui.add_space(10.0);
         }
-        // Translators: Home map layout: each folder a circle around what it holds.
-        if choice(
-            ui,
-            &gettext(locale, "Circles"),
-            home.map_layout == MapLayout::Circles,
-        ) {
-            app.actions.push(Action::SetMapLayout(MapLayout::Circles));
-        }
-        ui.add_space(10.0);
         // Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
         let by_listening = gettext(locale, "Size by listening");
         let response = theme::soft_button(
@@ -1235,7 +1238,7 @@ fn landing(app: &App, node: &Node, row: &crate::folders::Row, name: &str) -> Opt
 fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     let palette = app.palette;
     let locale = app.locale;
-    toolbar(app, ui);
+    toolbar(app, ui, side);
     ui.add_space(4.0);
     if !side {
         theme::text(

@@ -988,41 +988,94 @@ pub(crate) fn selected_sort(app: &App, shelf: Filter) -> LibrarySort {
     }
 }
 
-/// Offer only the sort modes supported by this shelf and queue the selected change.
-fn sort_menu(app: &mut App, ui: &mut egui::Ui, shelf: Filter, selected: LibrarySort) {
-    let locale = app.locale;
-    let labels = [
-        (LibrarySort::Library, gettext(locale, "Library order")),
-        (
-            LibrarySort::RecentlyPlayed,
-            gettext(locale, "Recently played"),
-        ),
-        (LibrarySort::Name, gettext(locale, "Name")),
-        (
-            LibrarySort::RecentlyAdded,
-            gettext(locale, "Recently added"),
-        ),
-        (LibrarySort::Local, gettext(locale, "Local custom order")),
-        (
-            LibrarySort::Spotify,
-            gettext(locale, "Spotify custom order"),
-        ),
-    ];
-    let label = &labels
-        .iter()
-        .find(|(sort, _)| *sort == selected)
-        .expect("sort label")
-        .1;
-    let response = ui.add(
+/// What each order is called.
+fn sort_label(locale: Locale, sort: LibrarySort) -> std::borrow::Cow<'static, str> {
+    match sort {
+        LibrarySort::Library => gettext(locale, "Library order"),
+        LibrarySort::RecentlyPlayed => gettext(locale, "Recently played"),
+        LibrarySort::Name => gettext(locale, "Name"),
+        LibrarySort::RecentlyAdded => gettext(locale, "Recently added"),
+        LibrarySort::Local => gettext(locale, "Local custom order"),
+        LibrarySort::Spotify => gettext(locale, "Spotify custom order"),
+    }
+}
+
+/// The icon an order shows in a sidebar too narrow for its name.
+fn sort_icon(sort: LibrarySort) -> Icon {
+    match sort {
+        LibrarySort::Library => Icon::SortOneTwo,
+        LibrarySort::RecentlyPlayed => Icon::Clock,
+        LibrarySort::Name => Icon::LetterA,
+        LibrarySort::RecentlyAdded => Icon::ClockPlus,
+        LibrarySort::Local => Icon::Brush,
+        LibrarySort::Spotify => Icon::Wifi,
+    }
+}
+
+/// The icon a kind of the Library shows in a sidebar too narrow for its name.
+fn kind_icon(kind: Filter) -> Icon {
+    match kind {
+        Filter::Playlists => Icon::ListVideo,
+        Filter::Albums => Icon::Disc,
+        Filter::Artists => Icon::MicVocal,
+        Filter::Podcasts => Icon::Mic,
+    }
+}
+
+/// The width the order button takes with its name in words.
+fn sort_button_width(ui: &egui::Ui, label: &str) -> f32 {
+    let text = ui
+        .painter()
+        .layout_no_wrap(label.to_owned(), theme::medium(13.0), egui::Color32::WHITE)
+        .size()
+        .x;
+    text + 15.0 + ui.spacing().icon_spacing + 2.0 * ui.spacing().button_padding.x
+}
+
+/// The button that opens the order menu: the order's name, or its icon
+/// where the name does not fit, with the name kept as its tooltip and the
+/// name screen readers say.
+fn sort_button(app: &App, ui: &mut egui::Ui, selected: LibrarySort, icons: bool) -> egui::Response {
+    let palette = app.palette;
+    let label = sort_label(app.locale, selected);
+    let chevron = Icon::ChevronDown.image(palette.text, 15.0);
+    let button = if icons {
+        egui::Button::new((sort_icon(selected).image(palette.text, 15.0), chevron))
+    } else {
         egui::Button::image_and_text(
-            Icon::ChevronDown.image(app.palette.text, 15.0),
+            chevron,
             egui::RichText::new(label.as_ref()).font(theme::medium(13.0)),
         )
         .wrap()
-        .fill(app.palette.surface)
-        .corner_radius(12)
-        .min_size(vec2(0.0, 28.0)),
+    };
+    let response = ui.add(
+        button
+            .fill(palette.surface)
+            .corner_radius(12)
+            .min_size(vec2(0.0, 28.0)),
     );
+    if !icons {
+        return response;
+    }
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), &*label)
+    });
+    response.on_hover_text(label.as_ref())
+}
+
+/// Offer only the sort modes supported by this shelf and queue the selected change.
+fn sort_menu(app: &mut App, ui: &mut egui::Ui, shelf: Filter, selected: LibrarySort, icons: bool) {
+    let locale = app.locale;
+    let labels = [
+        LibrarySort::Library,
+        LibrarySort::RecentlyPlayed,
+        LibrarySort::Name,
+        LibrarySort::RecentlyAdded,
+        LibrarySort::Local,
+        LibrarySort::Spotify,
+    ]
+    .map(|sort| (sort, sort_label(locale, sort)));
+    let response = sort_button(app, ui, selected, icons);
     egui::Popup::menu(&response)
         .frame(super::widgets::menu_frame(&app.palette))
         .show(|ui| {
@@ -1059,24 +1112,17 @@ fn sort_menu(app: &mut App, ui: &mut egui::Ui, shelf: Filter, selected: LibraryS
 
 /// The order menu of a Library of several kinds: the orders they all
 /// take, then whether to keep each kind together or mix them.
-fn mixed_sort_menu(app: &mut App, ui: &mut egui::Ui, shelves: &[Filter], selected: LibrarySort) {
+fn mixed_sort_menu(
+    app: &mut App,
+    ui: &mut egui::Ui,
+    shelves: &[Filter],
+    selected: LibrarySort,
+    icons: bool,
+) {
     let locale = app.locale;
-    let label = |sort: LibrarySort| match sort {
-        LibrarySort::Name => gettext(locale, "Name"),
-        LibrarySort::RecentlyAdded => gettext(locale, "Recently added"),
-        _ => gettext(locale, "Recently played"),
-    };
+    let label = |sort: LibrarySort| sort_label(locale, sort);
     let grouped = app.settings.library_group_kinds;
-    let response = ui.add(
-        egui::Button::image_and_text(
-            Icon::ChevronDown.image(app.palette.text, 15.0),
-            egui::RichText::new(label(selected).as_ref()).font(theme::medium(13.0)),
-        )
-        .wrap()
-        .fill(app.palette.surface)
-        .corner_radius(12)
-        .min_size(vec2(0.0, 28.0)),
-    );
+    let response = sort_button(app, ui, selected, icons);
     egui::Popup::menu(&response)
         .frame(super::widgets::menu_frame(&app.palette))
         .show(|ui| {
@@ -1939,6 +1985,162 @@ fn nav_row(
     response
 }
 
+/// Home or Search as an icon, half a row wide, for a sidebar too short for
+/// a row each. The name stays its tooltip and the name screen readers say.
+fn nav_icon(
+    ui: &mut egui::Ui,
+    palette: &Palette,
+    icon: Icon,
+    label: &str,
+    active: bool,
+    width: f32,
+) -> egui::Response {
+    let (rect, response) = ui.allocate_exact_size(vec2(width, 40.0), Sense::click());
+    if ui.is_rect_visible(rect) {
+        let color = if active || response.hovered() {
+            palette.text
+        } else {
+            palette.secondary
+        };
+        theme::paint_icon(ui, icon, rect, 22.0, color);
+    }
+    response.widget_info(|| {
+        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), active, label)
+    });
+    theme::focus_ring(ui, &response);
+    response.on_hover_text(label)
+}
+
+/// Below this height the sidebar puts Home and Search on one row.
+const SHORT_SIDEBAR: f32 = 480.0;
+
+/// The four ways the sidebar can show the Library.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LibraryView {
+    List,
+    Grid,
+    Circles,
+    Tree,
+}
+
+impl LibraryView {
+    const ALL: [Self; 4] = [Self::List, Self::Grid, Self::Circles, Self::Tree];
+
+    fn of(app: &App) -> Self {
+        if app.settings.sidebar_map {
+            match app.settings.home.map_layout {
+                crate::settings::MapLayout::Circles => Self::Circles,
+                crate::settings::MapLayout::Tree => Self::Tree,
+            }
+        } else if app.settings.sidebar_grid {
+            Self::Grid
+        } else {
+            Self::List
+        }
+    }
+
+    fn icon(self) -> Icon {
+        match self {
+            Self::List => Icon::LayoutList,
+            Self::Grid => Icon::LayoutGrid,
+            Self::Circles => Icon::MapCircles,
+            Self::Tree => Icon::MapTree,
+        }
+    }
+
+    fn label(self, locale: Locale) -> std::borrow::Cow<'static, str> {
+        match self {
+            Self::List => gettext(locale, "Show as list"),
+            Self::Grid => gettext(locale, "Show as grid"),
+            // Translators: Library sidebar view: the playlist map, each folder a circle around what it holds.
+            Self::Circles => gettext(locale, "Show as circles"),
+            // Translators: Library sidebar view: the playlist map as a round tree, each level of folders a ring further out.
+            Self::Tree => gettext(locale, "Show as tree"),
+        }
+    }
+
+    fn choose(self, app: &mut App) {
+        use crate::settings::MapLayout;
+        let actions = match self {
+            Self::List => [Action::SetLibraryGrid(false), Action::SetLibraryMap(false)],
+            Self::Grid => [Action::SetLibraryGrid(true), Action::SetLibraryMap(false)],
+            Self::Circles => [
+                Action::SetMapLayout(MapLayout::Circles),
+                Action::SetLibraryMap(true),
+            ],
+            Self::Tree => [
+                Action::SetMapLayout(MapLayout::Tree),
+                Action::SetLibraryMap(true),
+            ],
+        };
+        app.actions.extend(actions);
+    }
+}
+
+/// The width of one view in [`view_toggle`].
+const VIEW_CELL: f32 = 23.0;
+/// The width [`view_toggle`] takes.
+const VIEW_TOGGLE_WIDTH: f32 = VIEW_CELL * 4.0 + 4.0;
+
+/// The four views side by side, the current one filled: one click to any.
+/// In a menu, choosing one closes it, by key as well as by pointer.
+fn view_toggle(app: &mut App, ui: &mut egui::Ui, in_menu: bool) {
+    let palette = app.palette;
+    let current = LibraryView::of(app);
+    let (rect, _) = ui.allocate_exact_size(vec2(VIEW_TOGGLE_WIDTH, 28.0), Sense::hover());
+    if ui.is_rect_visible(rect) {
+        ui.painter()
+            .rect_filled(rect, rect.height() / 2.0, palette.surface);
+    }
+    for (index, view) in LibraryView::ALL.into_iter().enumerate() {
+        let cell = Rect::from_min_size(
+            pos2(
+                rect.left() + 2.0 + index as f32 * VIEW_CELL,
+                rect.top() + 2.0,
+            ),
+            vec2(VIEW_CELL, rect.height() - 4.0),
+        );
+        let label = view.label(app.locale);
+        let selected = view == current;
+        let response = ui.interact(cell, ui.id().with(("library-view", index)), Sense::click());
+        response.widget_info(|| {
+            egui::WidgetInfo::selected(
+                egui::WidgetType::RadioButton,
+                ui.is_enabled(),
+                selected,
+                &*label,
+            )
+        });
+        if ui.is_rect_visible(cell) {
+            let hovered = response.hovered() || response.has_focus();
+            if selected {
+                ui.painter()
+                    .rect_filled(cell, cell.height() / 2.0, palette.text);
+            } else if hovered {
+                ui.painter()
+                    .rect_filled(cell, cell.height() / 2.0, palette.surface_hover);
+            }
+            let color = if selected {
+                palette.window
+            } else if hovered {
+                palette.text
+            } else {
+                palette.secondary
+            };
+            theme::paint_icon(ui, view.icon(), cell, 15.0, color);
+        }
+        theme::focus_ring(ui, &response);
+        if response.on_hover_text(label.as_ref()).clicked() {
+            if !selected {
+                view.choose(app);
+            }
+            if in_menu {
+                ui.close();
+            }
+        }
+    }
+}
+
 /// Draw Library navigation, shelf controls, search, and the visible rows.
 /// Playlist ownership and text filters are applied before ordering and pin placement.
 fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
@@ -1946,27 +2148,37 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     let page = app.page().clone();
     let locale = app.locale;
     ui.add_space(4.0);
-    if nav_row(
-        ui,
-        &palette,
-        Icon::House,
-        &gettext(locale, "Home"),
-        page == Page::Home,
-    )
-    .clicked()
-    {
-        app.actions.push(Action::Open(Page::Home));
-    }
-    if nav_row(
-        ui,
-        &palette,
-        Icon::Search,
-        &gettext(locale, "Search"),
-        page == Page::Search,
-    )
-    .clicked()
-    {
-        app.actions.push(Action::FocusSearch);
+    let home = gettext(locale, "Home");
+    let search = gettext(locale, "Search");
+    if ui.available_height() < SHORT_SIDEBAR {
+        // A short sidebar keeps its room for the Library: Home and Search
+        // share one row, as icons.
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 0.0;
+            let width = ui.available_width() / 2.0;
+            if nav_icon(ui, &palette, Icon::House, &home, page == Page::Home, width).clicked() {
+                app.actions.push(Action::Open(Page::Home));
+            }
+            if nav_icon(
+                ui,
+                &palette,
+                Icon::Search,
+                &search,
+                page == Page::Search,
+                width,
+            )
+            .clicked()
+            {
+                app.actions.push(Action::FocusSearch);
+            }
+        });
+    } else {
+        if nav_row(ui, &palette, Icon::House, &home, page == Page::Home).clicked() {
+            app.actions.push(Action::Open(Page::Home));
+        }
+        if nav_row(ui, &palette, Icon::Search, &search, page == Page::Search).clicked() {
+            app.actions.push(Action::FocusSearch);
+        }
     }
     ui.add_space(10.0);
     ui.painter().hline(
@@ -2006,61 +2218,28 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             {
                 app.actions.push(Action::ToggleSidebar);
             }
-            // How the Library is shown: its rows, its cards, or the map in
-            // their place. One button, so the heading keeps its room in the
-            // default width; its menu offers the other two.
-            let grid = app.settings.sidebar_grid;
-            let map = app.settings.sidebar_map;
-            let shown_as = if map {
-                Icon::Network
-            } else if grid {
-                Icon::LayoutGrid
+            // How the Library is shown: rows, cards, or the map as circles or
+            // as a tree, side by side so any is one click away. Where the
+            // header has no room for all four, one button for the current
+            // view opens them.
+            let others = 2.0 * (16.0 + theme::ICON_BUTTON_PAD) + 3.0 * ui.spacing().item_spacing.x;
+            if ui.available_width() >= VIEW_TOGGLE_WIDTH + others {
+                view_toggle(app, ui, false);
             } else {
-                Icon::LayoutList
-            };
-            // Translators: Library sidebar button: choose to show the Library as rows, cover cards or the playlist map.
-            let view = gettext(locale, "Show as");
-            let response =
-                theme::icon_button(ui, shown_as, 16.0, palette.secondary, palette.text, &view);
-            egui::Popup::menu(&response)
-                .frame(super::widgets::menu_frame(&palette))
-                .show(|ui| {
-                    ui.set_min_width(160.0);
-                    ui.set_max_width(260.0);
-                    if (map || grid)
-                        && super::widgets::menu_item(
-                            ui,
-                            &palette,
-                            Some(Icon::LayoutList),
-                            &gettext(locale, "Show as list"),
-                        )
-                    {
-                        app.actions.push(Action::SetLibraryMap(false));
-                        app.actions.push(Action::SetLibraryGrid(false));
-                    }
-                    if (map || !grid)
-                        && super::widgets::menu_item(
-                            ui,
-                            &palette,
-                            Some(Icon::LayoutGrid),
-                            &gettext(locale, "Show as grid"),
-                        )
-                    {
-                        app.actions.push(Action::SetLibraryMap(false));
-                        app.actions.push(Action::SetLibraryGrid(true));
-                    }
-                    if !map
-                        && super::widgets::menu_item(
-                            ui,
-                            &palette,
-                            Some(Icon::Network),
-                            // Translators: Library sidebar button: show the Library as the playlist map in place of its rows.
-                            &gettext(locale, "Show as map"),
-                        )
-                    {
-                        app.actions.push(Action::SetLibraryMap(true));
-                    }
-                });
+                // Translators: Library sidebar button: choose to show the Library as rows, cover cards or the playlist map.
+                let view = gettext(locale, "Show as");
+                let response = theme::icon_button(
+                    ui,
+                    LibraryView::of(app).icon(),
+                    16.0,
+                    palette.secondary,
+                    palette.text,
+                    &view,
+                );
+                egui::Popup::menu(&response)
+                    .frame(super::widgets::menu_frame(&palette))
+                    .show(|ui| view_toggle(app, ui, true));
+            }
             // One item never deserved a menu: the plus creates directly.
             // Where folders can be made there are two, as in Spotify's apps.
             if app.folders_editable() {
@@ -2158,17 +2337,31 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
 
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
-        // Each kind is a checkbox: tick several to list them together,
-        // or none to list them all.
-        for (value, label) in [
+        let kinds = [
             (Filter::Playlists, gettext(locale, "Playlists")),
             (Filter::Albums, gettext(locale, "Albums")),
             (Filter::Artists, gettext(locale, "Artists")),
             (Filter::Podcasts, gettext(locale, "Podcasts")),
-        ] {
+        ];
+        // The kinds are named in words where they fit on one line, and
+        // shown as icons where the words would wrap.
+        let words = kinds
+            .iter()
+            .map(|(value, label)| {
+                theme::soft_button_width(ui, label) + if shown.has(*value) { 21.0 } else { 0.0 }
+            })
+            .sum::<f32>()
+            + 6.0 * (kinds.len() - 1) as f32;
+        let icons = words > ui.available_width();
+        // Each kind is a checkbox: tick several to list them together,
+        // or none to list them all.
+        for (value, label) in kinds {
             let ticked = shown.has(value);
-            let response =
-                theme::soft_button(ui, &palette, ticked.then_some(Icon::Check), &label, ticked);
+            let response = if icons {
+                theme::soft_icon_button(ui, &palette, kind_icon(value), &label, ticked)
+            } else {
+                theme::soft_button(ui, &palette, ticked.then_some(Icon::Check), &label, ticked)
+            };
             response.widget_info(|| {
                 egui::WidgetInfo::selected(
                     egui::WidgetType::Checkbox,
@@ -2193,16 +2386,31 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     };
     ui.add_space(4.0);
     ui.horizontal_wrapped(|ui| {
+        // Translators: Library filter for playlists created by the signed-in user.
+        let by_you_label = gettext(locale, "By You");
+        let by_you_shown = shelves.contains(&Filter::Playlists);
+        // The order and By You are words where both fit on one line, and
+        // icons where they would wrap.
+        let words = sort_button_width(ui, &sort_label(locale, sort))
+            + if by_you_shown {
+                ui.spacing().item_spacing.x + theme::soft_button_width(ui, &by_you_label)
+            } else {
+                0.0
+            };
+        let icons = words > ui.available_width();
         if mixed {
-            mixed_sort_menu(app, ui, &shelves, sort);
+            mixed_sort_menu(app, ui, &shelves, sort, icons);
         } else {
-            sort_menu(app, ui, filter, sort);
+            sort_menu(app, ui, filter, sort, icons);
         }
-        if shelves.contains(&Filter::Playlists) {
-            // Translators: Library filter for playlists created by the signed-in user.
-            let label = gettext(locale, "By You");
+        if by_you_shown {
+            let label = by_you_label;
             let by_you = app.settings.library_by_you;
-            let response = theme::soft_button(ui, &palette, None, &label, by_you);
+            let response = if icons {
+                theme::soft_icon_button(ui, &palette, Icon::User, &label, by_you)
+            } else {
+                theme::soft_button(ui, &palette, None, &label, by_you)
+            };
             response.widget_info(|| {
                 egui::WidgetInfo::selected(
                     egui::WidgetType::Button,
