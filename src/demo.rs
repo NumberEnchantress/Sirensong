@@ -1993,8 +1993,8 @@ mod tests {
 
     /// #576: the Library heading never runs under the header's buttons. It
     /// shrinks a little for a long translation and gives way entirely where
-    /// the four views take its room, as they do in the default width, but
-    /// stays in a wider sidebar.
+    /// the four views take its room, as they do in a narrow sidebar, but
+    /// stays from the default width up.
     #[test]
     fn the_library_heading_never_overlaps_its_buttons() {
         fn texts(shape: &egui::epaint::Shape, out: &mut Vec<(String, egui::Rect)>) {
@@ -2010,7 +2010,7 @@ mod tests {
             }
         }
         for locale in [crate::i18n::Locale::English, crate::i18n::Locale::German] {
-            for width in [210.0, 250.0, 420.0] {
+            for width in [210.0, 250.0, 320.0, 420.0] {
                 let (ctx, mut app) = accessible_app("library-heading");
                 app.locale = locale;
                 app.settings.sidebar_width = width;
@@ -2056,7 +2056,7 @@ mod tests {
                         button.x0
                     );
                 }
-                if width >= 420.0 {
+                if width >= 320.0 {
                     assert!(
                         label.is_some(),
                         "{locale:?} at {width}: the heading has room"
@@ -2688,6 +2688,27 @@ mod tests {
         assert!(!gate::on());
         assert_eq!(app.search.query, artist, "real again with Vacuum off");
         app.backend.shutdown();
+    }
+
+    /// The `nth` control named `label` with `role`, counted in reading
+    /// order, for names a view gives more than one control.
+    fn accessible_nth(
+        tree: &egui::accesskit::TreeUpdate,
+        label: &str,
+        role: egui::accesskit::Role,
+        nth: usize,
+    ) -> egui::accesskit::NodeId {
+        let mut found = tree
+            .nodes
+            .iter()
+            .filter(|(_, node)| node.label() == Some(label) && node.role() == role)
+            .filter_map(|(id, node)| node.bounds().map(|bounds| (*id, bounds)))
+            .collect::<Vec<_>>();
+        found.sort_by(|(_, a), (_, b)| (a.y0, a.x0).partial_cmp(&(b.y0, b.x0)).unwrap());
+        found
+            .get(nth)
+            .unwrap_or_else(|| panic!("no {label:?} number {nth} with role {role:?}"))
+            .0
     }
 
     fn accessible_node(
@@ -3976,10 +3997,9 @@ mod tests {
         (output.platform_output.accesskit_update.unwrap(), painted)
     }
 
-    /// A sidebar too narrow for the kinds' names on one line shows them as
-    /// icons, and the order and By You too where their words would wrap.
-    /// Each keeps its name for screen readers and still works; a wide
-    /// sidebar keeps the words.
+    /// The kinds, the order and By You show their icons and names in the
+    /// default sidebar, and their icons alone in one narrower than 300
+    /// points. Each keeps its name for screen readers and still works.
     #[test]
     fn a_narrow_sidebar_shows_its_filters_as_icons() {
         use egui::accesskit::{Action as AccessibleAction, Role};
@@ -3987,7 +4007,7 @@ mod tests {
         let size = egui::vec2(1280.0, 800.0);
         let words = ["Playlists", "Albums", "Artists", "Podcasts", "By You"];
 
-        app.settings.sidebar_width = 420.0;
+        assert_eq!(app.settings.sidebar_width, 320.0, "the default width");
         let (_, painted) = sidebar_frame(&ctx, &mut app, size, vec![]);
         for word in words.into_iter().chain(["Recently played"]) {
             assert!(
@@ -8109,7 +8129,7 @@ mod tests {
         );
         assert!(map_node(&tree, "Late night focus").is_some());
 
-        let only = accessible_node(&tree, "Only what they list", Role::RadioButton);
+        let only = accessible_nth(&tree, "Only selected", Role::RadioButton, 1);
         let tree = accessible_frame(
             &ctx,
             &mut app,
@@ -8165,7 +8185,7 @@ mod tests {
             );
             assert!(app.playlist_map.draws("spotify:playlist:pl4"));
 
-            let only = accessible_node(&tree, "Only its contents", Role::RadioButton);
+            let only = accessible_nth(&tree, "Only selected", Role::RadioButton, 0);
             accessible_frame(
                 &ctx,
                 &mut app,
@@ -8365,7 +8385,7 @@ mod tests {
         }
     }
 
-    /// Size by listening, above the map, makes each node as large as the
+    /// Time listened, above the map, makes each node as large as the
     /// time listened to what it plays, a folder as large as what it holds,
     /// says the time when pointed at, and is kept with the settings.
     #[test]
@@ -8398,7 +8418,7 @@ mod tests {
         let even = width(&tree, &heard) / width(&tree, &quiet);
         assert!(!app.settings.home.map_listening);
 
-        let toggle = accessible_node(&tree, "Size by listening", Role::CheckBox);
+        let toggle = accessible_node(&tree, "Time listened", Role::CheckBox);
         let tree = settled_map(
             &ctx,
             &mut app,
@@ -8418,7 +8438,7 @@ mod tests {
             "it says how long"
         );
 
-        let toggle = accessible_node(&tree, "Size by listening", Role::CheckBox);
+        let toggle = accessible_node(&tree, "Time listened", Role::CheckBox);
         let tree = settled_map(
             &ctx,
             &mut app,

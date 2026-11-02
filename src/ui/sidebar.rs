@@ -1022,30 +1022,22 @@ fn kind_icon(kind: Filter) -> Icon {
     }
 }
 
-/// The width the order button takes with its name in words.
-fn sort_button_width(ui: &egui::Ui, label: &str) -> f32 {
-    let text = ui
-        .painter()
-        .layout_no_wrap(label.to_owned(), theme::medium(13.0), egui::Color32::WHITE)
-        .size()
-        .x;
-    text + 15.0 + ui.spacing().icon_spacing + 2.0 * ui.spacing().button_padding.x
-}
-
-/// The button that opens the order menu: the order's name, or its icon
-/// where the name does not fit, with the name kept as its tooltip and the
+/// The button that opens the order menu: the order's icon and name, or its
+/// icon alone in a narrow sidebar, with the name kept as its tooltip and the
 /// name screen readers say.
 fn sort_button(app: &App, ui: &mut egui::Ui, selected: LibrarySort, icons: bool) -> egui::Response {
     let palette = app.palette;
     let label = sort_label(app.locale, selected);
+    let icon = sort_icon(selected).image(palette.text, 15.0);
     let chevron = Icon::ChevronDown.image(palette.text, 15.0);
     let button = if icons {
-        egui::Button::new((sort_icon(selected).image(palette.text, 15.0), chevron))
+        egui::Button::new((icon, chevron))
     } else {
-        egui::Button::image_and_text(
-            chevron,
+        egui::Button::new((
+            icon,
             egui::RichText::new(label.as_ref()).font(theme::medium(13.0)),
-        )
+            chevron,
+        ))
         .wrap()
     };
     let response = ui.add(
@@ -1381,6 +1373,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .size_range(fit.range.clone())
         .show_separator_line(false)
         .frame(Frame::new().fill(palette.panel).inner_margin(Margin {
+            // SIDEBAR_MARGIN_X counts these two.
             left: 12,
             right: 8,
             top,
@@ -2011,6 +2004,12 @@ fn nav_icon(
     response.on_hover_text(label)
 }
 
+/// The sidebar's width below which the Library's kinds, its order and By
+/// You show their icons without their names.
+const ICONS_ONLY_BELOW: f32 = 300.0;
+/// The sidebar's inner margins, left and right together.
+const SIDEBAR_MARGIN_X: f32 = 20.0;
+
 /// Below this height the sidebar puts Home and Search on one row.
 const SHORT_SIDEBAR: f32 = 480.0;
 
@@ -2188,6 +2187,8 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     );
     ui.add_space(10.0);
 
+    // Below this width the Library's filters show their icons alone.
+    let icons = ui.max_rect().width() + SIDEBAR_MARGIN_X < ICONS_ONLY_BELOW;
     let mut shown = Shown::of(&app.settings.library_kinds);
     let filter = listed_shelves(app, shown)[0];
     let show_search_id = egui::Id::new("sidebar-show-search");
@@ -2343,16 +2344,8 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             (Filter::Artists, gettext(locale, "Artists")),
             (Filter::Podcasts, gettext(locale, "Podcasts")),
         ];
-        // The kinds are named in words where they fit on one line, and
-        // shown as icons where the words would wrap.
-        let words = kinds
-            .iter()
-            .map(|(value, label)| {
-                theme::soft_button_width(ui, label) + if shown.has(*value) { 21.0 } else { 0.0 }
-            })
-            .sum::<f32>()
-            + 6.0 * (kinds.len() - 1) as f32;
-        let icons = words > ui.available_width();
+        // Each kind shows its icon and name, or its icon alone in a
+        // narrow sidebar.
         // Each kind is a checkbox: tick several to list them together,
         // or none to list them all.
         for (value, label) in kinds {
@@ -2360,7 +2353,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             let response = if icons {
                 theme::soft_icon_button(ui, &palette, kind_icon(value), &label, ticked)
             } else {
-                theme::soft_button(ui, &palette, ticked.then_some(Icon::Check), &label, ticked)
+                theme::soft_button(ui, &palette, Some(kind_icon(value)), &label, ticked)
             };
             response.widget_info(|| {
                 egui::WidgetInfo::selected(
@@ -2389,15 +2382,6 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
         // Translators: Library filter for playlists created by the signed-in user.
         let by_you_label = gettext(locale, "By You");
         let by_you_shown = shelves.contains(&Filter::Playlists);
-        // The order and By You are words where both fit on one line, and
-        // icons where they would wrap.
-        let words = sort_button_width(ui, &sort_label(locale, sort))
-            + if by_you_shown {
-                ui.spacing().item_spacing.x + theme::soft_button_width(ui, &by_you_label)
-            } else {
-                0.0
-            };
-        let icons = words > ui.available_width();
         if mixed {
             mixed_sort_menu(app, ui, &shelves, sort, icons);
         } else {
@@ -2409,7 +2393,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             let response = if icons {
                 theme::soft_icon_button(ui, &palette, Icon::User, &label, by_you)
             } else {
-                theme::soft_button(ui, &palette, None, &label, by_you)
+                theme::soft_button(ui, &palette, Some(Icon::User), &label, by_you)
             };
             response.widget_info(|| {
                 egui::WidgetInfo::selected(

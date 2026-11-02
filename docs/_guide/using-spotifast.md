@@ -409,14 +409,14 @@ the choice, and which kinds are ticked. One kind alone keeps its own order, Spot
 rows of several kinds cannot be dragged into a new order. A folder you open
 lists only what it holds, whatever else is ticked.
 
-Where the sidebar is too narrow to name the kinds on one line, they show as
-icons instead: a list with a play button for **Playlists**, a record for
-**Albums**, a singer's microphone for **Artists** and a microphone for
-**Podcasts**. The order button and **By You** do the same when their names
-would wrap: **Library order** is a 1 above a 2, **Recently played** a clock,
-**Recently added** a clock with a plus, **Name** the letter A, **Local custom
-order** a paintbrush, **Spotify custom order** a wireless signal and **By
-You** a person. Pointing at an icon names it, and screen readers say the name.
+The kinds show an icon beside their names: a list with a play button for
+**Playlists**, a record for **Albums**, a singer's microphone for **Artists**
+and a microphone for **Podcasts**. So do the order button and **By You**:
+**Library order** is a 1 above a 2, **Recently played** a clock, **Recently
+added** a clock with a plus, **Name** the letter A, **Local custom order** a
+paintbrush, **Spotify custom order** a wireless signal and **By You** a
+person. In a sidebar narrower than 300 points they show the icon alone;
+pointing at one names it, and screen readers say the name.
 In a short window, Home and Search share one row as icons.
 
 Select **By You** under Playlists to show only playlists owned by your signed-in
@@ -692,7 +692,7 @@ keeps how long you listened and where it was played from. Sirensong keeps
 the newest 500; turn on **Keep every play** in Settings → Storage to keep
 them all, the older ones in a `plays` folder beside it. Settings → Storage
 shows where they are and has a **Clear history** button, which asks first.
-The Home map's **Size by listening** sizes each playlist, album and folder
+The Home map's **Time listened** sizes each playlist, album and folder
 by this listening time.
 
 On Windows, the main window's minimize, maximize, and close buttons share the
@@ -823,10 +823,10 @@ use a personal Spotify app, reconnect it in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 16 · Spotifast 0.15.0`,
+Spotifast release it is built on, such as `Sirensong mod 17 · Spotifast 0.15.0`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.15.0 · mod 16` in the top bar instead, beside
+Settings → Appearance, puts `0.15.0 · mod 17` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

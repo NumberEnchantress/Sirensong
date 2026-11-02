@@ -4093,19 +4093,14 @@ msgstr ""
 msgid "Zoom in"
 msgstr ""
 
-#. Translators: Home map: show only what the open folder holds.
-#: src/ui/playlist_map.rs:995
-msgid "Only its contents"
+#. Translators: Home map: show only what is selected, the open folder or what the Library's filters list, and leave the rest out.
+#: src/ui/playlist_map.rs:1099
+msgid "Only selected"
 msgstr ""
 
 #. Translators: Home map: what to do with what the Library's filters (Playlists, Albums, By You, search) leave out.
 #: src/ui/playlist_map.rs:1007
 msgid "Filters:"
-msgstr ""
-
-#. Translators: Home map: show only what the Library's filters list.
-#: src/ui/playlist_map.rs:1020
-msgid "Only what they list"
 msgstr ""
 
 #. Translators: A setting: with Spotifast's own title bar, show the app's version in the top bar.
@@ -4132,12 +4127,12 @@ msgid "Hide what Spotify suggests: Made for you, top mixes, new releases, Recomm
 msgstr ""
 
 #. Translators: Library sidebar view: the playlist map, each folder a circle around what it holds.
-#: src/ui/sidebar.rs:2056
+#: src/ui/sidebar.rs:2055
 msgid "Show as circles"
 msgstr ""
 
 #. Translators: Library sidebar view: the playlist map as a round tree, each level of folders a ring further out.
-#: src/ui/sidebar.rs:2058
+#: src/ui/sidebar.rs:2057
 msgid "Show as tree"
 msgstr ""
 
@@ -4146,8 +4141,8 @@ msgid "Scroll to zoom, drag the background to pan, double-click for everything. 
 msgstr ""
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
-#: src/demo.rs:7173
-msgid "Size by listening"
+#: src/ui/playlist_map.rs:1068
+msgid "Time listened"
 msgstr ""
 
 #. Translators: How long the songs played from a playlist, album, artist, podcast or folder were listened to. {time} is a length of time, such as 2 hr 13 min.

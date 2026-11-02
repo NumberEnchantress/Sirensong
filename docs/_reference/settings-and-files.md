@@ -546,10 +546,10 @@ root, and each folder's playlists, albums and the like gathered close by it
 in one view; **Circles** draws each folder as a circle
 around everything it holds. A folder opened, on the map or in the Library,
 becomes the root: **Open folder: Zoom in** keeps the rest of the Library
-further out and zooms in on the folder, and **Only its contents** leaves the
+further out and zooms in on the folder, and **Only selected** leaves the
 rest out. **Filters: Zoom in** keeps what the Library's filters leave out
-beside the rest, faded, and zooms in on what they list; **Only what they
-list** leaves it out. Another kind already loaded has a branch of its own.
+beside the rest, faded, and zooms in on what they list; **Only selected**
+leaves it out. Another kind already loaded has a branch of its own.
 Zoom in is the default for both. Clicking the open folder at the root goes
 back out of it.
 
@@ -581,7 +581,7 @@ opens it beside the map, as a row would. It is kept as `"sidebar_map"`. The
 choices are kept as `"home": {"map_layout": "tree"}` (or `"circles"`),
 `"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`.
 
-**Size by listening**, beside the layouts, makes each node's area grow with
+**Time listened**, beside the layouts, makes each node's area grow with
 the time you listened to what it plays: the songs played from that
 playlist, album, artist or podcast, or from Liked Songs. A folder holds the
 time of everything in it. Something you never played from stays small, and

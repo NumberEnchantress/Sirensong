@@ -648,7 +648,7 @@ impl Default for Settings {
             sidebar_compact: false,
             sidebar_grid: false,
             sidebar_map: false,
-            sidebar_width: 250.0,
+            sidebar_width: 320.0,
             sidebar_map_width: 520.0,
             keep_every_play: false,
             vacuum: VacuumSettings::default(),

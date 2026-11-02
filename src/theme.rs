@@ -733,6 +733,7 @@ fastframe_icons::icons! {
         Eye => "eye",
         EyeOff => "eye-off",
         ExternalLink => lucide "external-link",
+        Focus => "focus",
         Gamepad => "gamepad-2",
         Globe => "globe",
         GripVertical => "grip-vertical",
@@ -805,6 +806,7 @@ fastframe_icons::icons! {
         WifiOff => "wifi-off",
         X => lucide "x",
         Zap => "zap",
+        ZoomIn => "zoom-in",
     }
 }
 

@@ -148,14 +148,18 @@ record its own decisions and three rounds of adversarial grading.
   clock (Recently played), a clock with a plus (Recently added), the letter A
   (Name, drawn), a paintbrush (Local custom order) and a wireless signal
   (Spotify custom order).
-- **When:** each row decides for itself. The kinds turn to icons where their
-  names would not fit on one line, which is already the case in the default
-  width; the order and By You where theirs would wrap. Home and Search share
-  one row as icons below 480 points of sidebar height.
+- **When (changed the same day, the user):** the kinds, the order and By You
+  show their icon and name, and the icon alone in a sidebar narrower than
+  300 points. The sidebar's default width is 320 points (it was 250), so
+  names show by default. Home and Search share one row as icons below 480
+  points of sidebar height.
+- **Map toolbar:** Zoom in has a magnifying glass. Both "only" choices say
+  Only selected, with a focus frame. Size by listening is now Time
+  listened, with headphones.
 - **Views:** list, grid, the map as circles and the map as a tree, side by
   side in the Library's header, one click each, with icons drawn from the
-  user's sketches. They take the Library heading's room in the default width;
-  the heading comes back in a wider sidebar. Below the room for all four the
+  user's sketches. They take the Library heading's room in a narrow sidebar;
+  the heading shows in the default width. Below the room for all four the
   single Show as button opens them. The sidebar's map drops its own Tree and
   Circles chips; Home's map keeps them.
 

@@ -1034,8 +1034,8 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
     let palette = app.palette;
     let locale = app.locale;
     let home = app.settings.home;
-    let choice = |ui: &mut egui::Ui, label: &str, selected: bool| {
-        let response = theme::soft_button(ui, &palette, None, label, selected);
+    let choice = |ui: &mut egui::Ui, icon: Option<Icon>, label: &str, selected: bool| {
+        let response = theme::soft_button(ui, &palette, icon, label, selected);
         response.widget_info(|| {
             egui::WidgetInfo::selected(egui::WidgetType::RadioButton, true, selected, label)
         });
@@ -1047,6 +1047,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
             // Translators: Home map layout: a round tree, each level of folders a ring further out.
             if choice(
                 ui,
+                None,
                 &gettext(locale, "Tree"),
                 home.map_layout == MapLayout::Tree,
             ) {
@@ -1055,6 +1056,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
             // Translators: Home map layout: each folder a circle around what it holds.
             if choice(
                 ui,
+                None,
                 &gettext(locale, "Circles"),
                 home.map_layout == MapLayout::Circles,
             ) {
@@ -1063,11 +1065,11 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
             ui.add_space(10.0);
         }
         // Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
-        let by_listening = gettext(locale, "Size by listening");
+        let by_listening = gettext(locale, "Time listened");
         let response = theme::soft_button(
             ui,
             &palette,
-            Some(Icon::Clock),
+            Some(Icon::Headphones),
             &by_listening,
             home.map_listening,
         );
@@ -1093,16 +1095,23 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
         );
         // Translators: Home map: keep the rest further out and zoom in on the open folder, or on what the Library's filters list.
         let zoom = gettext(locale, "Zoom in");
-        if choice(ui, &zoom, home.map_folder == MapFocus::Zoom) {
+        // Translators: Home map: show only what is selected, the open folder or what the Library's filters list, and leave the rest out.
+        let only = gettext(locale, "Only selected");
+        if choice(
+            ui,
+            Some(Icon::ZoomIn),
+            &zoom,
+            home.map_folder == MapFocus::Zoom,
+        ) {
             app.actions.push(Action::SetMapFocus {
                 folder: true,
                 focus: MapFocus::Zoom,
             });
         }
-        // Translators: Home map: show only what the open folder holds.
         if choice(
             ui,
-            &gettext(locale, "Only its contents"),
+            Some(Icon::Focus),
+            &only,
             home.map_folder == MapFocus::Only,
         ) {
             app.actions.push(Action::SetMapFocus {
@@ -1118,16 +1127,21 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
             theme::regular(12.5),
             palette.dim,
         );
-        if choice(ui, &zoom, home.map_filters == MapFocus::Zoom) {
+        if choice(
+            ui,
+            Some(Icon::ZoomIn),
+            &zoom,
+            home.map_filters == MapFocus::Zoom,
+        ) {
             app.actions.push(Action::SetMapFocus {
                 folder: false,
                 focus: MapFocus::Zoom,
             });
         }
-        // Translators: Home map: show only what the Library's filters list.
         if choice(
             ui,
-            &gettext(locale, "Only what they list"),
+            Some(Icon::Focus),
+            &only,
             home.map_filters == MapFocus::Only,
         ) {
             app.actions.push(Action::SetMapFocus {

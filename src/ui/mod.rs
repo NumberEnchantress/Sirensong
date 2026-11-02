@@ -637,7 +637,7 @@ const fn titlebar_spans_window(on_macos: bool, custom_titlebar: bool) -> bool {
 }
 
 /// The room the top bar's own controls need beside the caption buttons: the
-/// 760-point minimum with the default 250-point sidebar leaves 510 points.
+/// 760-point minimum with a 250-point sidebar leaves 510 points.
 const TOPBAR_MIN_CONTENT: f32 = 510.0;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
