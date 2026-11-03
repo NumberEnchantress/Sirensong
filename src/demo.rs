@@ -8095,6 +8095,85 @@ mod tests {
     /// The Home map shows what the Library's filters list, in focus, with
     /// the other kinds further out; with Only, nothing else. The ticked
     /// kinds and the map's choices are kept with the settings.
+    /// The map's choices show their icons and names where they fit on one
+    /// line, and their icons alone where the names would wrap; the group
+    /// labels keep their words, and every choice its name and its use.
+    #[test]
+    fn the_home_maps_choices_turn_to_icons_where_their_names_would_wrap() {
+        use egui::accesskit::{Action as Do, Role};
+        let (ctx, mut app) = accessible_app("map-toolbar-icons");
+        apply_flags(&mut app, None, Some("playlist-map,folders"));
+        let names = [
+            "Tree",
+            "Circles",
+            "Time listened",
+            "Zoom in",
+            "Only selected",
+        ];
+        // The words painted and the screen-reader tree, in a window `width`
+        // wide.
+        let frame = |app: &mut App, width: f32, events: Vec<egui::Event>| {
+            fn texts(shape: &egui::epaint::Shape, out: &mut Vec<String>) {
+                match shape {
+                    egui::epaint::Shape::Text(text) => out.push(text.galley.job.text.clone()),
+                    egui::epaint::Shape::Vec(shapes) => {
+                        shapes.iter().for_each(|shape| texts(shape, out))
+                    }
+                    _ => {}
+                }
+            }
+            let mut last = None;
+            for events in [events, Vec::new(), Vec::new()] {
+                let mut output = ctx.run_ui(
+                    egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(
+                            egui::Pos2::ZERO,
+                            egui::vec2(width, 800.0),
+                        )),
+                        events,
+                        ..Default::default()
+                    },
+                    |ui| app.frame_ui(ui),
+                );
+                output.textures_delta.clear();
+                last = Some(output);
+            }
+            let output = last.unwrap();
+            let mut painted = Vec::new();
+            output
+                .shapes
+                .iter()
+                .for_each(|shape| texts(&shape.shape, &mut painted));
+            (output.platform_output.accesskit_update.unwrap(), painted)
+        };
+        let (_, painted) = frame(&mut app, 1600.0, vec![]);
+        for name in names {
+            assert!(
+                painted.iter().any(|text| text == name),
+                "{name}: {painted:?}"
+            );
+        }
+        let (tree, painted) = frame(&mut app, 960.0, vec![]);
+        for name in names {
+            assert!(
+                !painted.iter().any(|text| text == name),
+                "{name}: {painted:?}"
+            );
+        }
+        assert!(
+            painted.iter().any(|text| text == "Open folder:"),
+            "the group labels keep their words"
+        );
+        let listened = accessible_node(&tree, "Time listened", Role::CheckBox);
+        frame(
+            &mut app,
+            960.0,
+            vec![accessible_action(listened, Do::Click, None)],
+        );
+        assert!(app.settings.home.map_listening, "the icon still works");
+        app.backend.shutdown();
+    }
+
     #[test]
     fn the_home_map_follows_the_library_filters_and_keeps_them() {
         use crate::settings::{LibraryShelf, MapFocus};

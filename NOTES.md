@@ -155,7 +155,10 @@ record its own decisions and three rounds of adversarial grading.
   points of sidebar height.
 - **Map toolbar:** Zoom in has a magnifying glass. Both "only" choices say
   Only selected, with a focus frame. Size by listening is now Time
-  listened, with headphones.
+  listened, with headphones. Tree and Circles show the view icons. The
+  choices show icon and name where they fit on one line, and the icon alone
+  where they would wrap (the user, 2 November 2026); the "Open folder:" and
+  "Filters:" labels keep their words, which tell the two pairs apart.
 - **Views:** list, grid, the map as circles and the map as a tree, side by
   side in the Library's header, one click each, with icons drawn from the
   user's sketches. They take the Library heading's room in a narrow sidebar;

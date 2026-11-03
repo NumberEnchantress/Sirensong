@@ -551,7 +551,10 @@ rest out. **Filters: Zoom in** keeps what the Library's filters leave out
 beside the rest, faded, and zooms in on what they list; **Only selected**
 leaves it out. Another kind already loaded has a branch of its own.
 Zoom in is the default for both. Clicking the open folder at the root goes
-back out of it.
+back out of it. Where the choices' names would not fit on one line, they show
+their icons alone: Tree and Circles their views, Time listened headphones,
+Zoom in a magnifying glass and Only selected a focus frame. Pointing at one
+names it.
 
 Scroll or pinch to zoom and drag the background to move. Double-click the
 background to see everything at once, and again to go back to the focus;
