@@ -56,6 +56,8 @@ impl From<fastframe_dirs::Dirs> for AppDirs {
 /// logging has started.
 pub struct Found {
     pub dirs: AppDirs,
+    /// Whether `dirs` is a portable copy's own folder.
+    portable: bool,
     lines: Vec<(log::Level, String)>,
 }
 
@@ -64,7 +66,18 @@ impl Found {
     pub fn given(dirs: AppDirs) -> Self {
         Self {
             dirs,
+            portable: false,
             lines: Vec::new(),
+        }
+    }
+
+    /// Where eframe remembers the main window: in a portable copy's own
+    /// folder, or in eframe's per-user one (#1144).
+    pub fn window_file(&self) -> Option<PathBuf> {
+        if self.portable {
+            Some(self.dirs.portable_window_file())
+        } else {
+            installed_window_file()
         }
     }
 
@@ -89,7 +102,17 @@ impl AppDirs {
         let dirs = found.dirs.map_or_else(Self::fallback, Self::from);
         let mut lines: Vec<_> = describe(&dirs, &found.mode).into_iter().collect();
         lines.extend(migrated);
-        if matches!(found.mode, fastframe_dirs::Mode::Portable { .. }) {
+        let portable = matches!(found.mode, fastframe_dirs::Mode::Portable { .. });
+        if portable {
+            // The per-user file may be an installed copy's, so it stays.
+            if let Some(from) = installed_window_file()
+                && let Err(error) = adopt_window_file(&from, &dirs.portable_window_file())
+            {
+                lines.push((
+                    log::Level::Warn,
+                    format!("unable to copy {}: {error}", from.display()),
+                ));
+            }
             // Its sign-in follows the folder when it moves to another drive.
             if let Err(error) = crate::credentials::keep_profile(&dirs.state) {
                 lines.push((
@@ -98,7 +121,11 @@ impl AppDirs {
                 ));
             }
         }
-        Found { dirs, lines }
+        Found {
+            dirs,
+            portable,
+            lines,
+        }
     }
 
     /// The per-user folders, which an installed copy uses whether or not
@@ -122,6 +149,11 @@ impl AppDirs {
             state: fallback.join("sirensong-state"),
             cache: fallback.join("sirensong-cache"),
         }
+    }
+
+    /// What eframe remembers about a portable copy's main window.
+    fn portable_window_file(&self) -> PathBuf {
+        self.state.join("app.ron")
     }
 
     pub fn settings_file(&self) -> PathBuf {
@@ -201,6 +233,11 @@ impl AppDirs {
 
     pub fn art_cache_dir(&self) -> PathBuf {
         self.cache.join("art")
+    }
+
+    /// Pictures of the installed skins, for their cards in Settings.
+    pub fn skin_preview_dir(&self) -> PathBuf {
+        self.cache.join("skin-previews")
     }
 
     pub fn lyrics_cache_dir(&self) -> PathBuf {
@@ -566,6 +603,25 @@ fn copy_tree(from: &Path, to: &Path, top: bool) -> std::io::Result<()> {
     Ok(())
 }
 
+/// What eframe remembers about the main window, in the folder it picks
+/// itself, which on Windows is `%APPDATA%\sirensong\data`.
+pub fn installed_window_file() -> Option<PathBuf> {
+    eframe::storage_dir("sirensong").map(|dir| dir.join("app.ron"))
+}
+
+/// Gives a portable copy that has no window file yet a copy of `from`, so
+/// the window opens as it was left. Later runs keep their own.
+fn adopt_window_file(from: &Path, to: &Path) -> std::io::Result<()> {
+    if to.exists() {
+        return Ok(());
+    }
+    match std::fs::read(from) {
+        Ok(contents) => fastframe_file::write(to, contents),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error),
+    }
+}
+
 /// The log line for the folders a copy uses, `dirs`, chosen for `mode`. An
 /// installed copy says nothing.
 fn describe(dirs: &AppDirs, mode: &fastframe_dirs::Mode) -> Option<(log::Level, String)> {
@@ -605,7 +661,55 @@ fn describe(dirs: &AppDirs, mode: &fastframe_dirs::Mode) -> Option<(log::Level, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
+
+    fn folder(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("spotifast-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// #1144: a portable copy remembers its window in its own folder.
+    #[test]
+    fn a_portable_copy_keeps_its_window_file_in_its_folder() {
+        let dirs = AppDirs::from(fastframe_dirs::Dirs::inside(Path::new(
+            "/usb/spotifast-data",
+        )));
+        let portable = Found {
+            dirs: dirs.clone(),
+            portable: true,
+            lines: Vec::new(),
+        };
+        assert_eq!(
+            portable.window_file(),
+            Some(PathBuf::from("/usb/spotifast-data/state/app.ron"))
+        );
+        assert_eq!(Found::given(dirs).window_file(), installed_window_file());
+    }
+
+    /// #1144: the first run after the file moved opens the window as it was
+    /// left, the per-user file stays for an installed copy, and later runs
+    /// keep what the portable copy saved.
+    #[test]
+    fn a_portable_copy_starts_from_a_copy_of_the_window_file() {
+        let dir = folder("window-file");
+        let from = dir.join("roaming").join("app.ron");
+        let to = dir.join("spotifast-data").join("state").join("app.ron");
+
+        adopt_window_file(&from, &to).unwrap();
+        assert!(!to.exists(), "nothing to copy");
+
+        std::fs::create_dir_all(from.parent().unwrap()).unwrap();
+        std::fs::write(&from, "installed").unwrap();
+        adopt_window_file(&from, &to).unwrap();
+        assert_eq!(std::fs::read_to_string(&to).unwrap(), "installed");
+        assert!(from.exists(), "copied, never moved");
+
+        std::fs::write(&to, "portable").unwrap();
+        adopt_window_file(&from, &to).unwrap();
+        assert_eq!(std::fs::read_to_string(&to).unwrap(), "portable");
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 
     /// The first start as Sirensong copies Spotifast's settings and state,
     /// with the sign-in's profile recorded so its grants stay reachable,

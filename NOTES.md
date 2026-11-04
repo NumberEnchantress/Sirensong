@@ -166,6 +166,28 @@ record its own decisions and three rounds of adversarial grading.
   single Show as button opens them. The sidebar's map drops its own Tree and
   Circles chips; Home's map keeps them.
 
+### Upstream 0.17.1, 4 November 2026
+
+- **Merged** upstream's 0.16.0, 0.17.0 and 0.17.1 into mod 19: Windows
+  Media Player skins with sandboxed scripts, the Spotifast Tall and Wide
+  skins (which keep their names, as the built-in Winamp skin does), MilkDrop
+  in skins and behind lyrics, Soloist's new setup and recovery, Connect and
+  playlist fixes.
+- **By You keeping folders:** upstream added its own version (#1143). The
+  fork's, which already did this with folder counts and the map, is kept.
+- **Vacuum** also covers what 0.16 and 0.17 added: a Windows Media Player
+  skin's scripts are given the song and queue as Vacuum shows them, and its
+  album art area the stand-in picture; an artist's monthly listeners hide
+  like followers; an upcoming release's card and an upcoming album's play
+  counts follow the album rules; Copy details copies what is shown; a table
+  sorted by plays falls back to its own order while counts are hidden; and a
+  playlist's description keeps its links only while Vacuum is off. The leak
+  test checks the skin's view and an upcoming release.
+- **Names:** upstream's new "Register Spotifast" wording and the Soloist
+  messages say Sirensong. The catalogs were merged entry by entry from the
+  base, fork and upstream versions, not from git's text hunks, which split
+  entries.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the
