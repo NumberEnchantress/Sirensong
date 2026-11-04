@@ -969,10 +969,6 @@ pub struct App {
     /// Pin reads numbered up to this were asked for before the latest pin
     /// change.
     pins_stale_upto: Option<u64>,
-    /// Spotify's pins have been read this session, not only restored from
-    /// the last one. Until then a failed read falls back to the pins saved
-    /// on this computer.
-    pins_live: bool,
     /// Pin changes Spotify has taken, by key, held over reads until a read
     /// shows them: Spotify's library can answer from before a change it has
     /// already accepted, and a pin must not flicker away and back.
@@ -1631,7 +1627,6 @@ impl App {
             pins_cache: session.spotify_pins.clone(),
             pin_edits: 0,
             pins_stale_upto: None,
-            pins_live: false,
             pin_overrides: Vec::new(),
             editable_by_grant: std::collections::BTreeSet::new(),
             pending_link: None,
@@ -3319,14 +3314,9 @@ impl App {
                         // shows; a read after the change follows it.
                     }
                     Ok(uris) => self.adopt_pins(uris),
-                    Err(error) => {
-                        log::warn!("pins unavailable: {error}");
-                        // Pins restored from the last session that cannot be
-                        // read now give way to the ones saved here.
-                        if !self.pins_live {
-                            self.spotify_pins = None;
-                        }
-                    }
+                    // The pins Spotify last reported stay until it answers
+                    // again: a refused read says nothing about the pins.
+                    Err(error) => log::warn!("pins unavailable: {error}"),
                 },
                 Event::PinSet {
                     uri,
@@ -3786,7 +3776,6 @@ impl App {
                 self.pins_cache = None;
                 self.pin_edits = 0;
                 self.pins_stale_upto = None;
-                self.pins_live = false;
                 self.pin_overrides.clear();
                 self.editable_by_grant.clear();
                 self.account_caches_due = false;
@@ -6415,7 +6404,6 @@ impl App {
 
     /// Shows Spotify's pins and remembers them for the next start.
     fn adopt_pins(&mut self, mut uris: Vec<String>) {
-        self.pins_live = true;
         if let Some(user) = self.user_id().map(str::to_owned) {
             // A change Spotify took stands until a read shows it, or for a
             // minute at most.
@@ -16738,7 +16726,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 19";
+pub const FORK_VERSION: &str = "mod 20";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -37452,7 +37440,7 @@ mod tests {
     /// this computer when Spotify's cannot be read now; once read, a later
     /// failure keeps them.
     #[test]
-    fn restored_pins_give_way_when_spotify_cannot_be_read() {
+    fn restored_pins_stay_when_spotify_cannot_be_read() {
         let mut app = pins_app();
         app.settings.pinned_contexts = vec!["spotify:playlist:local".into()];
         app.spotify_pins = Some(vec!["spotify:playlist:old".into()]);
@@ -37460,15 +37448,14 @@ mod tests {
             app.rootlist_asked += 1;
             app.handle_backend_events(vec![Event::Pins {
                 serial: app.rootlist_asked,
-                result: Err("PersistedQueryNotFound".into()),
+                result: Err("HTTP 403".into()),
             }]);
         };
+        // A refused read, as Spotify gives the shared sign-in, keeps the pins
+        // it last reported instead of falling back to the local ones.
         fail(&mut app);
-        assert!(!app.pins_synced());
-        assert!(
-            app.library_pins()
-                .contains(&"spotify:playlist:local".to_string())
-        );
+        assert!(app.pins_synced());
+        assert_eq!(app.library_pins(), ["spotify:playlist:old"]);
         receive_pins(&mut app, &["spotify:playlist:x"]);
         fail(&mut app);
         assert!(app.pins_synced());

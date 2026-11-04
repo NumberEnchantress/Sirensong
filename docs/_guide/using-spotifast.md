@@ -480,8 +480,10 @@ Set up playback on this computer to load that order. Your playlists stay
 visible while it loads, and Sirensong remembers the last order for your account.
 When you rearrange your library in another Spotify app, Sirensong picks up the
 new order when you switch back to it.
-Items you pin in Sirensong remain at the top, including items from a closed
-folder. In Spotify custom order, with playback set up on this computer,
+Pins show only in **Spotify custom order** and **Local custom order**, at
+the top, including items from a closed folder. **Name**, **Recently played**
+and **Recently added** sort pinned items with the rest, and a list of several
+kinds shows no pins. In Spotify custom order, with playback set up on this computer,
 dragging a playlist or folder moves it in your Spotify library, inside the
 folder of the row it lands above, also with **By You** on. Other sorts and a
 search only change the order in Sirensong.
@@ -502,9 +504,10 @@ Folders can be pinned from their menu or by dragging them into the pinned
 group; a pinned folder sits at the top with its playlists. Spotify pins only
 items that are not inside a folder and caps how many you can have; when it
 refuses a pin, Sirensong says why. Spotify keeps the order of its pins, so
-dragging within the pinned group does not change it. Until playback is set
-up, and if Spotify's pins cannot be read, the pins saved on this computer
-are used.
+dragging within the pinned group does not change it. If Spotify refuses to
+say which items are pinned, as it can for the shared sign-in, the pins it last
+reported stay. Until playback is set up, and before Spotify has ever reported
+your pins, the pins saved on this computer are used.
 
 Drag playlists to choose **Local custom order**. New playlists appear below the
 pinned group. Selecting **Name**, **Recently played** or **Spotify custom order**
@@ -523,8 +526,8 @@ order**. Other pins can sit above it. Its right-click menu also offers **Unpin**
 and **Pin to top**; pinning adds it after your existing pins. The arrangement
 survives restarting Sirensong and switching sort choices.
 
-When unpinned, Liked Songs follows **Name** or **Recently played** like the other
-rows. In **Spotify custom order**, it comes first after the pins, where
+When unpinned, and always in **Name** and **Recently played**, Liked Songs
+follows the order like the other rows. In **Spotify custom order**, it comes first after the pins, where
 Spotify's own apps show it. Returning to **Local custom order**
 restores its saved position. Dragging a song onto Liked Songs still saves that
 song, wherever the row sits.
@@ -867,10 +870,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 19 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 20 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 19` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 20` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

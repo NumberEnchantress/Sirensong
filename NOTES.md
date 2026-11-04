@@ -188,6 +188,21 @@ record its own decisions and three rounds of adversarial grading.
   base, fork and upstream versions, not from git's text hunks, which split
   entries.
 
+### Pins and custom orders, 4 November 2026
+
+- **Decision (the user):** one custom order the user arranges freely, which
+  can hold anything at any depth, with pins only in Spotify's order, where
+  Spotify's rules and its limit of four apply. An option, on by default,
+  keeps the custom order in step with Spotify's, and another chooses what
+  happens when both changed (Spotify wins, local wins, or ask, the default,
+  showing the conflict). Built in rounds.
+- **Round 1 (mod 20):** a pin read Spotify refuses (HTTP 403 for the shared
+  sign-in) keeps the pins it last reported, instead of falling back to the
+  local ones, which emptied the pinned group. Pins show only in Spotify
+  custom order and, until the next round replaces it, Local custom order:
+  Name, Recently played and Recently added sort pinned items with the rest,
+  and offer no Pin to top.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

@@ -1263,7 +1263,11 @@ fn order_entries(app: &App, shelf: Filter, sort: LibrarySort, entries: &mut [Ent
         }
         LibrarySort::Library => {}
     }
-    let pins = app.library_pins();
+    let pins = if pins_apply(shelf, sort) {
+        app.library_pins()
+    } else {
+        Vec::new()
+    };
     let ranks = first_ranks(pins.iter().map(String::as_str));
     // A pinned folder takes what it holds up with it: the rows after it
     // that sit deeper share its rank.
@@ -1316,6 +1320,28 @@ fn sort_by_ranks<T>(entries: &mut [T], ranks: &[usize]) {
     let mut order: Vec<usize> = (0..entries.len()).collect();
     order.sort_by_key(|&index| ranks[index]);
     permute(entries, &order);
+}
+
+/// Pins show only in the orders that keep them: Spotify's, where they are
+/// the account's own, and the local custom order. Sorted by name or by
+/// date, and with several kinds listed, nothing is lifted to the top.
+fn pins_apply(shelf: Filter, sort: LibrarySort) -> bool {
+    shelf == Filter::Playlists && matches!(sort, LibrarySort::Spotify | LibrarySort::Local)
+}
+
+/// Whether the sidebar's current order shows pins.
+fn pins_apply_here(app: &App) -> bool {
+    let shelves = listed_shelves(app, Shown::of(&app.settings.library_kinds));
+    matches!(shelves.as_slice(), [shelf] if pins_apply(*shelf, selected_sort(app, *shelf)))
+}
+
+/// The pins the sidebar shows in the order it shows now.
+fn shown_pins(app: &App) -> Vec<String> {
+    if pins_apply_here(app) {
+        app.library_pins()
+    } else {
+        Vec::new()
+    }
 }
 
 /// How many rows at the top belong to pins, a pinned folder's rows with it.
@@ -1638,7 +1664,7 @@ fn folder_rows_in(app: &App, user_id: &str, whole: bool, entries: &mut Vec<Entry
     };
     let counts = folder_counts(&app.rootlist, keep);
     let holdings = folder_holdings(&app.rootlist);
-    let pins = app.library_pins();
+    let pins = shown_pins(app);
     // Opened into a folder, only what it holds is listed, from its own rows
     // down, whether or not it is rolled up in the tree.
     let entered = if whole { None } else { entered_span(app) };
@@ -1801,7 +1827,7 @@ fn landing_slot(app: &App, entries: &[Entry], slot: usize) -> usize {
     }
     // A pinned folder sits in the pin block, not where the tree has it;
     // the drop then stays at the end.
-    let pinned = pinned_rows(entries, &app.library_pins());
+    let pinned = pinned_rows(entries, &shown_pins(app));
     match end_place(app) {
         Place::Before(Row::Folder(id)) => entries
             .iter()
@@ -2477,7 +2503,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
         more_pages,
     } = library_rows(app, &shelves, &needle);
     let custom_order = !mixed && filter == Filter::Playlists && sort == LibrarySort::Local;
-    let pins = app.library_pins();
+    let pins = shown_pins(app);
     let pinned_rows = pinned_rows(&entries, &pins);
     let playing_context = app.playing_context_uri();
     let context_playing = app.believed_playing();
@@ -2972,7 +2998,7 @@ fn library_grid(
         return;
     }
     let palette = app.palette;
-    let pins = app.library_pins();
+    let pins = shown_pins(app);
     let playing_context = app.playing_context_uri();
     let context_playing = app.believed_playing();
     let current_page = app.page().clone();
@@ -3481,6 +3507,10 @@ fn move_to_folder_menu(app: &mut App, ui: &mut egui::Ui, row: &Row) {
 }
 
 fn pin_menu(app: &mut App, ui: &mut egui::Ui, key: &str) {
+    // Pinning means nothing in an order that shows no pins.
+    if !pins_apply_here(app) {
+        return;
+    }
     let mut pins = app.library_pins();
     let pinned = pins.iter().any(|held| held == key);
     let label = if pinned {
@@ -3567,8 +3597,11 @@ fn drop_playlist_row(app: &mut App, entries: &[Entry], pinned_rows: usize, slot:
                     _ => None,
                 })
             } else {
+                // A pinned row shown in a sorted view is not in the order,
+                // so the drop goes before the next row that is.
                 let held = entry.ordering_key();
-                (!held.is_empty() && held != key).then_some(held)
+                (!held.is_empty() && held != key && order.iter().any(|kept| kept == held))
+                    .then_some(held)
             }
         })
         .map(str::to_string);
@@ -4212,8 +4245,31 @@ mod ordering_tests {
         );
     }
 
+    /// Pins show, and can be changed, only in Spotify's order and the
+    /// custom order, and only with playlists listed alone.
     #[test]
-    fn name_and_recent_sorts_keep_pins_and_do_not_rewrite_library_data() {
+    fn pins_show_only_in_spotify_and_custom_orders() {
+        let mut app = app("pins-where");
+        app.settings.pinned_contexts = vec![uri("a")];
+        for (sort, shown) in [
+            (LibrarySort::RecentlyPlayed, false),
+            (LibrarySort::Name, false),
+            (LibrarySort::Local, true),
+            (LibrarySort::Spotify, true),
+        ] {
+            app.settings.library_sort.insert(Filter::Playlists, sort);
+            assert_eq!(pins_apply_here(&app), shown, "{sort:?}");
+            assert_eq!(shown_pins(&app).contains(&uri("a")), shown, "{sort:?}");
+        }
+        app.settings.library_kinds = vec![Filter::Playlists, Filter::Albums];
+        assert!(shown_pins(&app).is_empty(), "several kinds list no pins");
+        app.backend.shutdown();
+    }
+
+    /// Sorted by name or by recent plays, pins stay where the order puts
+    /// them; only Spotify's order and the custom order lift them.
+    #[test]
+    fn name_and_recent_sorts_show_no_pins_and_do_not_rewrite_library_data() {
         let mut app = app("sorts");
         let mut entries = rows(&app);
         order_entries(
@@ -4227,7 +4283,9 @@ mod ordering_tests {
         assert_eq!(ids(&entries), ["b", "c", "d", "a"]);
         app.settings.pinned_contexts = vec![uri("a")];
         order_entries(&app, Filter::Playlists, LibrarySort::Name, &mut entries);
-        assert_eq!(ids(&entries), ["a", "b", "c", "d"]);
+        assert_eq!(ids(&entries), ["b", "c", "d", "a"]);
+        order_entries(&app, Filter::Playlists, LibrarySort::Local, &mut entries);
+        assert_eq!(ids(&entries)[0], "a", "the custom order lifts the pin");
         assert_eq!(ids(&rows(&app)), ["a", "b", "c", "d"]);
         app.backend.shutdown();
     }
@@ -4258,8 +4316,9 @@ mod ordering_tests {
         }
 
         app.settings.pinned_contexts = ["c", "a", "c"].map(uri).to_vec();
+        app.settings.sidebar_order.clear();
         let mut entries = rows(&app);
-        order_entries(&app, Filter::Playlists, LibrarySort::Library, &mut entries);
+        order_entries(&app, Filter::Playlists, LibrarySort::Local, &mut entries);
         assert_eq!(ids(&entries), ["c", "a", "b", "d"]);
         assert_eq!(ids(&rows(&app)), ["a", "b", "c", "d"]);
         app.backend.shutdown();
@@ -4373,7 +4432,7 @@ mod ordering_tests {
 
     /// Name keeps playlists in their folders, as Spotify does: each folder's
     /// rows follow it in name order, folders sort among their siblings by
-    /// name, and a pin still comes out of its folder to the top (#651).
+    /// name (#651), and a pin stays in its folder: Name lifts no pins.
     #[test]
     fn name_order_sorts_within_each_folder() {
         use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
@@ -4422,19 +4481,9 @@ mod ordering_tests {
                 ("Zebra", 1),
             ])
         );
+        let unpinned = rows(&app);
         app.settings.pinned_contexts = vec![uri("b")];
-        assert_eq!(
-            rows(&app),
-            expected(&[
-                ("Alpha", 0),
-                ("Beta", 0),
-                ("Liked Songs", 0),
-                ("Outer", 0),
-                ("Inner", 1),
-                ("alpha", 2),
-                ("Zebra", 1),
-            ])
-        );
+        assert_eq!(rows(&app), unpinned);
         // A search still lists matching playlists flat.
         assert!(projected(&app, "a").iter().all(|row| row.depth == 0));
         app.backend.shutdown();
@@ -4472,10 +4521,10 @@ mod ordering_tests {
         app.settings.sidebar_order.clear();
         app.settings
             .library_sort
-            .insert(Filter::Playlists, LibrarySort::Name);
+            .insert(Filter::Playlists, LibrarySort::Local);
         app.settings.pinned_contexts = vec![uri("a")];
         let mut entries = rows(&app);
-        order_entries(&app, Filter::Playlists, LibrarySort::Name, &mut entries);
+        order_entries(&app, Filter::Playlists, LibrarySort::Local, &mut entries);
         drop_playlist_row(&mut app, &entries, 1, 2, &uri("a"));
         apply_actions(&mut app);
         assert_eq!(app.settings.library_pins(), [LIKED_SONGS_KEY]);
@@ -5273,6 +5322,9 @@ mod ordering_tests {
     #[test]
     fn liked_songs_moves_among_pins_and_retains_its_local_position() {
         let mut app = app("liked-position");
+        app.settings
+            .library_sort
+            .insert(Filter::Playlists, LibrarySort::Local);
         app.settings.pinned_contexts = [uri("d"), uri("a")].to_vec();
         let ordered = |app: &App| {
             let mut entries = rows(app);

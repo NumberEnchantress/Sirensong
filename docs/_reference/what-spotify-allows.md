@@ -68,7 +68,8 @@ clients. Sirensong uses its session for:
 - **Pins shared with the Spotify apps.** There is no Web API for pins.
   Sirensong reads and changes them through the private library queries
   Spotify's web player uses, with this session's token. Spotify pins only
-  items outside folders and caps their number. When the pins cannot be read,
+  items outside folders and caps their number. When Spotify refuses to read
+  them, Sirensong keeps the pins it last reported; before it has ever read them,
   Sirensong uses the pins saved in `settings.json`.
 - **Playlist permissions.** The rootlist shows when a playlist shared by
   invitation can be edited. The Web API's `collaborative` flag does not cover

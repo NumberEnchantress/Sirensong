@@ -4493,6 +4493,11 @@ mod tests {
         let (ctx, mut app) = accessible_app("library-menu-locale");
         app.locale = Locale::German;
         app.settings.liked_songs_pinned = false;
+        // The pin item belongs to the orders that show pins.
+        app.settings.library_sort.insert(
+            crate::settings::LibraryShelf::Playlists,
+            crate::settings::LibrarySort::Local,
+        );
         let row = |tree: &egui::accesskit::TreeUpdate, label: &str| {
             let bounds = tree
                 .nodes
@@ -13587,6 +13592,11 @@ mod tests {
         populate(&mut app);
         app.settings.pinned_contexts =
             vec!["spotify:playlist:pl2".into(), "spotify:playlist:pl4".into()];
+        // Pins show in the custom order.
+        app.settings.library_sort.insert(
+            crate::settings::LibraryShelf::Playlists,
+            crate::settings::LibrarySort::Local,
+        );
         for _ in 0..3 {
             frame(&ctx, &mut app);
         }
@@ -13666,6 +13676,11 @@ mod tests {
         populate(&mut app);
         assert!(app.settings.pinned_contexts.is_empty());
         assert!(app.settings.sidebar_order.is_empty());
+        // In the custom order, where Liked Songs is pinned at the top.
+        app.settings.library_sort.insert(
+            crate::settings::LibraryShelf::Playlists,
+            crate::settings::LibrarySort::Local,
+        );
         for _ in 0..3 {
             frame(&ctx, &mut app);
         }
