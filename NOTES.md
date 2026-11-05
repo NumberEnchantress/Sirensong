@@ -202,6 +202,22 @@ record its own decisions and three rounds of adversarial grading.
   custom order and, until the next round replaces it, Local custom order:
   Name, Recently played and Recently added sort pinned items with the rest,
   and offer no Pin to top.
+- **Round 2 (mod 21):** Local custom order became **Sirensong custom
+  order**, one tree per account in `settings.json` (`library_trees`,
+  `crate::library_tree`) in the rootlist's own rows, so `crate::folders` edits and checks it
+  unchanged. It holds any kind: playlists, albums, artists, podcasts, Liked
+  Songs and Local Files (`spotifast:local-files`). It starts from Spotify's
+  tree with Liked Songs and the pins on top, waiting for Spotify's tree
+  unless an edit cannot wait; a tree made flat gives way to Spotify's
+  folders until the listener changes it. A new save goes just below a
+  leading Liked Songs, a kind seen first goes at the end, and an empty
+  folder stays in sight. The sidebar edits
+  whichever tree it shows (`App::shown_tree`): folder dialogs carry `local`,
+  and `Action::EditLibraryTree` changes this computer only until round 3
+  syncs it. A drag in a sorted view moves the row in this order and switches
+  to it. Pins show only in Spotify's order. The flat `sidebar_order` is kept
+  in settings, read only to start a tree when Spotify's is unknown. The map
+  still follows Spotify's tree (round 4).
 
 ### Still open
 

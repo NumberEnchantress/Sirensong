@@ -3855,7 +3855,7 @@ mod tests {
         let saved = app.settings.sidebar_order.clone();
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let sort = accessible_node(&tree, "Local custom order", Role::Button);
+        let sort = accessible_node(&tree, "Sirensong custom order", Role::Button);
         accessible_frame(
             &ctx,
             &mut app,
@@ -3892,7 +3892,7 @@ mod tests {
             vec![accessible_action(sort, AccessibleAction::Click, None)],
         );
         let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let local = accessible_node(&tree, "Local custom order", Role::Button);
+        let local = accessible_node(&tree, "Sirensong custom order", Role::Button);
         accessible_frame(
             &ctx,
             &mut app,
@@ -4493,10 +4493,10 @@ mod tests {
         let (ctx, mut app) = accessible_app("library-menu-locale");
         app.locale = Locale::German;
         app.settings.liked_songs_pinned = false;
-        // The pin item belongs to the orders that show pins.
+        // The pin item belongs to the order that shows pins.
         app.settings.library_sort.insert(
             crate::settings::LibraryShelf::Playlists,
-            crate::settings::LibrarySort::Local,
+            crate::settings::LibrarySort::Spotify,
         );
         let row = |tree: &egui::accesskit::TreeUpdate, label: &str| {
             let bounds = tree
@@ -4696,9 +4696,14 @@ mod tests {
             );
         };
         let rearranged = |app: &App| {
-            app.actions
-                .iter()
-                .any(|action| matches!(action, Action::ArrangeLibrary { .. }))
+            app.actions.iter().any(|action| {
+                matches!(
+                    action,
+                    Action::ArrangeLibrary { .. }
+                        | Action::EditFolders(_)
+                        | Action::EditLibraryTree(_)
+                )
+            })
         };
         drag_card();
         release(&mut app, pos);
@@ -13592,10 +13597,10 @@ mod tests {
         populate(&mut app);
         app.settings.pinned_contexts =
             vec!["spotify:playlist:pl2".into(), "spotify:playlist:pl4".into()];
-        // Pins show in the custom order.
+        // Pins show in Spotify's order.
         app.settings.library_sort.insert(
             crate::settings::LibraryShelf::Playlists,
-            crate::settings::LibrarySort::Local,
+            crate::settings::LibrarySort::Spotify,
         );
         for _ in 0..3 {
             frame(&ctx, &mut app);
@@ -13648,102 +13653,21 @@ mod tests {
         let _ = std::fs::remove_dir_all(root);
     }
 
-    /// Reordering unpinned playlists creates a custom sidebar order.
     #[test]
-    fn dropping_between_unpinned_playlists_creates_the_custom_order() {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-unpinned-test-{}", std::process::id()));
-        let dirs = AppDirs {
-            config: root.join("config"),
-            state: root.join("state"),
-            cache: root.join("cache"),
-        };
-        let ctx = egui::Context::default();
-        let waker = crate::backend::Waker::default();
-        waker.attach(&ctx);
-        let mut app = App::new(
-            &waker,
-            dirs,
-            Settings::default(),
-            AppOptions {
-                media_controls: false,
-                restore_sign_in: false,
-                tray: false,
-                autostart: false,
-            },
-        );
-        app.attach(&ctx);
-        populate(&mut app);
-        assert!(app.settings.pinned_contexts.is_empty());
-        assert!(app.settings.sidebar_order.is_empty());
-        // In the custom order, where Liked Songs is pinned at the top.
-        app.settings.library_sort.insert(
-            crate::settings::LibraryShelf::Playlists,
-            crate::settings::LibrarySort::Local,
-        );
-        for _ in 0..3 {
-            frame(&ctx, &mut app);
-        }
-
-        // Sweep from the top; the first slot inside the list is the one
-        // right under Liked Songs, between what were the first two
-        // unpinned playlists.
-        let mut dropped = false;
-        for step in 0..40 {
-            let pos = egui::pos2(120.0, 100.0 + step as f32 * 10.0);
-            egui::DragAndDrop::set_payload(
-                &ctx,
-                DragEntry {
-                    uri: "spotify:playlist:pl4".into(),
-                    title: "Release Radar".into(),
-                    image: None,
-                },
-            );
-            frame_events(&ctx, &mut app, vec![egui::Event::PointerMoved(pos)]);
-            frame_events(
-                &ctx,
-                &mut app,
-                vec![egui::Event::PointerButton {
-                    pos,
-                    button: egui::PointerButton::Primary,
-                    pressed: false,
-                    modifiers: egui::Modifiers::NONE,
-                }],
-            );
-            egui::DragAndDrop::clear_payload(&ctx);
-            if !app.settings.sidebar_order.is_empty() {
-                dropped = true;
-                break;
-            }
-        }
-        assert!(dropped, "no sweep position landed below Liked Songs");
-        let expected: Vec<String> = [0, 4]
-            .into_iter()
-            .chain((1..PLAYLISTS.len()).filter(|index| *index != 4))
-            .map(|index| format!("spotify:playlist:pl{index}"))
-            .collect();
-        assert_eq!(app.settings.sidebar_order, expected);
-        assert_eq!(
-            app.settings.library_pins(),
-            [crate::settings::LIKED_SONGS_KEY]
-        );
-        app.backend.shutdown();
-        let _ = std::fs::remove_dir_all(root);
-    }
-
-    #[test]
-    fn dragging_liked_songs_moves_it_and_its_menu_can_pin_it_again() {
+    fn dragging_liked_songs_in_the_custom_order_moves_it_and_it_stays() {
         use crate::settings::LIKED_SONGS_KEY;
         use egui::accesskit::Role;
         for compact in [false, true] {
             let (ctx, mut app) = accessible_app(&format!("liked-drag-{compact}"));
             app.settings.sidebar_compact = compact;
             app.rootlist.clear();
-            app.settings.pinned_contexts = vec!["spotify:playlist:pl2".into()];
             app.settings.sidebar_order = (0..PLAYLISTS.len())
-                .filter(|index| *index != 2)
                 .map(|index| format!("spotify:playlist:pl{index}"))
                 .collect();
+            app.settings.library_sort.insert(
+                crate::settings::LibraryShelf::Playlists,
+                crate::settings::LibrarySort::Local,
+            );
             let row = |tree: &egui::accesskit::TreeUpdate, label: &str| {
                 let bounds = tree
                     .nodes
@@ -13800,65 +13724,29 @@ mod tests {
                     modifiers: egui::Modifiers::NONE,
                 }],
             );
-            assert!(!app.settings.liked_songs_pinned);
+            let keys = |app: &App| -> Vec<String> {
+                app.library_tree()
+                    .iter()
+                    .flat_map(|tree| tree.rows.iter())
+                    .filter_map(|row| match row {
+                        crate::player::RootlistEntry::Playlist(key) => Some(key.clone()),
+                        _ => None,
+                    })
+                    .collect()
+            };
+            let order = keys(&app);
+            let at = |key: &str| order.iter().position(|held| held == key).unwrap();
             assert_eq!(
-                &app.settings.sidebar_order[..3],
-                [
-                    "spotify:playlist:pl0",
-                    LIKED_SONGS_KEY,
-                    "spotify:playlist:pl1"
-                ]
+                at(LIKED_SONGS_KEY) + 1,
+                at("spotify:playlist:pl1"),
+                "{order:?}"
             );
-            let expected = app.settings.sidebar_order.clone();
             let path = app.dirs.config.join("liked-placement.json");
             app.settings.save(&path);
             app.settings = Settings::load(&path);
+            assert_eq!(keys(&app), order, "the arrangement survives a restart");
             let tree = accessible_frame(&ctx, &mut app, vec![]);
-            assert_eq!(app.settings.sidebar_order, expected);
-            assert!(row(&tree, "Discover Weekly").top() < row(&tree, "Liked Songs").top());
             assert!(row(&tree, "Liked Songs").top() < row(&tree, "Late night focus").top());
-            let source = row(&tree, "Liked Songs").center();
-            accessible_frame(
-                &ctx,
-                &mut app,
-                pointer_click(source, egui::PointerButton::Secondary),
-            );
-            let tree = accessible_frame(&ctx, &mut app, vec![]);
-            let pin = accessible_node(&tree, "Pin to top", Role::Button);
-            accessible_frame(
-                &ctx,
-                &mut app,
-                vec![accessible_action(pin, egui::accesskit::Action::Click, None)],
-            );
-            assert_eq!(
-                app.settings.library_pins(),
-                ["spotify:playlist:pl2", LIKED_SONGS_KEY]
-            );
-            assert!(
-                !app.settings
-                    .sidebar_order
-                    .iter()
-                    .any(|key| key == LIKED_SONGS_KEY)
-            );
-            let tree = accessible_frame(&ctx, &mut app, vec![]);
-            let source = row(&tree, "Liked Songs").center();
-            accessible_frame(
-                &ctx,
-                &mut app,
-                pointer_click(source, egui::PointerButton::Secondary),
-            );
-            let tree = accessible_frame(&ctx, &mut app, vec![]);
-            let unpin = accessible_node(&tree, "Unpin", Role::Button);
-            accessible_frame(
-                &ctx,
-                &mut app,
-                vec![accessible_action(
-                    unpin,
-                    egui::accesskit::Action::Click,
-                    None,
-                )],
-            );
-            assert!(!app.settings.liked_songs_pinned);
             let tree = accessible_frame(&ctx, &mut app, vec![]);
             let target = row(&tree, "Liked Songs").center();
             app.saved.insert("spotify:track:trk0".into(), false);

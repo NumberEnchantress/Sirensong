@@ -56,9 +56,15 @@ msgstr "Nome"
 msgid "Recently added"
 msgstr "Adicionados recentemente"
 
-#: src/ui/sidebar.rs:363
-msgid "Local custom order"
-msgstr "Ordem personalizada local"
+#. Translators: The Library order the listener arranges in Sirensong, in folders of their own.
+#: src/ui/sidebar.rs:1115
+msgid "Sirensong custom order"
+msgstr "Ordem personalizada do Sirensong"
+
+#. Translators: An item or folder moved in Sirensong custom order has gone from it.
+#: src/app.rs:6725
+msgid "That folder or item is no longer in Sirensong custom order."
+msgstr "Essa pasta ou item já não está na ordem personalizada do Sirensong."
 
 #: src/ui/sidebar.rs:366
 msgid "Spotify custom order"

@@ -58,7 +58,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 Dialog::CreatePlaylist { .. } => create_playlist(app, ui),
                 Dialog::EditPlaylist { .. } => edit_playlist(app, ui),
                 Dialog::NameFolder { .. } => name_folder(app, ui),
-                Dialog::ConfirmRemoveFolder { id, name } => {
+                Dialog::ConfirmRemoveFolder { id, name, local } => {
                     theme::text(ui, gettext(locale, "Remove folder?"), theme::bold(20.0), palette.text);
                     ui.add_space(8.0);
                     // Translators: {name} is a folder name.
@@ -75,9 +75,12 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     ui.add_space(20.0);
                     buttons(ui, |ui| {
                         if theme::pill_button(ui, &palette, &gettext(locale, "Remove"), true).clicked() {
-                            app.actions.push(Action::EditFolders(
-                                crate::folders::FolderEdit::Remove { id: id.clone() },
-                            ));
+                            let edit = crate::folders::FolderEdit::Remove { id: id.clone() };
+                            app.actions.push(if local {
+                                Action::EditLibraryTree(edit)
+                            } else {
+                                Action::EditFolders(edit)
+                            });
                         }
                         if theme::pill_button(ui, &palette, &gettext(locale, "Cancel"), false).clicked() {
                             app.actions.push(Action::CloseDialog);
@@ -488,6 +491,7 @@ fn name_folder(app: &mut App, ui: &mut egui::Ui) {
         name,
         place,
         adopt,
+        local,
     }) = &mut app.dialog
     else {
         return;
@@ -520,6 +524,7 @@ fn name_folder(app: &mut App, ui: &mut egui::Ui) {
     );
     ui.add_space(20.0);
     let submit = field.lost_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter));
+    let local = *local;
     let edit = crate::folders::folder_name(name).map(|name| match id {
         Some(id) => crate::folders::FolderEdit::Rename {
             id: id.clone(),
@@ -541,7 +546,11 @@ fn name_folder(app: &mut App, ui: &mut egui::Ui) {
         if (theme::pill_button(ui, &palette, &label, true).clicked() || submit)
             && let Some(edit) = edit
         {
-            app.actions.push(Action::EditFolders(edit));
+            app.actions.push(if local {
+                Action::EditLibraryTree(edit)
+            } else {
+                Action::EditFolders(edit)
+            });
         }
         if theme::pill_button(ui, &palette, &gettext(locale, "Cancel"), false).clicked() {
             app.actions.push(Action::CloseDialog);

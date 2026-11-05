@@ -1116,11 +1116,15 @@ pub enum Dialog {
         place: crate::folders::Place,
         /// A playlist a new folder takes in straight away.
         adopt: Option<String>,
+        /// The folder is in Sirensong custom order's own tree.
+        local: bool,
     },
     /// Ask before taking a folder away; its playlists stay.
     ConfirmRemoveFolder {
         id: String,
         name: String,
+        /// The folder is in Sirensong custom order's own tree.
+        local: bool,
     },
     /// Ask before letting go of every play kept.
     ConfirmClearHistory,
@@ -1469,6 +1473,8 @@ pub enum Action {
     /// Change the account's playlist folders, shown at once and sent to
     /// Spotify.
     EditFolders(crate::folders::FolderEdit),
+    /// A change to Sirensong custom order's own tree.
+    EditLibraryTree(crate::folders::FolderEdit),
     ArrangeLibrary {
         pinned: Vec<String>,
         /// A drag outside the pin block selects this local playlist order.

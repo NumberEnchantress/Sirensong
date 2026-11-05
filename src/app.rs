@@ -931,6 +931,8 @@ pub struct App {
     pub rootlist: Vec<crate::player::RootlistEntry>,
     /// Last good tree and the account it belongs to, kept across restarts.
     rootlist_cache: Option<CachedRootlist>,
+    /// What the Library held when Sirensong custom order last placed it.
+    library_tree_seen: u64,
     /// The read of the verified account's cached library on its way.
     account_caches_generation: u64,
     /// A session connected and its account's cache is still to be read,
@@ -945,7 +947,7 @@ pub struct App {
     rootlist_wanted: bool,
     /// The session has read the tree since sign-in, so folder edits can be
     /// planned against something real rather than the cached copy.
-    rootlist_live: bool,
+    pub(crate) rootlist_live: bool,
     /// Folder edits sent and not yet answered, and when the first was sent.
     /// While any is out, a read of the tree tells the story from before it
     /// and is set aside; the edit's own answer brings the tree back.
@@ -1613,6 +1615,7 @@ impl App {
             last_album_queue: None,
             rootlist: Vec::new(),
             rootlist_cache: session.rootlist.clone(),
+            library_tree_seen: 0,
             account_caches_generation: 0,
             account_caches_due: false,
             rootlist_read_at: None,
@@ -6489,9 +6492,241 @@ impl App {
         if self
             .library_folder
             .as_ref()
-            .is_some_and(|id| crate::folders::folder_span(&self.rootlist, id).is_none())
+            .is_some_and(|id| crate::folders::folder_span(self.shown_tree(), id).is_none())
         {
             self.library_folder = None;
+        }
+    }
+
+    /// The tree the sidebar shows and edits: Sirensong custom order's own,
+    /// or Spotify's.
+    pub fn shown_tree(&self) -> &[crate::player::RootlistEntry] {
+        if crate::ui::sidebar::custom_order_shown(self) {
+            self.library_tree().map_or(&[], |tree| tree.rows.as_slice())
+        } else {
+            &self.rootlist
+        }
+    }
+
+    /// The signed-in account's custom order, once made.
+    pub fn library_tree(&self) -> Option<&crate::library_tree::LibraryTree> {
+        self.settings.library_trees.get(self.user_id()?)
+    }
+
+    /// Every key the Library holds of `kind`, in the order its shelf lists
+    /// it, and whether all of that kind has arrived.
+    fn library_keys(&self, kind: crate::settings::LibraryShelf) -> (Vec<String>, bool) {
+        use crate::settings::LibraryShelf;
+        let library = &self.library;
+        match kind {
+            LibraryShelf::Playlists => {
+                let mut keys = vec![crate::settings::LIKED_SONGS_KEY.to_string()];
+                if !self.local_sources().is_empty() {
+                    keys.push(crate::library_tree::LOCAL_FILES_KEY.to_string());
+                }
+                if let Some(playlists) = library.playlists.get() {
+                    keys.extend(playlists.iter().map(|playlist| playlist.uri.clone()));
+                }
+                let whole = matches!(library.playlists, Loadable::Loaded(_))
+                    && library.playlists_whole
+                    && library.playlists_next.is_none();
+                (keys, whole)
+            }
+            LibraryShelf::Albums => (
+                library
+                    .albums
+                    .items
+                    .iter()
+                    .map(|saved| saved.album.uri.clone())
+                    .collect(),
+                library.albums.loaded_once && library.albums.next_offset.is_none(),
+            ),
+            LibraryShelf::Artists => (
+                library
+                    .artists
+                    .items
+                    .iter()
+                    .map(|artist| artist.uri.clone())
+                    .collect(),
+                library.artists.complete,
+            ),
+            LibraryShelf::Podcasts => (
+                library
+                    .shows
+                    .items
+                    .iter()
+                    .map(|saved| saved.show.uri.clone())
+                    .collect(),
+                library.shows.loaded_once && library.shows.next_offset.is_none(),
+            ),
+        }
+    }
+
+    /// The first tree: Spotify's, with Liked Songs and the pins on top, or
+    /// the flat order this computer kept before Spotify's is known.
+    fn seed_library_tree(&self) -> crate::library_tree::LibraryTree {
+        let mut top = vec![crate::settings::LIKED_SONGS_KEY.to_string()];
+        top.extend(self.library_pins());
+        crate::library_tree::LibraryTree {
+            rows: crate::library_tree::seed(&top, &self.rootlist, &self.settings.sidebar_order),
+            kinds: vec![crate::settings::LibraryShelf::Playlists],
+            edited: false,
+        }
+    }
+
+    /// Starts Sirensong custom order from Spotify's tree the first time it
+    /// is shown, with Liked Songs and the pins on top, and places what the
+    /// Library saves after: on top, as Spotify shows a new save, or at the
+    /// end for a kind seen for the first time. With `now`, a tree is made
+    /// even before Spotify's is read, for an edit that cannot wait.
+    pub(crate) fn keep_library_tree(&mut self, now: bool) {
+        use crate::settings::LibraryShelf;
+        let Some(account) = self.user_id().map(str::to_owned) else {
+            return;
+        };
+        let has_folders = |rows: &[crate::player::RootlistEntry]| {
+            rows.iter()
+                .any(|row| matches!(row, crate::player::RootlistEntry::FolderStart { .. }))
+        };
+        match self.settings.library_trees.get(&account) {
+            None => {
+                if !crate::ui::sidebar::custom_order_shown(self) && !now {
+                    return;
+                }
+                // Wait for Spotify's tree, read or remembered, so its folders
+                // are in the first one.
+                if self.rootlist.is_empty() && !self.rootlist_live && !now {
+                    return;
+                }
+                let tree = self.seed_library_tree();
+                self.settings.library_trees.insert(account.clone(), tree);
+                self.library_tree_seen = 0;
+                self.mark_settings_dirty();
+            }
+            // A first tree made without Spotify's folders, never changed
+            // since, gives way to one made with them.
+            Some(tree)
+                if !tree.edited && !has_folders(&tree.rows) && has_folders(&self.rootlist) =>
+            {
+                let tree = self.seed_library_tree();
+                self.settings.library_trees.insert(account.clone(), tree);
+                self.library_tree_seen = 0;
+                self.mark_settings_dirty();
+            }
+            Some(_) => {}
+        }
+        // Only when something the Library holds has changed.
+        let seen = {
+            use std::hash::{Hash, Hasher};
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            account.hash(&mut hasher);
+            self.library.playlists_generation.hash(&mut hasher);
+            self.library.playlists.get().map(Vec::len).hash(&mut hasher);
+            self.library.playlists_whole.hash(&mut hasher);
+            self.library.albums.revision.hash(&mut hasher);
+            self.library.albums.items.len().hash(&mut hasher);
+            for artist in [
+                self.library.artists.items.first(),
+                self.library.artists.items.last(),
+            ] {
+                artist.map(|artist| &artist.uri).hash(&mut hasher);
+            }
+            self.library.artists.items.len().hash(&mut hasher);
+            self.library.artists.complete.hash(&mut hasher);
+            self.library.shows.revision.hash(&mut hasher);
+            self.library.shows.items.len().hash(&mut hasher);
+            self.local_sources().is_empty().hash(&mut hasher);
+            self.settings
+                .library_trees
+                .get(&account)
+                .map(|tree| tree.rows.len())
+                .hash(&mut hasher);
+            hasher.finish()
+        };
+        if seen == self.library_tree_seen {
+            return;
+        }
+        self.library_tree_seen = seen;
+        let mut changed = false;
+        for kind in [
+            LibraryShelf::Playlists,
+            LibraryShelf::Albums,
+            LibraryShelf::Artists,
+            LibraryShelf::Podcasts,
+        ] {
+            let (keys, whole) = self.library_keys(kind);
+            if keys.is_empty() {
+                continue;
+            }
+            let Some(tree) = self.settings.library_trees.get_mut(&account) else {
+                return;
+            };
+            let placed = tree.kinds.contains(&kind);
+            if placed {
+                changed |= crate::library_tree::place(&mut tree.rows, &keys, &[]);
+            } else if whole {
+                crate::library_tree::place(&mut tree.rows, &[], &keys);
+                tree.kinds.push(kind);
+                changed = true;
+            }
+        }
+        if changed {
+            self.mark_settings_dirty();
+        }
+    }
+
+    /// Changes Sirensong custom order's tree, on this computer. An item the
+    /// tree has not placed yet is placed first, where the sidebar shows it.
+    fn edit_library_tree(&mut self, edit: crate::folders::FolderEdit) {
+        use crate::folders::{FolderEdit, Place, Row};
+        self.keep_library_tree(true);
+        let Some(account) = self.user_id().map(str::to_owned) else {
+            return;
+        };
+        let Some(tree) = self.settings.library_trees.get_mut(&account) else {
+            return;
+        };
+        let anchor = |place: &Place| match place {
+            Place::Before(Row::Playlist(key)) | Place::AfterPlaylist(key) => Some(key.clone()),
+            _ => None,
+        };
+        let named: Vec<String> = match &edit {
+            FolderEdit::MovePlaylist { uri, place } => {
+                std::iter::once(uri.clone()).chain(anchor(place)).collect()
+            }
+            FolderEdit::Create { place, adopt, .. } => {
+                anchor(place).into_iter().chain(adopt.clone()).collect()
+            }
+            FolderEdit::MoveFolder { place, .. } => anchor(place).into_iter().collect(),
+            FolderEdit::Rename { .. } | FolderEdit::Remove { .. } => Vec::new(),
+        };
+        let (now, later): (Vec<String>, Vec<String>) = named
+            .into_iter()
+            .partition(|key| tree.kinds.contains(&crate::library_tree::kind_of(key)));
+        crate::library_tree::place(&mut tree.rows, &now, &later);
+        match crate::folders::apply(&tree.rows, &edit) {
+            Ok(rows) => {
+                tree.rows = rows;
+                tree.edited = true;
+                if let FolderEdit::Remove { id } = &edit {
+                    self.collapsed_folders.retain(|held| held != id);
+                    self.session_dirty = true;
+                }
+                self.mark_settings_dirty();
+                self.forget_missing_library_folder();
+            }
+            Err(crate::folders::Refusal::Unchanged) => {}
+            // The custom order is this computer's own: nothing changed on
+            // Spotify, whatever the shared check would say.
+            // Translators: An item or folder moved in Sirensong custom order has gone from it.
+            Err(crate::folders::Refusal::Missing) => self.toast_error(
+                gettext(
+                    self.locale,
+                    "That folder or item is no longer in Sirensong custom order.",
+                )
+                .into_owned(),
+            ),
+            Err(refusal) => self.toast_error(refusal.message(self.locale).into_owned()),
         }
     }
 
@@ -14414,6 +14649,15 @@ impl App {
                 }
                 self.edit_folders(edit);
             }
+            Action::EditLibraryTree(edit) => {
+                if matches!(
+                    self.dialog,
+                    Some(Dialog::NameFolder { .. } | Dialog::ConfirmRemoveFolder { .. })
+                ) {
+                    self.dialog = None;
+                }
+                self.edit_library_tree(edit);
+            }
             Action::ArrangeLibrary {
                 pinned,
                 playlist_order,
@@ -16285,6 +16529,7 @@ impl App {
         let ctx = &ctx;
         // Before anything draws, so nothing real is drawn first.
         self.sync_vacuum(ctx);
+        self.keep_library_tree(false);
         self.pixels_per_point = ctx.pixels_per_point();
         self.refresh_frame_now();
         self.apply_theme(ctx);
@@ -16726,7 +16971,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 20";
+pub const FORK_VERSION: &str = "mod 21";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -37436,9 +37681,8 @@ mod tests {
         assert!(app.pin_overrides.is_empty());
     }
 
-    /// Pins restored from the last session give way to the ones saved on
-    /// this computer when Spotify's cannot be read now; once read, a later
-    /// failure keeps them.
+    /// Pins restored from the last session stay when Spotify refuses to
+    /// read them, and a read that succeeds replaces them.
     #[test]
     fn restored_pins_stay_when_spotify_cannot_be_read() {
         let mut app = pins_app();
@@ -37659,6 +37903,7 @@ mod tests {
         app.dialog = Some(Dialog::ConfirmRemoveFolder {
             id: "f1".into(),
             name: "Gym".into(),
+            local: false,
         });
         app.apply(
             Action::EditFolders(crate::folders::FolderEdit::Remove { id: "f1".into() }),

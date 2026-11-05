@@ -33,7 +33,9 @@ impl LibrarySort {
         match self {
             Self::RecentlyPlayed | Self::Name | Self::Library => true,
             Self::RecentlyAdded => matches!(shelf, LibraryShelf::Albums | LibraryShelf::Podcasts),
-            Self::Local | Self::Spotify => shelf == LibraryShelf::Playlists,
+            // Sirensong's own order holds every kind; Spotify's holds playlists.
+            Self::Local => true,
+            Self::Spotify => shelf == LibraryShelf::Playlists,
         }
     }
 }
@@ -478,6 +480,11 @@ pub struct Settings {
     /// The sidebar's own playlist order, set by dragging rows. Kept while
     /// another sort is selected; empty means no saved local arrangement.
     pub sidebar_order: Vec<String>,
+    /// Sirensong custom order, by account: the Library as the listener
+    /// arranged it, in folders of their own at any depth
+    /// (`crate::library_tree`). An account has none until that order is
+    /// first shown, when it starts from Spotify's tree.
+    pub library_trees: std::collections::BTreeMap<String, crate::library_tree::LibraryTree>,
     /// Explicit order per Library shelf. Missing shelves keep their previous
     /// behaviour; selecting another order never deletes the local arrangement.
     pub library_sort: std::collections::BTreeMap<LibraryShelf, LibrarySort>,
@@ -677,6 +684,7 @@ impl Default for Settings {
             pinned_contexts: Vec::new(),
             liked_songs_pinned: true,
             sidebar_order: Vec::new(),
+            library_trees: Default::default(),
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,
             settings_search_in_topbar: true,

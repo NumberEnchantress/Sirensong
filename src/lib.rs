@@ -24,6 +24,7 @@ pub mod http;
 pub mod hyprland;
 pub mod i18n;
 pub mod images;
+pub mod library_tree;
 pub mod liked;
 pub mod limiter;
 pub mod link;
