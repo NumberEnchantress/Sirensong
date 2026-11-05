@@ -88,7 +88,7 @@ impl Default for HomeShelfSettings {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct HomeSettings {
     pub made_for_you: HomeShelfSettings,
@@ -111,6 +111,30 @@ pub struct HomeSettings {
     pub map_filters: MapFocus,
     /// Each node's size follows the time listened to it, by the plays kept.
     pub map_listening: bool,
+    /// While a map is open, the Library's search box sits above it.
+    pub map_search: bool,
+    /// The search marks what matches on the map, leaving the rest in
+    /// place; off, it is one of the filters Zoom in and Only selected act on.
+    pub map_highlight: bool,
+}
+
+impl Default for HomeSettings {
+    fn default() -> Self {
+        Self {
+            made_for_you: HomeShelfSettings::default(),
+            recommendations: HomeShelfSettings::default(),
+            playlist_map: false,
+            map_layout: MapLayout::default(),
+            sidebar_map_layout: None,
+            same_map_layout: false,
+            both_maps: false,
+            map_folder: MapFocus::default(),
+            map_filters: MapFocus::default(),
+            map_listening: false,
+            map_search: true,
+            map_highlight: true,
+        }
+    }
 }
 
 /// Vacuum's choices, as the Unfamiliar Sounds extension's settings.

@@ -1351,6 +1351,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let one_map = gettext(locale, "One map at a time");
     // Translators: A setting: which results a new search shows first, all mixed or one kind.
     let search_default = gettext(locale, "Search opens on");
+    // Translators: A setting: while the playlist map is open, the Library's search box sits above the map.
+    let map_search = gettext(locale, "Search box above the map");
+    // Translators: A setting: searching marks what matches on the playlist map instead of filtering it.
+    let map_highlight = gettext(locale, "Search marks matches on the map");
     let player_bar_vis_click = gettext(locale, "Click player bar to change visualizer");
     // Follow system's own light and dark palettes. Omarchy's palette already
     // follows the desktop, so they are offered only without it.
@@ -1515,6 +1519,20 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             gettext(
                 locale,
                 "The results a new search shows first: all of them, or one kind.",
+            ),
+        ),
+        RowText::new(
+            map_search.clone(),
+            gettext(
+                locale,
+                "While a map is open, the Library's search box sits above it.",
+            ),
+        ),
+        RowText::new(
+            map_highlight.clone(),
+            gettext(
+                locale,
+                "Searching rings what matches and leaves the rest in place. Off, the search is a filter, as Zoom in and Only selected treat the others.",
             ),
         ),
     ];
@@ -1709,6 +1727,39 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     let mut one = !app.settings.home.both_maps;
                     if widgets::switch(ui, &palette, &one_map, &mut one).changed() {
                         app.settings.home.both_maps = !one;
+                        changed = true;
+                    }
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
+                &appearance_rows[20],
+                |ui| {
+                    if widgets::switch(ui, &palette, &map_search, &mut app.settings.home.map_search)
+                        .changed()
+                    {
+                        changed = true;
+                    }
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
+                &appearance_rows[21],
+                |ui| {
+                    if widgets::switch(
+                        ui,
+                        &palette,
+                        &map_highlight,
+                        &mut app.settings.home.map_highlight,
+                    )
+                    .changed()
+                    {
                         changed = true;
                     }
                 },

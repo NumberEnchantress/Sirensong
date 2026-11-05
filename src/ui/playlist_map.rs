@@ -125,6 +125,8 @@ pub(crate) struct Node {
     /// Time listened to it, a folder's what it holds, in milliseconds,
     /// while the map is sized by listening.
     pub(crate) listened: Option<u64>,
+    /// The Library's search finds it: marked, and named.
+    pub(crate) matched: bool,
 }
 
 impl Node {
@@ -160,6 +162,7 @@ pub(crate) fn graph(app: &App, side: bool) -> Vec<Node> {
         radius: 0.0,
         entry: None,
         listened: None,
+        matched: false,
     });
     let mut listed = vec![true];
     let mut keys: HashSet<String> = HashSet::from(["library".to_string()]);
@@ -203,6 +206,7 @@ pub(crate) fn graph(app: &App, side: bool) -> Vec<Node> {
             radius: 0.0,
             entry: row.entry,
             listened: None,
+            matched: row.matched,
         });
         listed.push(row.listed);
     }
@@ -989,7 +993,9 @@ fn focus_of(app: &App, side: bool) -> u64 {
     format!("{:?}", settings.library_kinds).hash(&mut hasher);
     settings.library_by_you.hash(&mut hasher);
     settings.library_group_kinds.hash(&mut hasher);
-    app.library.filter.trim().hash(&mut hasher);
+    if !settings.home.map_highlight {
+        app.library.filter.trim().hash(&mut hasher);
+    }
     hasher.finish()
 }
 
@@ -1034,6 +1040,23 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
     let palette = app.palette;
     let locale = app.locale;
     let home = app.settings.home;
+    if home.map_search {
+        let width = if side {
+            ui.available_width() - 4.0
+        } else {
+            ui.available_width().min(360.0)
+        };
+        super::widgets::search_field(
+            ui,
+            &palette,
+            locale,
+            egui::Id::new(("map-search", side)),
+            &mut app.library.filter,
+            &gettext(locale, "Search in Your Library"),
+            width,
+        );
+        ui.add_space(6.0);
+    }
     // Translators: Home map layout: a round tree, each level of folders a ring further out.
     let tree = gettext(locale, "Tree");
     // Translators: Home map layout: each folder a circle around what it holds.
@@ -1642,7 +1665,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
                 radius,
                 Stroke::new(
                     (0.8 + 0.9 * height) * zoom.sqrt().clamp(0.5, 1.4),
-                    if landing_here {
+                    if landing_here || node.matched {
                         palette.accent
                     } else if pointed {
                         palette.text
@@ -1716,13 +1739,13 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
                 Kind::Item(_) => playing.as_deref() == Some(node.key.as_str()),
                 _ => false,
             };
-            if is_playing || pointed || landing_here {
+            if is_playing || pointed || landing_here || node.matched {
                 painter.circle_stroke(
                     centre,
                     radius + 2.0,
                     Stroke::new(
-                        2.0,
-                        if is_playing || drop_here || landing_here {
+                        if node.matched { 3.0 } else { 2.0 },
+                        if is_playing || drop_here || landing_here || node.matched {
                             palette.accent
                         } else {
                             palette.text
@@ -1732,7 +1755,10 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
             }
             if pointed && dragging.is_none() {
                 hovered_label = Some((centre + vec2(0.0, radius + 4.0), label.clone()));
-            } else if (radius >= 9.0 && node.focus) || (node.holds() && radius >= 2.5) {
+            } else if (radius >= 9.0 && node.focus)
+                || (node.holds() && radius >= 2.5)
+                || node.matched
+            {
                 let from = drawn
                     .parent
                     .as_ref()

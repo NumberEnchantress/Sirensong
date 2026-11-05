@@ -1890,6 +1890,11 @@ impl App {
         }
     }
 
+    /// A map is on screen, Home's or the Library's.
+    pub fn map_shown(&self) -> bool {
+        self.home_map_shown() || self.sidebar_map_shown()
+    }
+
     /// Home shows its map on screen now.
     pub fn home_map_shown(&self) -> bool {
         self.settings.home.playlist_map && *self.page() == Page::Home
@@ -17247,7 +17252,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 24";
+pub const FORK_VERSION: &str = "mod 25";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

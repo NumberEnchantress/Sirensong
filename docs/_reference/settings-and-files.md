@@ -589,7 +589,12 @@ becomes the root: **Open folder: Zoom in** keeps the rest of the Library
 further out and zooms in on the folder, and **Only selected** leaves the
 rest out. **Filters: Zoom in** keeps what the Library's filters leave out
 beside the rest, faded, and zooms in on what they list; **Only selected**
-leaves it out. Another kind already loaded has a branch of its own. In
+leaves it out. The Library's search box sits above an open map, Home's or
+the Library's (**Search box above the map**, on by default), and a search
+rings what it finds and names it, leaving everything else where it was
+(**Search marks matches on the map**, on by default). With marking off, the
+search is one of the filters again, so Zoom in and Only selected act on
+it. Another kind already loaded has a branch of its own. In
 **Sirensong custom order** the map is that order's own tree, every kind in
 the place and folder you gave it, with nothing on branches of its own.
 Zoom in is the default for both. Clicking the open folder at the root goes
@@ -636,7 +641,8 @@ Library's map comes back when you leave Home. The
 choices are kept as `"home": {"map_layout": "tree"}` (or `"circles"`, Home's,
 and the Library's too while it has none of its own), `"sidebar_map_layout"`
 (the Library's), `"same_map_layout"`, `"both_maps"` (One map at a time off),
-`"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`.
+`"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`, and
+`"map_search"` and `"map_highlight"`.
 
 **Time listened**, beside the layouts, makes each node's area grow with
 the time you listened to what it plays: the songs played from that

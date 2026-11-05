@@ -5241,3 +5241,21 @@ msgstr "İkisi de"
 #: src/ui/sidebar.rs:2442
 msgid "Home shows the map now"
 msgstr "Harita şu anda Ana Sayfa'da"
+
+#. Translators: A setting: while the playlist map is open, the Library's search box sits above the map.
+#: src/ui/settings.rs:1355
+msgid "Search box above the map"
+msgstr "Haritanın üstünde arama kutusu"
+
+#. Translators: A setting: searching marks what matches on the playlist map instead of filtering it.
+#: src/ui/settings.rs:1357
+msgid "Search marks matches on the map"
+msgstr "Arama eşleşmeleri haritada işaretler"
+
+#: src/ui/settings.rs:1528
+msgid "While a map is open, the Library's search box sits above it."
+msgstr "Bir harita açıkken Kitaplık'ın arama kutusu onun üstünde durur."
+
+#: src/ui/settings.rs:1535
+msgid "Searching rings what matches and leaves the rest in place. Off, the search is a filter, as Zoom in and Only selected treat the others."
+msgstr "Arama eşleşenleri halkayla işaretler, gerisini yerinde bırakır. Kapalıyken arama bir filtredir; Yakınlaştır ve Yalnızca seçili onu diğerleri gibi ele alır."

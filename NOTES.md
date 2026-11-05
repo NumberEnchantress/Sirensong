@@ -266,6 +266,16 @@ record its own decisions and three rounds of adversarial grading.
   search starts from none, or from a recent search or link, not while typing
   on.
 
+### Map search, 5 November 2026 (mod 25)
+
+- **Asked by the user.** With `home.map_search` (on), the Library's search
+  box is drawn in the map's toolbar while a map is open (`App::map_shown`),
+  and the sidebar's search button gives way; a search left typed shows in
+  the sidebar again once the map closes.
+- With `home.map_highlight` (on), the search no longer decides `listed`:
+  `MapRow::matched` and `Node::matched` ring and name what it finds, and the
+  view does not refit as you type. Off, it filters as before.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

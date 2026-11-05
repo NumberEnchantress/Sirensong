@@ -25,6 +25,7 @@ fn big_library() -> Vec<Node> {
             away: false,
             entry: None,
             listened: None,
+            matched: false,
             radius: if holds {
                 12.0
             } else {

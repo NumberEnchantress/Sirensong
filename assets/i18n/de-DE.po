@@ -5271,3 +5271,21 @@ msgstr "Beides"
 #: src/ui/sidebar.rs:2442
 msgid "Home shows the map now"
 msgstr "Start zeigt gerade die Karte"
+
+#. Translators: A setting: while the playlist map is open, the Library's search box sits above the map.
+#: src/ui/settings.rs:1355
+msgid "Search box above the map"
+msgstr "Suchfeld über der Karte"
+
+#. Translators: A setting: searching marks what matches on the playlist map instead of filtering it.
+#: src/ui/settings.rs:1357
+msgid "Search marks matches on the map"
+msgstr "Suche markiert Treffer auf der Karte"
+
+#: src/ui/settings.rs:1528
+msgid "While a map is open, the Library's search box sits above it."
+msgstr "Solange eine Karte offen ist, steht das Suchfeld der Bibliothek über ihr."
+
+#: src/ui/settings.rs:1535
+msgid "Searching rings what matches and leaves the rest in place. Off, the search is a filter, as Zoom in and Only selected treat the others."
+msgstr "Die Suche umrandet Treffer und lässt den Rest, wo er ist. Aus ist die Suche ein Filter, den Heranzoomen und Nur Auswahl wie die anderen behandeln."

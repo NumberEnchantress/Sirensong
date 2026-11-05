@@ -729,6 +729,8 @@ pub(crate) struct MapRow {
     pub(crate) listed: bool,
     /// The Library's own row, for its menu; a kind's branch has none.
     pub(crate) entry: Option<Entry>,
+    /// The search finds it, for the map to mark.
+    pub(crate) matched: bool,
 }
 
 /// Whether a kind has anything to show without loading more.
@@ -788,6 +790,7 @@ pub(crate) fn map_rows(app: &App) -> Vec<MapRow> {
                 takes_songs: false,
                 listed: false,
                 entry: None,
+                matched: false,
             });
         }
         map_block(app, shelves, sort, &needle, ticked, u8::from(branch), rows);
@@ -862,19 +865,27 @@ fn map_block(
     let start = rows.len();
     for entry in tree {
         let listed = ticked && map_listed(app, &entry, found.as_ref());
-        rows.push(map_row(app, entry, listed, base));
+        let matched = map_matched(&entry, found.as_ref());
+        rows.push(map_row(app, entry, listed, matched, base));
     }
     folders_listed(&mut rows[start..]);
 }
 
-/// Whether the Library's own choices list `entry`: By You and the search.
+/// Whether the Library's own choices list `entry`: By You, and the search
+/// unless it marks what it finds instead.
 fn map_listed(app: &App, entry: &Entry, found: Option<&std::collections::HashSet<String>>) -> bool {
+    let found = found.filter(|_| !app.settings.home.map_highlight);
     !(app.settings.library_by_you && entry.playlist_index.is_some() && !entry.owned)
         && found.is_none_or(|found| found.contains(entry.ordering_key()))
 }
 
+/// Whether a search finds `entry`, for the map to mark it.
+fn map_matched(entry: &Entry, found: Option<&std::collections::HashSet<String>>) -> bool {
+    entry.folder.is_none() && found.is_some_and(|found| found.contains(entry.ordering_key()))
+}
+
 /// The map's row for the Library's `entry`, `base` levels down.
-fn map_row(app: &App, entry: Entry, listed: bool, base: u8) -> MapRow {
+fn map_row(app: &App, entry: Entry, listed: bool, matched: bool, base: u8) -> MapRow {
     let songs = if entry.liked {
         app.library.liked.total
     } else {
@@ -901,6 +912,7 @@ fn map_row(app: &App, entry: Entry, listed: bool, base: u8) -> MapRow {
         songs,
         listed,
         entry: Some(entry),
+        matched,
     }
 }
 
@@ -986,7 +998,8 @@ fn custom_map_rows(app: &App, ticked: &[Filter], needle: &str, rows: &mut Vec<Ma
     for entry in entries {
         let kind = crate::library_tree::kind_of(entry.ordering_key());
         let listed = ticked.contains(&kind) && map_listed(app, &entry, found.as_ref());
-        rows.push(map_row(app, entry, listed, 0));
+        let matched = map_matched(&entry, found.as_ref());
+        rows.push(map_row(app, entry, listed, matched, 0));
     }
     folders_listed(&mut rows[start..]);
 }
@@ -2548,6 +2561,12 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     let mut show_search = ui
         .data(|data| data.get_temp::<bool>(show_search_id))
         .unwrap_or(false);
+    // While a map is open, its own search box above it is the Library's.
+    let search_here = !(app.settings.home.map_search && app.map_shown());
+    // A search typed above the map stays in sight here once it closes.
+    if search_here && !app.library.filter.is_empty() {
+        show_search = true;
+    }
 
     let mut focus_search = false;
 
@@ -2651,15 +2670,16 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                     add_uris: Vec::new(),
                 }));
             }
-            if theme::icon_button(
-                ui,
-                Icon::Search,
-                16.0,
-                palette.secondary,
-                palette.text,
-                &gettext(locale, "Search Your Library"),
-            )
-            .clicked()
+            if search_here
+                && theme::icon_button(
+                    ui,
+                    Icon::Search,
+                    16.0,
+                    palette.secondary,
+                    palette.text,
+                    &gettext(locale, "Search Your Library"),
+                )
+                .clicked()
             {
                 show_search = !show_search;
                 if show_search {
@@ -2763,7 +2783,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
         }
     });
     ui.data_mut(|data| data.insert_temp(show_search_id, show_search));
-    if show_search {
+    if show_search && search_here {
         ui.add_space(4.0);
         let response = super::widgets::search_field(
             ui,
@@ -5660,6 +5680,35 @@ mod ordering_tests {
         assert!(!LibrarySort::RecentlyAdded.supports(Filter::Playlists));
         assert!(!LibrarySort::RecentlyAdded.supports(Filter::Artists));
         assert!(LibrarySort::RecentlyAdded.supports(Filter::Podcasts));
+        app.backend.shutdown();
+    }
+
+    /// A search rings what it finds on the map and leaves the rest listed;
+    /// with marking off it is a filter again.
+    #[test]
+    fn a_search_marks_what_it_finds_on_the_map() {
+        let mut app = app("map-search");
+        assert!(app.settings.home.map_highlight && app.settings.home.map_search);
+        let all = map_rows(&app);
+        let target = all
+            .iter()
+            .find(|row| row.page.is_some() && row.entry.as_ref().is_some_and(|entry| !entry.liked))
+            .unwrap();
+        let (key, name) = (target.key.clone(), target.name.clone());
+        app.library.filter = name.clone();
+        let rows = map_rows(&app);
+        let found = rows.iter().find(|row| row.key == key).unwrap();
+        assert!(found.matched, "{name} is marked");
+        let listed = |rows: &[MapRow]| rows.iter().map(|row| row.listed).collect::<Vec<_>>();
+        assert_eq!(listed(&rows), listed(&all), "nothing is left out");
+        assert!(
+            rows.iter()
+                .filter(|row| row.matched)
+                .all(|row| row.page.is_some())
+        );
+        app.settings.home.map_highlight = false;
+        let rows = map_rows(&app);
+        assert_ne!(listed(&rows), listed(&all), "a filter again");
         app.backend.shutdown();
     }
 
