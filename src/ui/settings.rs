@@ -49,6 +49,9 @@ pub(super) struct RowText<'a> {
     title: std::borrow::Cow<'a, str>,
     description: std::borrow::Cow<'a, str>,
     available: bool,
+    /// Why another setting leaves this one nothing to do: the row is
+    /// greyed out with this under its description.
+    needs: Option<std::borrow::Cow<'a, str>>,
 }
 
 impl<'a> RowText<'a> {
@@ -60,6 +63,7 @@ impl<'a> RowText<'a> {
             title: title.into(),
             description: description.into(),
             available: true,
+            needs: None,
         }
     }
 
@@ -172,6 +176,59 @@ const RELEASE_NOTES_URL: &str = concat!(
     env!("CARGO_PKG_VERSION")
 );
 
+/// A reason a row is greyed out: it needs `setting` on.
+fn needs_on(locale: crate::i18n::Locale, setting: &str) -> std::borrow::Cow<'static, str> {
+    // Translators: Under a greyed-out setting. {setting} is the name of the setting it depends on.
+    gettext(locale, "Needs {setting}.")
+        .replace("{setting}", setting)
+        .into()
+}
+
+/// A reason a row is greyed out: `setting` being on turns it off.
+fn off_while(locale: crate::i18n::Locale, setting: &str) -> std::borrow::Cow<'static, str> {
+    // Translators: Under a greyed-out setting. {setting} is the name of the setting that turns it off.
+    gettext(locale, "Off while {setting} is on.")
+        .replace("{setting}", setting)
+        .into()
+}
+
+/// A reason a row is greyed out: it needs `setting` set to `choice`.
+fn needs_choice(
+    locale: crate::i18n::Locale,
+    setting: &str,
+    choice: &str,
+) -> std::borrow::Cow<'static, str> {
+    // Translators: Under a greyed-out setting. {setting} is a setting's name and {choice} one of its choices.
+    gettext(locale, "Needs {setting} set to {choice}.")
+        .replace("{setting}", setting)
+        .replace("{choice}", choice)
+        .into()
+}
+
+/// Draws a row with `add`, given the description to show: as it is, or
+/// greyed out and out of reach with the reason after it while another
+/// setting leaves it nothing to do.
+fn row_body<R>(
+    ui: &mut egui::Ui,
+    row: &RowText<'_>,
+    add: impl FnOnce(&mut egui::Ui, &str) -> R,
+) -> R {
+    let Some(reason) = &row.needs else {
+        return add(ui, &row.description);
+    };
+    let description = if row.description.is_empty() {
+        reason.to_string()
+    } else {
+        format!("{} {reason}", row.description)
+    };
+    ui.scope(|ui| {
+        ui.disable();
+        ui.multiply_opacity(0.6);
+        add(ui, &description)
+    })
+    .inner
+}
+
 fn section_matches(needle: &str, title: &str, rows: &[RowText<'_>]) -> bool {
     let needle = needle.trim().to_lowercase();
     rows.iter().any(|row| row.matches(&needle, title))
@@ -186,7 +243,9 @@ pub(super) fn filtered_row(
     control: impl FnOnce(&mut egui::Ui),
 ) {
     if row.matches(needle, section) {
-        widgets::setting_row(ui, palette, &row.title, &row.description, control);
+        row_body(ui, row, |ui, description| {
+            widgets::setting_row(ui, palette, &row.title, description, control);
+        });
     }
 }
 
@@ -199,7 +258,9 @@ pub(super) fn filtered_note(
     row: &RowText<'_>,
 ) {
     if row.matches(needle, section) {
-        widgets::setting_note(ui, palette, &row.title, &row.description);
+        row_body(ui, row, |ui, description| {
+            widgets::setting_note(ui, palette, &row.title, description);
+        });
     }
 }
 
@@ -214,14 +275,16 @@ fn filtered_row_sized(
     control: impl FnOnce(&mut egui::Ui),
 ) {
     if row.matches(needle, section) {
-        widgets::setting_row_sized(
-            ui,
-            palette,
-            &row.title,
-            &row.description,
-            control_width,
-            control,
-        );
+        row_body(ui, row, |ui, description| {
+            widgets::setting_row_sized(
+                ui,
+                palette,
+                &row.title,
+                description,
+                control_width,
+                control,
+            );
+        });
     }
 }
 
@@ -849,6 +912,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         .when(!cfg!(target_os = "macos")),
         RowText::new(start_with_computer.clone(), start_detail).when(start_available),
     ];
+    // The built-in player's own rows show only while it plays: Soloist
+    // offers none of them, so none is shown as if it could apply.
     for index in [0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 14] {
         playback_rows[index].available &= built_in;
     }
@@ -904,7 +969,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             ),
         };
         let detail = theme::pair_detail(&app.custom_themes, locale, &app.settings.theme_pair, base);
-        RowText::new(title, if detail.is_empty() { usage } else { detail }).when(show_pair)
+        RowText::new(title, if detail.is_empty() { usage } else { detail })
+            .when(!app.custom_themes.follows_omarchy())
     };
     let mut appearance_rows = [
         RowText::new(theme_title.clone(), {
@@ -1309,7 +1375,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let keep_in_step = gettext(locale, "Keep in step with Spotify");
     // Translators: A setting: what happens when Sirensong custom order and the Spotify library were both rearranged while apart.
     let both_changed = gettext(locale, "When both changed");
-    let library_rows = [
+    let mut library_rows = [
         RowText::new(
             keep_in_step.clone(),
             gettext(
@@ -1323,8 +1389,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 locale,
                 "When Sirensong custom order and your Spotify library were both rearranged apart: show both and choose, take Spotify's, or keep this computer's and send it to Spotify.",
             ),
-        )
-        .when(app.settings.library_sync),
+        ),
     ];
 
     // Vacuum: the Unfamiliar Sounds extension's choices.
@@ -1339,7 +1404,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let hide_pages = gettext(locale, "Hide pages about a person or popularity");
     let pictures_title = gettext(locale, "Pictures");
     let seed_title = gettext(locale, "Seed");
-    let vacuum_rows = [
+    let mut vacuum_rows = [
         RowText::new(
             vacuum_on.clone(),
             gettext(
@@ -1483,6 +1548,31 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let system = gettext(locale, "Window and system");
     // Translators: A settings section: the proxy for network requests.
     let network = gettext(locale, "Network");
+
+    // Rows another setting leaves nothing to do: greyed out, saying which.
+    if app.settings.only_what_i_ask_for {
+        playback_rows[4].needs = Some(off_while(locale, &only_asked));
+    }
+    if !app.settings.library_sync {
+        library_rows[1].needs = Some(needs_on(locale, &keep_in_step));
+    }
+    if !app.settings.custom_titlebar {
+        appearance_rows[16].needs = Some(needs_on(locale, &custom_titlebar));
+    }
+    if !app.settings.home.playlist_map {
+        appearance_rows[18].needs = Some(needs_on(locale, &playlist_map));
+    }
+    if !show_pair {
+        let follow = ThemeChoice::System.label(locale);
+        for index in [11, 12] {
+            appearance_rows[index].needs = Some(needs_choice(locale, &theme_title, &follow));
+        }
+    }
+    if !app.settings.vacuum.on {
+        for row in &mut vacuum_rows[1..] {
+            row.needs = Some(needs_on(locale, &vacuum_on));
+        }
+    }
 
     // Rows that moved to the section they belong with, each taken from
     // where its text is made and leaving nothing behind there.
@@ -2052,7 +2142,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 },
             );
             if library_more[0].matches(&needle, &library) {
-                local_files_sources(app, ui, &open_folder);
+                row_body(ui, &library_more[0], |ui, _| {
+                    local_files_sources(app, ui, &open_folder);
+                });
             }
             filtered_row(ui, &palette, &needle, &library, &library_more[1], |ui| {
                 if widgets::switch(

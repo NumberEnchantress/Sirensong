@@ -150,7 +150,7 @@ fn visualizer(app: &mut App, ui: &egui::Ui, rect: Rect, now: Option<&NowPlaying>
         spectrum(&painter, rect, &levels, &peaks, &colours, strength);
         moving |= sounding || !app.player_bar_analyser.settled();
     }
-    // Both: the waveform's line over the bars.
+    // Both: the waveform's line over the bars, in a colour of its own.
     if mode.waveform() && sounding {
         // Winamp's scope with a column every eight points or so.
         let count = (rect.width() / 8.0).clamp(75.0, 320.0) as usize;
@@ -158,11 +158,12 @@ fn visualizer(app: &mut App, ui: &egui::Ui, rect: Rect, now: Option<&NowPlaying>
             .winamp
             .tap
             .window(count * vis::SCOPE_STEP, app.visualizer_lag());
+        let over = [over_bars(&colours, app.palette.accent, dark)];
         waveform(
             &painter,
             rect,
             &vis::scope_line(&samples, count),
-            &colours,
+            if mode.spectrum() { &over } else { &colours },
             strength,
         );
         moving = true;
@@ -205,6 +206,27 @@ fn vis_colours(art: Option<&[[u8; 3]]>, accent: Color32, dark: bool) -> Vec<Colo
 
 /// The colour `at` the given fraction of the way along `colours`, from the
 /// first at 0 to the last at 1.
+/// The waveform's colour over the bars, with both drawn: the hue across
+/// the colour wheel from the bass bars', so the two read apart; over grey
+/// bars, the accent. Kept to the bars' band of brightness, so the words
+/// still stand out.
+fn over_bars(colours: &[Color32], accent: Color32, dark: bool) -> Color32 {
+    use egui::ecolor::Hsva;
+    let bass = Hsva::from(colours.first().copied().unwrap_or(accent));
+    let mut colour = if bass.s < 0.15 {
+        Hsva::from(accent)
+    } else {
+        Hsva {
+            h: (bass.h + 0.5).fract(),
+            ..bass
+        }
+    };
+    colour.s = colour.s.max(0.55);
+    colour.v = 1.0;
+    colour.a = 1.0;
+    within_brightness(Color32::from(colour), dark)
+}
+
 fn swept(colours: &[Color32], at: f32) -> Color32 {
     let Some(last) = colours.len().checked_sub(1) else {
         return Color32::TRANSPARENT;
@@ -1274,6 +1296,23 @@ mod player_bar_tint_tests {
 
         let accent = Color32::from_rgb(30, 215, 96);
         assert_eq!(vis_colours(None, accent, true).len(), 2);
+    }
+
+    /// With both drawn, the waveform takes the hue across the wheel from
+    /// the bars, or the accent over grey ones.
+    #[test]
+    fn the_waveform_over_the_bars_takes_another_colour() {
+        use egui::ecolor::Hsva;
+        let accent = Color32::from_rgb(30, 215, 96);
+        for dark in [true, false] {
+            let bars = vis_colours(Some(&[[230, 40, 40]]), accent, dark);
+            let line = Hsva::from(over_bars(&bars, accent, dark));
+            let gap = (line.h - Hsva::from(bars[0]).h).rem_euclid(1.0);
+            assert!((0.4..0.6).contains(&gap), "{gap} apart");
+            let grey = vis_colours(Some(&[[128, 128, 128]]), accent, dark);
+            let line = Hsva::from(over_bars(&grey, accent, dark));
+            assert!(line.s > 0.3, "the accent's hue over grey bars");
+        }
     }
 
     /// A window too narrow for it loses the button, not the volume.

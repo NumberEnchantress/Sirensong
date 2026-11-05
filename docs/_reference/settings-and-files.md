@@ -506,7 +506,7 @@ and `--demo-show` adds surfaces on top of it: a comma separated list of
 `focus`, `winamp`, `playlist`, `eq`, `eq-shade`, `compact`, `update`, `personal-app`, `slow-banner`, `audio-key-banner`,
 `collection-loading`, `shuffle-selected`, `shuffle-started`, `library-list`,
 `library-list-narrow`, `library-list-wide`, `library-grid`, `library-grid-narrow`,
-`library-grid-wide`, `eq-user-presets`, `start-in-tray`, `rtl`, `player-bar-spectrum`, `player-bar-waveform`,
+`library-grid-wide`, `eq-user-presets`, `start-in-tray`, `rtl`, `player-bar-spectrum`, `player-bar-waveform`, `player-bar-both`,
 `lyrics-fullscreen-view`, `lyrics-fullscreen-instrumental`, `signed-out`, `connecting`,
 `waiting-for-browser`, `sign-in-returning`, `sign-in-malformed`, `sign-in-shared-retired`,
 `sign-in-unknown-client`, `sign-in-not-allowed`, `shared-grant`, and `own-app`. The Library variants show the list or cover grid with
@@ -531,8 +531,8 @@ Settings for a listener still on a shared grant from before 0.14.2, and
 light or dark (on Linux), to show the light and dark mode themes; with an
 explicit `--demo-data` directory, its `config/settings.json` and
 `config/themes` supply them.
-`player-bar-spectrum` and `player-bar-waveform` play a fixed, music-like
-sound on this computer with that player bar visualizer on.
+`player-bar-spectrum`, `player-bar-waveform` and `player-bar-both` play a
+fixed, music-like sound on this computer with that player bar visualizer on.
 `lyrics-fullscreen-view` and `lyrics-fullscreen-instrumental` draw full-screen
 lyrics, with words or without, at the window's own size.
 `eq-user-presets` saves a sample equalizer preset and puts it in use.

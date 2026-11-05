@@ -5288,3 +5288,18 @@ msgstr "Janela e sistema"
 #: src/ui/settings.rs:1485
 msgid "Network"
 msgstr "Rede"
+
+#. Translators: Under a greyed-out setting. {setting} is the name of the setting it depends on.
+#: src/ui/settings.rs:182
+msgid "Needs {setting}."
+msgstr "Requer {setting}."
+
+#. Translators: Under a greyed-out setting. {setting} is the name of the setting that turns it off.
+#: src/ui/settings.rs:190
+msgid "Off while {setting} is on."
+msgstr "Desativado enquanto {setting} estiver ativado."
+
+#. Translators: Under a greyed-out setting. {setting} is a setting's name and {choice} one of its choices.
+#: src/ui/settings.rs:202
+msgid "Needs {setting} set to {choice}."
+msgstr "Requer {setting} em {choice}."

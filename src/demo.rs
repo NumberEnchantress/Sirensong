@@ -1511,11 +1511,11 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 play_here(app);
                 app.local.playback = crate::player::Playback::Paused;
             }
-            "player-bar-spectrum" | "player-bar-waveform" => {
-                app.settings.player_bar_vis = if surface == "player-bar-spectrum" {
-                    crate::settings::PlayerBarVis::Spectrum
-                } else {
-                    crate::settings::PlayerBarVis::Waveform
+            "player-bar-spectrum" | "player-bar-waveform" | "player-bar-both" => {
+                app.settings.player_bar_vis = match surface {
+                    "player-bar-spectrum" => crate::settings::PlayerBarVis::Spectrum,
+                    "player-bar-waveform" => crate::settings::PlayerBarVis::Waveform,
+                    _ => crate::settings::PlayerBarVis::Both,
                 };
                 play_here(app);
                 app.local.playback = crate::player::Playback::Playing;
@@ -8099,6 +8099,51 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// A setting another one leaves with nothing to do shows greyed out,
+    /// saying which, and takes no clicks until that one is on.
+    #[test]
+    fn a_setting_that_needs_another_is_greyed_out_and_says_which() {
+        let (ctx, mut app) = accessible_app("settings-needs");
+        app.backend.shutdown();
+        app.settings.library_sync = false;
+        ctx.data_mut(|data| {
+            data.insert_temp(
+                egui::Id::new("settings-filter"),
+                "When both changed".to_string(),
+            )
+        });
+        for _ in 0..3 {
+            view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+        }
+        let painted = view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+        assert!(
+            painted
+                .iter()
+                .any(|(text, _)| text.ends_with("Needs Keep in step with Spotify.")),
+            "it says what it needs"
+        );
+        let mine = sidebar_text(&painted, "Mine").center();
+        let before = app.settings.library_conflicts;
+        view_frame(
+            &ctx,
+            &mut app,
+            pointer_click(mine, egui::PointerButton::Primary),
+            crate::ui::settings::show,
+        );
+        assert_eq!(
+            app.settings.library_conflicts, before,
+            "greyed out, it takes no click"
+        );
+        app.settings.library_sync = true;
+        let painted = view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+        assert!(
+            !painted
+                .iter()
+                .any(|(text, _)| text.contains("Needs Keep in step with Spotify.")),
+            "kept in step, it applies"
+        );
+    }
+
     /// Settings groups its rows by task, and the buttons above the
     /// sections name every one; a search shows a row under its new heading.
     #[test]
@@ -8284,8 +8329,10 @@ mod tests {
         app.apply(Action::SetTheme(crate::settings::ThemeChoice::Dark), &ctx);
         let painted = view_frame(&ctx, &mut app, vec![], App::frame_ui);
         assert!(
-            painted.iter().all(|(text, _)| text != "Light mode theme"),
-            "a fixed theme has no light and dark themes"
+            painted
+                .iter()
+                .any(|(text, _)| text.ends_with("Needs Theme set to Follow system.")),
+            "a fixed theme greys out the light and dark themes, saying why"
         );
     }
 

@@ -291,7 +291,23 @@ record its own decisions and three rounds of adversarial grading.
   `section` scrolls its heading to the top when it draws it.
 - "Suggestions", "Application" and "Playback on this computer" left the
   catalogs.
-- Noticed, not changed: the Vacuum card draws wider than the others.
+- Noticed, not changed: the Vacuum card draws wider than the others (its
+  seed row's field and button do not wrap).
+
+### Greyed-out settings and Both's colours, 5 November 2026 (mod 27)
+
+- **Asked by the user.** `RowText::needs` holds why another setting leaves
+  a row nothing to do; `row_body` draws such a row disabled at 0.6 opacity
+  with the reason after its description (`needs_on`, `off_while`,
+  `needs_choice`). Search still matches the row's own text. Rows hidden
+  before now show greyed: When both changed, and Light and Dark mode theme;
+  and greyed: Show version, Autoplay under Only what I ask for, One map at
+  a time without the Home map, and Vacuum's choices while it is off. The
+  built-in player's rows stay hidden under Soloist, which offers none of
+  them (the Soloist tests hold that).
+- With Both, the waveform takes `over_bars`: the hue opposite the bass
+  bars', or the accent over grey bars, in the same brightness band.
+  `--demo-show player-bar-both` shows it.
 
 ### Still open
 
