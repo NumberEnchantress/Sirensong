@@ -228,6 +228,11 @@ sidebar is not in compact mode.
 
 ## Playing a song from search
 
+A new search opens on all its results mixed, by default. **Search opens
+on** in **Settings > Appearance** chooses another: Songs, Artists, Albums,
+Playlists, Podcasts or Episodes. Choosing another kind in a search keeps it
+while you type on; a recent search or a link starts again on the chosen one.
+
 A song picked from the search results plays on its own, and, with Autoplay on,
 Spotify continues with songs it suggests after it, as in the Spotify apps. The other results are
 not queued after it.
@@ -510,8 +515,9 @@ your pins, the pins saved on this computer are used.
 **Sirensong custom order** is your own arrangement, kept on this computer.
 It holds everything in your library: playlists, albums, artists, podcasts,
 Liked Songs and Local Files, each anywhere you put it, in folders of your own
-at any depth. Drag any row, a folder too, to move it; a row dropped in a
-folder goes into it. Folders are made, renamed, moved and removed from the
+at any depth. Drag any row, a folder too, to move it: let go between two
+rows to put it there, or on the middle of a folder to put it inside, at
+the top. A row dropped in an open folder goes into it. Folders are made, renamed, moved and removed from the
 **+** button and their menus as in Spotify custom order, and **Move to
 folder** is in every row's menu, Liked Songs' and Local Files' too. It lists several kinds together, and while a
 filter or **By You** leaves things out, a folder holding none of what is
@@ -560,14 +566,14 @@ song, wherever the row sits.
 
 **Player bar visualizer** in **Settings > Appearance** shows the song moving
 behind the player bar's controls: **Spectrum** draws glowing bars from bass
-to treble with peaks that hang and fall, and **Waveform** draws the sound's
-wave as a glowing line. With **Colour from album art** on, both sweep from
+to treble with peaks that hang and fall, **Waveform** draws the sound's
+wave as a glowing line, and **Both** draws the line over the bars. With **Colour from album art** on, both sweep from
 bass to treble across up to four colours read from the cover, its hues first
 and its greys after, so a black and white cover moves in grey; with it off,
 they take the accent colour. It follows the equalizer, not the volume, and moves only while the
 song plays on this computer. It is off by default. Clicking the player
 bar's empty space switches it, as Winamp's visualizer did: off, then
-Spectrum, then Waveform, then off again. **Frame rate** in **Settings >
+Spectrum, then Waveform, then Both, then off again. **Frame rate** in **Settings >
 Appearance** sets how often it and the mini player's analyser draw: 30, 60
 (the default), the rate of the screen showing the window, or Uncapped,
 which follows the display. They draw at half that rate while Sirensong's
@@ -896,10 +902,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 23 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 24 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 23` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 24` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

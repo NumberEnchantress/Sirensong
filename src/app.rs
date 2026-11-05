@@ -1881,6 +1881,26 @@ impl App {
 
     // ---- derived state -----------------------------------------------------
 
+    /// How the map draws its folders: the Library's (`side`) or Home's.
+    pub fn map_layout(&self, side: bool) -> crate::settings::MapLayout {
+        let home = &self.settings.home;
+        match home.sidebar_map_layout {
+            Some(layout) if side && !home.same_map_layout => layout,
+            _ => home.map_layout,
+        }
+    }
+
+    /// Home shows its map on screen now.
+    pub fn home_map_shown(&self) -> bool {
+        self.settings.home.playlist_map && *self.page() == Page::Home
+    }
+
+    /// The Library shows its map: chosen, and not while Home shows one
+    /// unless both may.
+    pub fn sidebar_map_shown(&self) -> bool {
+        self.settings.sidebar_map && (self.settings.home.both_maps || !self.home_map_shown())
+    }
+
     pub fn page(&self) -> &Page {
         &self.history[self.history_index]
     }
@@ -8827,6 +8847,11 @@ impl App {
         // is what was typed.
         self.search.typed = query.trim().to_string();
         let query = crate::vacuum::gate::real_query(&query);
+        // A new search, not the one being typed on, opens on the chosen
+        // results.
+        if self.search.committed.is_empty() && !query.is_empty() {
+            self.search.filter = self.settings.search_default;
+        }
         if !query.is_empty()
             && query == self.search.committed
             && !self.search.results.needs_load()
@@ -14525,6 +14550,8 @@ impl App {
                 if typed {
                     self.submit_typed_search(query.trim().to_string());
                 } else {
+                    // A recent search or a link starts afresh.
+                    self.search.filter = self.settings.search_default;
                     self.search.edit_run += 1;
                     self.run_search(query.trim().to_string());
                 }
@@ -14535,6 +14562,11 @@ impl App {
                 self.settings_dirty = true;
             }
             Action::SetSearchFilter(filter) => self.search.filter = filter,
+            Action::SetSearchDefault(filter) => {
+                self.settings.search_default = filter;
+                self.search.filter = filter;
+                self.mark_settings_dirty();
+            }
             Action::SetTopPeriod(period) => self.set_top_period(period),
             Action::FocusSearch => {
                 self.search.focus_requested = true;
@@ -14790,8 +14822,14 @@ impl App {
                 self.settings.library_kinds = kinds;
                 self.mark_settings_dirty();
             }
-            Action::SetMapLayout(layout) => {
-                self.settings.home.map_layout = layout;
+            Action::SetMapLayout { layout, side } => {
+                let home = &mut self.settings.home;
+                if home.same_map_layout || !side {
+                    home.map_layout = layout;
+                }
+                if home.same_map_layout || side {
+                    home.sidebar_map_layout = Some(layout);
+                }
                 self.mark_settings_dirty();
             }
             Action::OpenGame(source) => {
@@ -17209,7 +17247,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 23";
+pub const FORK_VERSION: &str = "mod 24";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -37679,6 +37717,99 @@ mod tests {
         };
         app.backend.take_folder_edit_requests();
         app
+    }
+
+    /// Home's map and the Library's keep their own Tree or Circles, unless
+    /// they share one; a settings file from before keeps one for both.
+    #[test]
+    fn map_views_are_chosen_apart_unless_shared() {
+        use crate::settings::MapLayout;
+        let mut app = pins_app();
+        let ctx = egui::Context::default();
+        assert!(!crate::settings::Settings::default().home.same_map_layout);
+        app.apply(
+            Action::SetMapLayout {
+                layout: MapLayout::Circles,
+                side: true,
+            },
+            &ctx,
+        );
+        assert_eq!(app.map_layout(true), MapLayout::Circles);
+        assert_eq!(app.map_layout(false), MapLayout::Tree);
+        app.settings.home.same_map_layout = true;
+        app.apply(
+            Action::SetMapLayout {
+                layout: MapLayout::Circles,
+                side: false,
+            },
+            &ctx,
+        );
+        app.apply(
+            Action::SetMapLayout {
+                layout: MapLayout::Tree,
+                side: true,
+            },
+            &ctx,
+        );
+        assert_eq!(app.map_layout(false), MapLayout::Tree);
+        assert_eq!(app.map_layout(true), MapLayout::Tree);
+        let old: crate::settings::Settings =
+            serde_json::from_str(r#"{"home":{"map_layout":"circles"}}"#).unwrap();
+        app.settings.home = old.home;
+        assert_eq!(app.map_layout(true), MapLayout::Circles);
+        app.backend.shutdown();
+    }
+
+    /// While Home shows the map, the Library shows its rows, unless both
+    /// maps may show.
+    #[test]
+    fn one_map_shows_at_a_time_unless_both_may() {
+        let mut app = pins_app();
+        assert!(!crate::settings::Settings::default().home.both_maps);
+        app.settings.sidebar_map = true;
+        app.settings.home.playlist_map = true;
+        app.open(Page::Home);
+        assert!(!app.sidebar_map_shown());
+        app.open(Page::Search);
+        assert!(
+            app.sidebar_map_shown(),
+            "away from Home, the Library's map shows"
+        );
+        app.open(Page::Home);
+        app.settings.home.both_maps = true;
+        assert!(app.sidebar_map_shown());
+        app.backend.shutdown();
+    }
+
+    /// A new search opens on the results chosen in Settings; typing on in
+    /// it keeps the kind picked meanwhile.
+    #[test]
+    fn a_new_search_opens_on_the_chosen_results() {
+        use crate::model::SearchFilter;
+        let mut app = pins_app();
+        let ctx = egui::Context::default();
+        assert_eq!(
+            crate::settings::Settings::default().search_default,
+            SearchFilter::All
+        );
+        app.apply(Action::SetSearchDefault(SearchFilter::Albums), &ctx);
+        app.search.filter = SearchFilter::All;
+        app.apply(Action::Search("abba".into()), &ctx);
+        assert_eq!(app.search.filter, SearchFilter::Albums);
+        app.apply(Action::SetSearchFilter(SearchFilter::Songs), &ctx);
+        app.search.query = "abba gold".into();
+        app.apply(Action::Search("abba gold".into()), &ctx);
+        assert_eq!(app.search.filter, SearchFilter::Songs, "typed on, it stays");
+        app.apply(Action::Search("queen".into()), &ctx);
+        assert_eq!(
+            app.search.filter,
+            SearchFilter::Albums,
+            "a recent search starts afresh"
+        );
+        let json = serde_json::to_string(&app.settings).unwrap();
+        let back: crate::settings::Settings = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.search_default, SearchFilter::Albums);
+        app.backend.shutdown();
     }
 
     /// An app showing Sirensong custom order over Spotify's `folder_tree`.

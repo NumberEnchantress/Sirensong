@@ -245,6 +245,27 @@ record its own decisions and three rounds of adversarial grading.
   checked against `App::shown_tree`, and goes through `tree_action`, so it
   edits the custom order and syncs as any other edit.
 
+### Folder drops, map views and search, 4 November 2026 (mod 24)
+
+- **Asked by the user.** A row let go over the middle half of a folder's row
+  (or card) goes inside it (`sidebar::folder_drop`), in the tree shown:
+  Sirensong custom order through `EditLibraryTree`, Spotify's through
+  `EditFolders` once it can be changed. Between rows it still lands in the
+  gap.
+- The user's custom order was checked against Spotify's tree: its
+  playlists and folders already matched, so the settings were left alone.
+- Home's map and the Library's keep their own layout
+  (`home.sidebar_map_layout`, falling back to `map_layout`);
+  `same_map_layout` (off) shares one. `Action::SetMapLayout` names its side,
+  and `App::map_layout(side)` reads it.
+- One map at a time (`home.both_maps` off): `App::sidebar_map_shown` is
+  false while Home shows its map, and the Library's map buttons wait.
+- `PlayerBarVis::Both` draws the waveform over the spectrum, and joins the
+  click cycle after Waveform.
+- `search_default` (`all`) is the results a new search opens on: set when a
+  search starts from none, or from a recent search or link, not while typing
+  on.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

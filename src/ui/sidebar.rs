@@ -984,12 +984,7 @@ fn custom_map_rows(app: &App, ticked: &[Filter], needle: &str, rows: &mut Vec<Ma
     );
     let start = rows.len();
     for entry in entries {
-        let kind = match crate::library_tree::kind_of(entry.ordering_key()) {
-            crate::settings::LibraryShelf::Playlists => Filter::Playlists,
-            crate::settings::LibraryShelf::Albums => Filter::Albums,
-            crate::settings::LibraryShelf::Artists => Filter::Artists,
-            crate::settings::LibraryShelf::Podcasts => Filter::Podcasts,
-        };
+        let kind = crate::library_tree::kind_of(entry.ordering_key());
         let listed = ticked.contains(&kind) && map_listed(app, &entry, found.as_ref());
         rows.push(map_row(app, entry, listed, 0));
     }
@@ -1655,7 +1650,7 @@ fn pinned_rows(entries: &[Entry], pins: &[String]) -> usize {
 pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let palette = app.palette;
     let expanded_art = has_expanded_art(app);
-    let map = app.settings.sidebar_map;
+    let map = app.sidebar_map_shown();
     let floating_art = app.settings.sidebar_grid && !map && expanded_art;
     // The map takes a panel of its own, wider, with a width of its own.
     let (id, widest, chosen) = if map {
@@ -2359,8 +2354,8 @@ impl LibraryView {
     const ALL: [Self; 4] = [Self::List, Self::Grid, Self::Circles, Self::Tree];
 
     fn of(app: &App) -> Self {
-        if app.settings.sidebar_map {
-            match app.settings.home.map_layout {
+        if app.sidebar_map_shown() {
+            match app.map_layout(true) {
                 crate::settings::MapLayout::Circles => Self::Circles,
                 crate::settings::MapLayout::Tree => Self::Tree,
             }
@@ -2397,11 +2392,17 @@ impl LibraryView {
             Self::List => [Action::SetLibraryGrid(false), Action::SetLibraryMap(false)],
             Self::Grid => [Action::SetLibraryGrid(true), Action::SetLibraryMap(false)],
             Self::Circles => [
-                Action::SetMapLayout(MapLayout::Circles),
+                Action::SetMapLayout {
+                    layout: MapLayout::Circles,
+                    side: true,
+                },
                 Action::SetLibraryMap(true),
             ],
             Self::Tree => [
-                Action::SetMapLayout(MapLayout::Tree),
+                Action::SetMapLayout {
+                    layout: MapLayout::Tree,
+                    side: true,
+                },
                 Action::SetLibraryMap(true),
             ],
         };
@@ -2432,13 +2433,30 @@ fn view_toggle(app: &mut App, ui: &mut egui::Ui, in_menu: bool) {
             ),
             vec2(VIEW_CELL, rect.height() - 4.0),
         );
-        let label = view.label(app.locale);
+        // One map at a time: while Home shows its map, the Library's waits.
+        let blocked = matches!(view, LibraryView::Circles | LibraryView::Tree)
+            && !app.settings.home.both_maps
+            && app.home_map_shown();
+        let label = if blocked {
+            // Translators: Hover text on the Library's map views while Home shows the playlist map, with one map at a time.
+            gettext(app.locale, "Home shows the map now")
+        } else {
+            view.label(app.locale)
+        };
         let selected = view == current;
-        let response = ui.interact(cell, ui.id().with(("library-view", index)), Sense::click());
+        let response = ui.interact(
+            cell,
+            ui.id().with(("library-view", index)),
+            if blocked {
+                Sense::hover()
+            } else {
+                Sense::click()
+            },
+        );
         response.widget_info(|| {
             egui::WidgetInfo::selected(
                 egui::WidgetType::RadioButton,
-                ui.is_enabled(),
+                !blocked && ui.is_enabled(),
                 selected,
                 &*label,
             )
@@ -2454,6 +2472,8 @@ fn view_toggle(app: &mut App, ui: &mut egui::Ui, in_menu: bool) {
             }
             let color = if selected {
                 palette.window
+            } else if blocked {
+                palette.dim
             } else if hovered {
                 palette.text
             } else {
@@ -2766,7 +2786,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     }
     // The map in place of the rows: an open folder is its root, and the
     // way back out is on the map too.
-    if app.settings.sidebar_map {
+    if app.sidebar_map_shown() {
         super::playlist_map::sidebar(app, ui);
         return;
     }
@@ -2894,11 +2914,26 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             // Rows of several kinds keep their shared order: none moves.
             let reordering = (!mixed || custom_order)
                 && egui::DragAndDrop::has_payload_of_type::<DragEntry>(ui.ctx());
-            let reorder_slot = reordering.then_some(pointer).flatten().map(|pos| {
-                let slot = (((pos.y - list_top) / row_height).round().max(0.0) as usize)
-                    .min(entries.len());
-                landing_slot(app, &entries, slot)
-            });
+            // Over the middle of a folder's row, the row goes inside it.
+            let into_folder = reordering
+                .then_some(pointer)
+                .flatten()
+                .and_then(|pos| {
+                    let at = (pos.y - list_top) / row_height;
+                    let index = at.floor();
+                    (index >= 0.0 && (0.25..0.75).contains(&(at - index))).then_some(index as usize)
+                })
+                .and_then(|index| folder_drop(app, ui.ctx(), &entries, index));
+            let reorder_slot = into_folder
+                .is_none()
+                .then_some(reordering)
+                .filter(|on| *on)
+                .and(pointer)
+                .map(|pos| {
+                    let slot = (((pos.y - list_top) / row_height).round().max(0.0) as usize)
+                        .min(entries.len());
+                    landing_slot(app, &entries, slot)
+                });
             let art = app.backend.art().clone();
             super::widgets::virtual_rows(ui, entries.len(), row_height, |ui, index| {
                 let entry = &entries[index];
@@ -2909,7 +2944,8 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                     app.softened_covers.texture(ui.ctx(), &art, image);
                 }
                 let droppable = entry.liked || entry.editable;
-                let drop_hover = drop_target == Some(index);
+                let drop_hover = drop_target == Some(index)
+                    || into_folder.as_ref().is_some_and(|(at, _)| *at == index);
                 let active = entry.folder.is_none() && entry.page == current_page;
                 // Liked Songs has no URI of its own here; Spotify plays it
                 // as the account's collection context.
@@ -3176,6 +3212,12 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                     true,
                 );
             });
+            if let Some((_, action)) = into_folder
+                && ui.input(|input| input.pointer.button_released(egui::PointerButton::Primary))
+                && egui::DragAndDrop::take_payload::<DragEntry>(ui.ctx()).is_some()
+            {
+                app.actions.push(action);
+            }
             if let Some(slot) = reorder_slot {
                 // A line in the gap the rows opened, so the eye lands
                 // where the row will.
@@ -3252,6 +3294,63 @@ fn paint_grid_text(
         .galley(crate::bidi::galley_pos(rect, &galley), galley, color);
 }
 
+/// The card whose middle is under `pointer`, away from the gaps either
+/// side where a card drops beside it.
+fn grid_card_middle(pointer: egui::Pos2, origin: egui::Pos2, layout: GridLayout) -> Option<usize> {
+    let x = pointer.x - origin.x;
+    let y = pointer.y - origin.y;
+    if x < 0.0 || y < 0.0 {
+        return None;
+    }
+    let column = (x / layout.card_width).floor() as usize;
+    let across = x / layout.card_width - column as f32;
+    (column < layout.columns && (0.25..0.75).contains(&across))
+        .then(|| (y / layout.row_height).floor() as usize * layout.columns + column)
+}
+
+/// The row being dragged, dropped on the folder at `index`, goes inside it,
+/// at its top: the move, in the tree the Library shows, if that tree takes
+/// it. Spotify's tree holds only playlists and folders, and only once it can
+/// be changed; Sirensong custom order holds anything.
+fn folder_drop(
+    app: &App,
+    ctx: &egui::Context,
+    entries: &[Entry],
+    index: usize,
+) -> Option<(usize, Action)> {
+    let (id, _, _) = entries.get(index)?.folder.as_ref()?;
+    let drag = egui::DragAndDrop::payload::<DragEntry>(ctx)?;
+    let custom = custom_order_shown(app);
+    if !custom && !app.folders_editable() {
+        return None;
+    }
+    let place = Place::InFolder(id.clone());
+    let edit = match crate::folders::start_id(&drag.uri) {
+        Some(folder) => FolderEdit::MoveFolder {
+            id: folder.to_string(),
+            place,
+        },
+        None => FolderEdit::MovePlaylist {
+            uri: drag.uri.clone(),
+            place,
+        },
+    };
+    let tree = if custom {
+        app.shown_tree()
+    } else {
+        &app.rootlist
+    };
+    crate::folders::apply(tree, &edit).ok()?;
+    Some((
+        index,
+        if custom {
+            Action::EditLibraryTree(edit)
+        } else {
+            Action::EditFolders(edit)
+        },
+    ))
+}
+
 fn grid_reorder_slot(
     pointer: egui::Pos2,
     origin: egui::Pos2,
@@ -3322,9 +3421,16 @@ fn library_grid(
     let dragging_song = egui::DragAndDrop::has_payload_of_type::<DragTrack>(ui.ctx());
     let reordering = (filter.is_some() || custom_order)
         && egui::DragAndDrop::has_payload_of_type::<DragEntry>(ui.ctx());
+    // Over the middle of a folder's card, the card goes inside it.
+    let into_folder = reordering
+        .then_some(pointer)
+        .flatten()
+        .and_then(|pointer| grid_card_middle(pointer, origin, layout))
+        .and_then(|index| folder_drop(app, ui.ctx(), entries, index));
     let reorder_slot = reordering
         .then_some(pointer)
         .flatten()
+        .filter(|_| into_folder.is_none())
         .map(|pointer| grid_reorder_slot(pointer, origin, layout, entries.len()))
         .map(|slot| landing_slot(app, entries, slot));
     let rows = grid_rows(entries.len(), layout.columns, group_starts);
@@ -3469,6 +3575,7 @@ fn library_grid(
                         } else if dragging_song
                             && droppable
                             && pointer.is_some_and(|pos| rect.contains(pos))
+                            || into_folder.as_ref().is_some_and(|(at, _)| *at == index)
                         {
                             ui.painter().rect_stroke(
                                 cover_rect,
@@ -3507,6 +3614,12 @@ fn library_grid(
         });
     });
 
+    if let Some((_, action)) = into_folder
+        && ui.input(|input| input.pointer.button_released(egui::PointerButton::Primary))
+        && egui::DragAndDrop::take_payload::<DragEntry>(ui.ctx()).is_some()
+    {
+        app.actions.push(action);
+    }
     if let Some(slot) = reorder_slot
         && ui.input(|input| input.pointer.button_released(egui::PointerButton::Primary))
         && let Some(drag) = egui::DragAndDrop::take_payload::<DragEntry>(ui.ctx())
@@ -5550,6 +5663,62 @@ mod ordering_tests {
         app.backend.shutdown();
     }
 
+    /// A row dropped on the middle of a folder goes inside it, in the tree
+    /// the Library shows, where that tree can take it.
+    #[test]
+    fn a_row_dropped_on_a_folder_goes_inside() {
+        use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
+        let mut app = app("folder-drop");
+        app.rootlist = vec![
+            FolderStart {
+                id: "f".into(),
+                name: "Folder".into(),
+            },
+            Playlist(uri("b")),
+            FolderEnd,
+            Playlist(uri("a")),
+        ];
+        app.collapsed_folders.clear();
+        app.settings.library_kinds = vec![Filter::Playlists];
+        let ctx = egui::Context::default();
+        egui::DragAndDrop::set_payload(
+            &ctx,
+            DragEntry {
+                uri: uri("a"),
+                title: "a".into(),
+                image: None,
+            },
+        );
+        // Spotify's tree, not yet changeable here: nowhere to go.
+        let entries = library_rows(&app, &[Filter::Playlists], "").entries;
+        let folder = entries
+            .iter()
+            .position(|entry| entry.folder.is_some())
+            .unwrap();
+        assert!(folder_drop(&app, &ctx, &entries, folder).is_none());
+        assert!(
+            folder_drop(&app, &ctx, &entries, folder + 1).is_none(),
+            "not a folder"
+        );
+        app.settings
+            .library_sort
+            .insert(Filter::Playlists, LibrarySort::Local);
+        app.keep_library_tree(false);
+        let entries = library_rows(&app, &[Filter::Playlists], "").entries;
+        let folder = entries
+            .iter()
+            .position(|entry| entry.folder.is_some())
+            .unwrap();
+        let (at, action) = folder_drop(&app, &ctx, &entries, folder).unwrap();
+        assert_eq!(at, folder);
+        assert!(matches!(
+            action,
+            Action::EditLibraryTree(FolderEdit::MovePlaylist { uri: ref moved, place: Place::InFolder(ref id) })
+                if *moved == uri("a") && id == "f"
+        ));
+        app.backend.shutdown();
+    }
+
     /// The map follows Sirensong custom order: its own tree, any kind in
     /// any folder, and a drag on it arranges that tree.
     #[test]
@@ -5597,7 +5766,7 @@ mod ordering_tests {
             inside.contains(&album.as_str()) && inside.contains(&uri("b").as_str()),
             "{inside:?}"
         );
-        let nodes = crate::ui::playlist_map::graph(&app);
+        let nodes = crate::ui::playlist_map::graph(&app, false);
         let moved = nodes.iter().find(|node| node.key == uri("a")).unwrap();
         let into = nodes.iter().find(|node| node.key == "folder:f").unwrap();
         let landing =

@@ -5207,3 +5207,40 @@ msgstr "{name} verwijderd"
 #: src/app.rs:6889
 msgid "Folder renamed to {name}"
 msgstr "Map hernoemd naar {name}"
+
+#. Translators: A setting: choosing Tree or Circles for the playlist map chooses it on Home and in the Library both.
+#: src/ui/settings.rs:1349
+msgid "Same map view on Home and in the Library"
+msgstr "Zelfde kaartweergave op Home en in de Bibliotheek"
+
+#. Translators: A setting: while Home shows the playlist map, the Library shows its list or grid instead of a second map.
+#: src/ui/settings.rs:1351
+msgid "One map at a time"
+msgstr "Eén kaart tegelijk"
+
+#. Translators: A setting: which results a new search shows first, all mixed or one kind.
+#: src/ui/settings.rs:1353
+msgid "Search opens on"
+msgstr "Zoeken opent op"
+
+#: src/ui/settings.rs:1503
+msgid "Off, Home's map and the Library's each keep their own choice of Tree or Circles."
+msgstr "Uit: de kaart op Home en die van de Bibliotheek houden elk hun eigen keuze voor Boom of Cirkels."
+
+#: src/ui/settings.rs:1510
+msgid "While Home shows the map, the Library shows its list or grid."
+msgstr "Zolang Home de kaart toont, toont de Bibliotheek haar lijst of raster."
+
+#: src/ui/settings.rs:1517
+msgid "The results a new search shows first: all of them, or one kind."
+msgstr "De resultaten die een nieuwe zoekopdracht eerst toont: alle, of één soort."
+
+#. Translators: Player bar visualizer: the spectrum and the waveform together.
+#: src/ui/settings.rs:1790
+msgid "Both"
+msgstr "Beide"
+
+#. Translators: Hover text on the Library's map views while Home shows the playlist map, with one map at a time.
+#: src/ui/sidebar.rs:2442
+msgid "Home shows the map now"
+msgstr "Home toont nu de kaart"

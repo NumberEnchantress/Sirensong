@@ -140,7 +140,7 @@ impl Node {
 /// and in circles the folder stays inside the rest. With the filters'
 /// Only, what they leave out is left out; otherwise it stays, out of
 /// focus.
-pub(crate) fn graph(app: &App) -> Vec<Node> {
+pub(crate) fn graph(app: &App, side: bool) -> Vec<Node> {
     let home = app.settings.home;
     let rows = super::sidebar::map_rows(app);
     let mut raw: Vec<Node> = Vec::with_capacity(rows.len() + 1);
@@ -248,7 +248,7 @@ pub(crate) fn graph(app: &App) -> Vec<Node> {
             }
         }
     }
-    let circles = home.map_layout == MapLayout::Circles;
+    let circles = app.map_layout(side) == MapLayout::Circles;
     let root = if circles && home.map_folder == MapFocus::Zoom {
         0
     } else {
@@ -974,11 +974,11 @@ fn shape_of(nodes: &[Node], layout: MapLayout, outside: f32) -> u64 {
 /// What the view is fitted to: the layout, the open folder and the
 /// Library's choices. The Library itself changing, a page of albums
 /// arriving or a playlist renamed, keeps a view moved by hand.
-fn focus_of(app: &App) -> u64 {
+fn focus_of(app: &App, side: bool) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     let settings = &app.settings;
-    settings.home.map_layout.hash(&mut hasher);
+    app.map_layout(side).hash(&mut hasher);
     settings.home.map_listening.hash(&mut hasher);
     format!(
         "{:?}{:?}",
@@ -1085,16 +1085,18 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
         if !side {
-            if choice(ui, Icon::MapTree, &tree, home.map_layout == MapLayout::Tree) {
-                app.actions.push(Action::SetMapLayout(MapLayout::Tree));
+            let layout = app.map_layout(false);
+            if choice(ui, Icon::MapTree, &tree, layout == MapLayout::Tree) {
+                app.actions.push(Action::SetMapLayout {
+                    layout: MapLayout::Tree,
+                    side: false,
+                });
             }
-            if choice(
-                ui,
-                Icon::MapCircles,
-                &circles,
-                home.map_layout == MapLayout::Circles,
-            ) {
-                app.actions.push(Action::SetMapLayout(MapLayout::Circles));
+            if choice(ui, Icon::MapCircles, &circles, layout == MapLayout::Circles) {
+                app.actions.push(Action::SetMapLayout {
+                    layout: MapLayout::Circles,
+                    side: false,
+                });
             }
             ui.add_space(10.0);
         }
@@ -1301,9 +1303,9 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     ui.painter()
         .rect_filled(rect, egui::CornerRadius::same(10), palette.panel);
 
-    let layout = app.settings.home.map_layout;
+    let layout = app.map_layout(side);
     let circles = layout == MapLayout::Circles;
-    let nodes = graph(app);
+    let nodes = graph(app, side);
     let mut state = std::mem::take(if side {
         &mut app.sidebar_map
     } else {
@@ -1330,7 +1332,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         .unwrap_or_default();
 
     // The view fits the focus whenever it changes, and on a double-click.
-    let focus = focus_of(app);
+    let focus = focus_of(app, side);
     let first = state.camera.zoom == 0.0;
     if state.fitted != Some(focus) {
         state.fitted = Some(focus);

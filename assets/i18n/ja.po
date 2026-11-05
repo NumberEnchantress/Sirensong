@@ -5173,3 +5173,40 @@ msgstr "{name} を削除"
 #: src/app.rs:6889
 msgid "Folder renamed to {name}"
 msgstr "フォルダ名を {name} に変更"
+
+#. Translators: A setting: choosing Tree or Circles for the playlist map chooses it on Home and in the Library both.
+#: src/ui/settings.rs:1349
+msgid "Same map view on Home and in the Library"
+msgstr "ホームとライブラリで同じマップ表示"
+
+#. Translators: A setting: while Home shows the playlist map, the Library shows its list or grid instead of a second map.
+#: src/ui/settings.rs:1351
+msgid "One map at a time"
+msgstr "マップは一度に1つ"
+
+#. Translators: A setting: which results a new search shows first, all mixed or one kind.
+#: src/ui/settings.rs:1353
+msgid "Search opens on"
+msgstr "検索の最初の表示"
+
+#: src/ui/settings.rs:1503
+msgid "Off, Home's map and the Library's each keep their own choice of Tree or Circles."
+msgstr "オフのとき、ホームのマップとライブラリのマップはそれぞれツリーか円かを別々に選べます。"
+
+#: src/ui/settings.rs:1510
+msgid "While Home shows the map, the Library shows its list or grid."
+msgstr "ホームにマップが表示されている間、ライブラリはリストかグリッドで表示されます。"
+
+#: src/ui/settings.rs:1517
+msgid "The results a new search shows first: all of them, or one kind."
+msgstr "新しい検索で最初に表示する結果：すべて、または1つの種類。"
+
+#. Translators: Player bar visualizer: the spectrum and the waveform together.
+#: src/ui/settings.rs:1790
+msgid "Both"
+msgstr "両方"
+
+#. Translators: Hover text on the Library's map views while Home shows the playlist map, with one map at a time.
+#: src/ui/sidebar.rs:2442
+msgid "Home shows the map now"
+msgstr "いまはホームにマップを表示中"

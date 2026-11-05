@@ -4401,7 +4401,12 @@ mod tests {
 
         let tree = choose(&mut app, "Show as circles");
         assert!(app.settings.sidebar_map, "the map stands in for the cards");
-        assert_eq!(app.settings.home.map_layout, MapLayout::Circles);
+        assert_eq!(app.map_layout(true), MapLayout::Circles);
+        assert_eq!(
+            app.settings.home.map_layout,
+            MapLayout::Tree,
+            "Home keeps its own view"
+        );
         assert_eq!(chosen(&tree), ["Show as circles"]);
         assert!(
             tree.nodes
@@ -4412,7 +4417,7 @@ mod tests {
 
         let tree = choose(&mut app, "Show as tree");
         assert!(app.settings.sidebar_map);
-        assert_eq!(app.settings.home.map_layout, MapLayout::Tree);
+        assert_eq!(app.map_layout(true), MapLayout::Tree);
         assert_eq!(chosen(&tree), ["Show as tree"]);
 
         let tree = choose(&mut app, "Show as list");

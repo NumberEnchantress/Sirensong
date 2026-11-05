@@ -782,7 +782,8 @@ pub struct HomeSnapshot {
     pub podcasts: Vec<(Show, Vec<Episode>)>,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SearchFilter {
     #[default]
     All,
@@ -1429,7 +1430,14 @@ pub enum Action {
     /// The kinds ticked in the Library's filters; none ticked lists them all.
     SetLibraryKinds(Vec<crate::settings::LibraryShelf>),
     /// How the Home map draws the folders.
-    SetMapLayout(crate::settings::MapLayout),
+    /// The results a new search opens on, chosen in Settings.
+    SetSearchDefault(SearchFilter),
+    /// Tree or Circles, for the Library's map (`side`) or Home's, or both
+    /// while they share one.
+    SetMapLayout {
+        layout: crate::settings::MapLayout,
+        side: bool,
+    },
     /// What the Home map does with the rest while a folder is open
     /// (`folder`), or with what the Library's filters leave out.
     SetMapFocus {

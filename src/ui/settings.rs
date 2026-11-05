@@ -1345,6 +1345,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let show_version = gettext(locale, "Show version");
     let show_custom_titlebar = cfg!(target_os = "linux") || app.windows_controls_visible();
     let player_bar_vis = gettext(locale, "Player bar visualizer");
+    // Translators: A setting: choosing Tree or Circles for the playlist map chooses it on Home and in the Library both.
+    let same_map_layout = gettext(locale, "Same map view on Home and in the Library");
+    // Translators: A setting: while Home shows the playlist map, the Library shows its list or grid instead of a second map.
+    let one_map = gettext(locale, "One map at a time");
+    // Translators: A setting: which results a new search shows first, all mixed or one kind.
+    let search_default = gettext(locale, "Search opens on");
     let player_bar_vis_click = gettext(locale, "Click player bar to change visualizer");
     // Follow system's own light and dark palettes. Omarchy's palette already
     // follows the desktop, so they are offered only without it.
@@ -1490,6 +1496,27 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             ),
         )
         .when(show_custom_titlebar),
+        RowText::new(
+            same_map_layout.clone(),
+            gettext(
+                locale,
+                "Off, Home's map and the Library's each keep their own choice of Tree or Circles.",
+            ),
+        ),
+        RowText::new(
+            one_map.clone(),
+            gettext(
+                locale,
+                "While Home shows the map, the Library shows its list or grid.",
+            ),
+        ),
+        RowText::new(
+            search_default.clone(),
+            gettext(
+                locale,
+                "The results a new search shows first: all of them, or one kind.",
+            ),
+        ),
     ];
     for index in [8, 9, 10] {
         appearance_rows[index].available &= visualizers;
@@ -1657,6 +1684,80 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 &palette,
                 &needle,
                 &appearance,
+                &appearance_rows[17],
+                |ui| {
+                    let home = &mut app.settings.home;
+                    let was = home.same_map_layout;
+                    if widgets::switch(ui, &palette, &same_map_layout, &mut home.same_map_layout)
+                        .changed()
+                    {
+                        // Turned on, the Library takes Home's choice.
+                        if home.same_map_layout && !was {
+                            home.sidebar_map_layout = Some(home.map_layout);
+                        }
+                        changed = true;
+                    }
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
+                &appearance_rows[18],
+                |ui| {
+                    let mut one = !app.settings.home.both_maps;
+                    if widgets::switch(ui, &palette, &one_map, &mut one).changed() {
+                        app.settings.home.both_maps = !one;
+                        changed = true;
+                    }
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
+                &appearance_rows[19],
+                |ui| {
+                    use crate::model::SearchFilter;
+                    ui.with_layout(Layout::top_down(Align::Max), |ui| {
+                        let current = app.settings.search_default;
+                        let selected = current.label(locale);
+                        let response = egui::ComboBox::from_id_salt("search_default")
+                            .selected_text(selected.as_ref())
+                            .width(160.0_f32.min(ui.available_width()))
+                            .show_ui(ui, |ui| {
+                                for filter in SearchFilter::ALL {
+                                    if ui
+                                        .selectable_label(
+                                            current == filter,
+                                            filter.label(locale).as_ref(),
+                                        )
+                                        .clicked()
+                                        && current != filter
+                                    {
+                                        app.actions.push(Action::SetSearchDefault(filter));
+                                    }
+                                }
+                            });
+                        response.response.widget_info(|| {
+                            let mut info = egui::WidgetInfo::labeled(
+                                egui::WidgetType::ComboBox,
+                                ui.is_enabled(),
+                                search_default.as_ref(),
+                            );
+                            info.current_text_value = Some(selected.to_string());
+                            info
+                        });
+                    });
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
                 &appearance_rows[1],
                 |ui| language_picker(app, ui),
             );
@@ -1685,6 +1786,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     (PlayerBarVis::Off, gettext(locale, "Off")),
                     (PlayerBarVis::Spectrum, gettext(locale, "Spectrum")),
                     (PlayerBarVis::Waveform, gettext(locale, "Waveform")),
+                    // Translators: Player bar visualizer: the spectrum and the waveform together.
+                    (PlayerBarVis::Both, gettext(locale, "Both")),
                 ];
                 let choice_gap = 6.0;
                 let choices_width = choices

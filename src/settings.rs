@@ -95,8 +95,16 @@ pub struct HomeSettings {
     pub recommendations: HomeShelfSettings,
     /// Home shows a map of the playlists in place of its shelves.
     pub playlist_map: bool,
-    /// How the map draws the folders.
+    /// How the map draws the folders: on Home, and in the Library too while
+    /// `same_map_layout` is on or it has no layout of its own.
     pub map_layout: MapLayout,
+    /// How the Library's own map draws the folders, when it differs.
+    pub sidebar_map_layout: Option<MapLayout>,
+    /// Choosing Tree or Circles in one place chooses it in both.
+    pub same_map_layout: bool,
+    /// The Library may show its map while Home shows one too; off, the
+    /// Library shows its rows or cards while Home's map is on screen.
+    pub both_maps: bool,
     /// What the map does with the rest while a folder is open.
     pub map_folder: MapFocus,
     /// What the map does with what the Library's filters leave out.
@@ -190,17 +198,30 @@ pub enum PlayerBarVis {
     Off,
     Spectrum,
     Waveform,
+    /// The spectrum with the waveform over it.
+    Both,
 }
 
 impl PlayerBarVis {
     /// The mode a click on the player bar moves to: spectrum, waveform,
-    /// then off, as Winamp's visualizer cycles.
+    /// both, then off, as Winamp's visualizer cycles.
     pub fn next(self) -> Self {
         match self {
             Self::Off => Self::Spectrum,
             Self::Spectrum => Self::Waveform,
-            Self::Waveform => Self::Off,
+            Self::Waveform => Self::Both,
+            Self::Both => Self::Off,
         }
+    }
+
+    /// Whether the spectrum's bars are drawn.
+    pub fn spectrum(self) -> bool {
+        matches!(self, Self::Spectrum | Self::Both)
+    }
+
+    /// Whether the waveform's line is drawn.
+    pub fn waveform(self) -> bool {
+        matches!(self, Self::Waveform | Self::Both)
     }
 }
 
@@ -505,6 +526,8 @@ pub struct Settings {
     /// When both orders changed apart: ask, take Spotify's, or keep this
     /// computer's.
     pub library_conflicts: LibraryConflicts,
+    /// The results a new search opens on: all of them mixed, or one kind.
+    pub search_default: crate::model::SearchFilter,
     /// Explicit order per Library shelf. Missing shelves keep their previous
     /// behaviour; selecting another order never deletes the local arrangement.
     pub library_sort: std::collections::BTreeMap<LibraryShelf, LibrarySort>,
@@ -707,6 +730,7 @@ impl Default for Settings {
             library_trees: Default::default(),
             library_sync: true,
             library_conflicts: LibraryConflicts::Ask,
+            search_default: crate::model::SearchFilter::All,
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,
             settings_search_in_topbar: true,
@@ -1745,7 +1769,11 @@ mod tests {
         let json = serde_json::to_string(&disabled).unwrap();
         let restored: Settings = serde_json::from_str(&json).unwrap();
         assert!(!restored.player_bar_vis_click);
-        for mode in [PlayerBarVis::Spectrum, PlayerBarVis::Waveform] {
+        for mode in [
+            PlayerBarVis::Spectrum,
+            PlayerBarVis::Waveform,
+            PlayerBarVis::Both,
+        ] {
             let settings = Settings {
                 player_bar_vis: mode,
                 ..Settings::default()
@@ -1758,7 +1786,8 @@ mod tests {
         assert_eq!(spectrum.player_bar_vis, PlayerBarVis::Spectrum);
         assert_eq!(PlayerBarVis::Off.next(), PlayerBarVis::Spectrum);
         assert_eq!(PlayerBarVis::Spectrum.next(), PlayerBarVis::Waveform);
-        assert_eq!(PlayerBarVis::Waveform.next(), PlayerBarVis::Off);
+        assert_eq!(PlayerBarVis::Waveform.next(), PlayerBarVis::Both);
+        assert_eq!(PlayerBarVis::Both.next(), PlayerBarVis::Off);
     }
 
     #[test]

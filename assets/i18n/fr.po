@@ -5245,3 +5245,40 @@ msgstr "{name} retiré"
 #: src/app.rs:6889
 msgid "Folder renamed to {name}"
 msgstr "Dossier renommé en {name}"
+
+#. Translators: A setting: choosing Tree or Circles for the playlist map chooses it on Home and in the Library both.
+#: src/ui/settings.rs:1349
+msgid "Same map view on Home and in the Library"
+msgstr "Même vue de carte dans Accueil et dans la Bibliothèque"
+
+#. Translators: A setting: while Home shows the playlist map, the Library shows its list or grid instead of a second map.
+#: src/ui/settings.rs:1351
+msgid "One map at a time"
+msgstr "Une seule carte à la fois"
+
+#. Translators: A setting: which results a new search shows first, all mixed or one kind.
+#: src/ui/settings.rs:1353
+msgid "Search opens on"
+msgstr "La recherche s’ouvre sur"
+
+#: src/ui/settings.rs:1503
+msgid "Off, Home's map and the Library's each keep their own choice of Tree or Circles."
+msgstr "Désactivé, la carte d’Accueil et celle de la Bibliothèque gardent chacune leur choix d’Arbre ou de Cercles."
+
+#: src/ui/settings.rs:1510
+msgid "While Home shows the map, the Library shows its list or grid."
+msgstr "Tant qu’Accueil affiche la carte, la Bibliothèque affiche sa liste ou sa grille."
+
+#: src/ui/settings.rs:1517
+msgid "The results a new search shows first: all of them, or one kind."
+msgstr "Les résultats qu’une nouvelle recherche affiche d’abord : tous, ou un seul type."
+
+#. Translators: Player bar visualizer: the spectrum and the waveform together.
+#: src/ui/settings.rs:1790
+msgid "Both"
+msgstr "Les deux"
+
+#. Translators: Hover text on the Library's map views while Home shows the playlist map, with one map at a time.
+#: src/ui/sidebar.rs:2442
+msgid "Home shows the map now"
+msgstr "Accueil affiche la carte en ce moment"

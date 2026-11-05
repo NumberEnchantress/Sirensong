@@ -401,7 +401,8 @@ main fields are:
 | `system_theme_cache` | absent | Last accepted Omarchy palette for Follow system; retained across restarts |
 | `theme_pair` | absent | The themes Follow system uses in light and dark mode: `{"light": {"filename": "Catppuccin Latte.json", "palette": {...}}, "dark": {...}}`. Each `palette` is the last accepted copy of that file's colours. A missing side, or the whole field, is Sirensong's own Light or Dark; it is written only once you choose one |
 | `accent_from_art` | `true` | Tint pages with album art, and colour the player bar visualizer with the cover's colours |
-| `player_bar_vis` | `off` | Since 0.11.0: what moves behind the player bar while a song plays on this computer: `off`, `spectrum` or `waveform` |
+| `player_bar_vis` | `off` | Since 0.11.0: what moves behind the player bar while a song plays on this computer: `off`, `spectrum`, `waveform` or `both` (the waveform over the spectrum) |
+| `search_default` | `"all"` | The results a new search opens on: `all`, `songs`, `artists`, `albums`, `playlists`, `podcasts` or `episodes` |
 | `player_bar_vis_click` | `true` | Allow clicks on empty player bar space to cycle visualizer modes |
 | `visualizer_fps` | `60` | Frame rate of the player bar and mini player visualizers; `0` is uncapped. Half that out of focus, at most 30 while the system saves energy, none while the window is hidden. MilkDrop uses `milkdrop_fps` |
 | `library_sort` | `{}` | Per-section Library order overrides, since 0.8.0: `library`, `recently_played`, `name`, `recently_added`, `local`, or `spotify`, where supported |
@@ -623,8 +624,18 @@ current view and opens the four. Shown as the map, the sidebar holds the
 map in place of the Library's rows or cards, with the same choices above it
 but the layout, which the header's buttons choose. The sidebar is wider for it and keeps that width of its
 own (`"sidebar_map_width"`). Clicking a playlist, album, artist or podcast
-opens it beside the map, as a row would. It is kept as `"sidebar_map"`. The
-choices are kept as `"home": {"map_layout": "tree"}` (or `"circles"`),
+opens it beside the map, as a row would. It is kept as `"sidebar_map"`.
+
+Home's map and the Library's keep their own Tree or Circles: choosing one
+in the Library's header leaves Home's as it was. **Same map view on Home
+and in the Library**, in Settings → Appearance and off by default, makes a
+choice in either place choose it in both. **One map at a time**, on by
+default, shows the Library's list or grid while Home shows its map, so the
+two are never on screen together; the Library's map buttons wait, and the
+Library's map comes back when you leave Home. The
+choices are kept as `"home": {"map_layout": "tree"}` (or `"circles"`, Home's,
+and the Library's too while it has none of its own), `"sidebar_map_layout"`
+(the Library's), `"same_map_layout"`, `"both_maps"` (One map at a time off),
 `"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`.
 
 **Time listened**, beside the layouts, makes each node's area grow with

@@ -125,7 +125,6 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 /// same post-equalizer, pre-volume sound as the mini player's visualizer,
 /// so the volume never moves it. Returns whether it is still moving.
 fn visualizer(app: &mut App, ui: &egui::Ui, rect: Rect, now: Option<&NowPlaying>) -> bool {
-    use crate::settings::PlayerBarVis;
     use crate::vis;
     let mode = app.settings.player_bar_vis;
     let sounding = app.visualizer_sounding(now);
@@ -135,46 +134,40 @@ fn visualizer(app: &mut App, ui: &egui::Ui, rect: Rect, now: Option<&NowPlaying>
     // would wash it out.
     let strength = if dark { 1.0 } else { LIGHT_STRENGTH };
     let painter = ui.painter().with_clip_rect(rect);
-    match mode {
-        PlayerBarVis::Off => false,
-        PlayerBarVis::Spectrum => {
-            if !sounding && app.player_bar_analyser.settled() {
-                return false;
-            }
-            let samples = if sounding {
-                app.winamp
-                    .tap
-                    .window(vis::WIDE_SAMPLES, app.visualizer_lag())
-            } else {
-                Vec::new()
-            };
-            let levels = app
-                .player_bar_analyser
-                .step(&samples, std::time::Instant::now());
-            let peaks = app.player_bar_analyser.peaks();
-            spectrum(&painter, rect, &levels, &peaks, &colours, strength);
-            sounding || !app.player_bar_analyser.settled()
-        }
-        PlayerBarVis::Waveform => {
-            if !sounding {
-                return false;
-            }
-            // Winamp's scope with a column every eight points or so.
-            let count = (rect.width() / 8.0).clamp(75.0, 320.0) as usize;
-            let samples = app
-                .winamp
+    let mut moving = false;
+    if mode.spectrum() && (sounding || !app.player_bar_analyser.settled()) {
+        let samples = if sounding {
+            app.winamp
                 .tap
-                .window(count * vis::SCOPE_STEP, app.visualizer_lag());
-            waveform(
-                &painter,
-                rect,
-                &vis::scope_line(&samples, count),
-                &colours,
-                strength,
-            );
-            true
-        }
+                .window(vis::WIDE_SAMPLES, app.visualizer_lag())
+        } else {
+            Vec::new()
+        };
+        let levels = app
+            .player_bar_analyser
+            .step(&samples, std::time::Instant::now());
+        let peaks = app.player_bar_analyser.peaks();
+        spectrum(&painter, rect, &levels, &peaks, &colours, strength);
+        moving |= sounding || !app.player_bar_analyser.settled();
     }
+    // Both: the waveform's line over the bars.
+    if mode.waveform() && sounding {
+        // Winamp's scope with a column every eight points or so.
+        let count = (rect.width() / 8.0).clamp(75.0, 320.0) as usize;
+        let samples = app
+            .winamp
+            .tap
+            .window(count * vis::SCOPE_STEP, app.visualizer_lag());
+        waveform(
+            &painter,
+            rect,
+            &vis::scope_line(&samples, count),
+            &colours,
+            strength,
+        );
+        moving = true;
+    }
+    moving
 }
 
 /// The visualizer's colours, swept across from the bass to the treble. With

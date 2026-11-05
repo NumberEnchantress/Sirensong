@@ -5133,3 +5133,40 @@ msgstr "{name} 제거"
 #: src/app.rs:6889
 msgid "Folder renamed to {name}"
 msgstr "폴더 이름을 {name}(으)로 변경"
+
+#. Translators: A setting: choosing Tree or Circles for the playlist map chooses it on Home and in the Library both.
+#: src/ui/settings.rs:1349
+msgid "Same map view on Home and in the Library"
+msgstr "홈과 라이브러리에서 같은 지도 보기"
+
+#. Translators: A setting: while Home shows the playlist map, the Library shows its list or grid instead of a second map.
+#: src/ui/settings.rs:1351
+msgid "One map at a time"
+msgstr "한 번에 지도 하나"
+
+#. Translators: A setting: which results a new search shows first, all mixed or one kind.
+#: src/ui/settings.rs:1353
+msgid "Search opens on"
+msgstr "검색 시작 화면"
+
+#: src/ui/settings.rs:1503
+msgid "Off, Home's map and the Library's each keep their own choice of Tree or Circles."
+msgstr "끄면 홈의 지도와 라이브러리의 지도가 각각 트리 또는 원을 따로 유지합니다."
+
+#: src/ui/settings.rs:1510
+msgid "While Home shows the map, the Library shows its list or grid."
+msgstr "홈에 지도가 표시되는 동안 라이브러리는 목록이나 격자로 표시됩니다."
+
+#: src/ui/settings.rs:1517
+msgid "The results a new search shows first: all of them, or one kind."
+msgstr "새 검색에서 먼저 보여 줄 결과: 전체 또는 한 종류."
+
+#. Translators: Player bar visualizer: the spectrum and the waveform together.
+#: src/ui/settings.rs:1790
+msgid "Both"
+msgstr "둘 다"
+
+#. Translators: Hover text on the Library's map views while Home shows the playlist map, with one map at a time.
+#: src/ui/sidebar.rs:2442
+msgid "Home shows the map now"
+msgstr "지금은 홈에 지도가 표시됩니다"
