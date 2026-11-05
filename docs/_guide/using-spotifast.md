@@ -513,8 +513,7 @@ Liked Songs and Local Files, each anywhere you put it, in folders of your own
 at any depth. Drag any row, a folder too, to move it; a row dropped in a
 folder goes into it. Folders are made, renamed, moved and removed from the
 **+** button and their menus as in Spotify custom order, and **Move to
-folder** is in every row's menu, Liked Songs' and Local Files' too. None of it
-changes your Spotify library. It lists several kinds together, and while a
+folder** is in every row's menu, Liked Songs' and Local Files' too. It lists several kinds together, and while a
 filter or **By You** leaves things out, a folder holding none of what is
 listed is hidden. Dragging a row in **Name** or **Recently played** moves it
 in this order and switches to it.
@@ -525,6 +524,26 @@ want first, you put first. A playlist saved since goes just below Liked Songs,
 as Spotify shows a new save; albums, artists or podcasts listed for the first
 time go at the end. Selecting another order keeps the arrangement, so
 choosing **Sirensong custom order** again restores it.
+
+**Keep in step with Spotify**, in **Settings > Library** and on by default,
+makes the playlists and folders of Sirensong custom order your Spotify
+library's too: moving a playlist or making, renaming, moving or removing a
+folder here does the same on Spotify, and what you change in Spotify's own
+apps comes here, a newly saved playlist where Spotify puts it and a
+removed one gone. Albums, artists, podcasts, Liked Songs and Local Files are
+arranged only here, and keep their places around what Spotify moves. A folder
+made here goes to Spotify too, empty of what only Sirensong arranges. With
+the setting on, the first custom order keeps your Spotify pins where Spotify
+puts them rather than lifting them to the top. Turned off, nothing here
+reaches Spotify, and turning it back on compares the two.
+
+If both were rearranged apart, for example while the setting was off or in
+another app while Sirensong was closed, **When both changed** decides:
+**Ask me** (the default) shows what changed on each side and lets you choose
+**Keep mine**, which sends this computer's arrangement to Spotify, or **Use
+Spotify's**, which takes Spotify's; **Spotify's** and **Mine** choose without
+asking. Spotify's own rules still hold for what goes there: pins live only in
+Spotify custom order, only outside folders, and up to Spotify's limit.
 
 Upgrading keeps the previous default: with a saved local playlist arrangement,
 Sirensong custom order stays chosen, now made from your Spotify folders (or
@@ -877,10 +896,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 21 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 22 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 21` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 22` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

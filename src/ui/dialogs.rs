@@ -61,9 +61,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                 Dialog::ConfirmRemoveFolder { id, name, local } => {
                     theme::text(ui, gettext(locale, "Remove folder?"), theme::bold(20.0), palette.text);
                     ui.add_space(8.0);
-                    // Translators: {name} is a folder name.
-                    let body = gettext(locale, "“{name}” will be removed from Your Library on Spotify. The playlists in it stay where they are.")
-                        .replace("{name}", &name);
+                    // Only in Sirensong custom order, unless it is kept in step.
+                    let body = if local && !app.settings.library_sync {
+                        // Translators: {name} is a folder name in Sirensong custom order.
+                        gettext(locale, "“{name}” will be removed from Sirensong custom order. What it holds stays where it is.")
+                    } else {
+                        // Translators: {name} is a folder name.
+                        gettext(locale, "“{name}” will be removed from Your Library on Spotify. The playlists in it stay where they are.")
+                    }
+                    .replace("{name}", &name);
                     ui.add(
                         egui::Label::new(
                             egui::RichText::new(body)
@@ -84,6 +90,70 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         }
                         if theme::pill_button(ui, &palette, &gettext(locale, "Cancel"), false).clicked() {
                             app.actions.push(Action::CloseDialog);
+                        }
+                    });
+                }
+                Dialog::LibraryConflict { spotify, local } => {
+                    // Translators: Sirensong custom order and the Spotify library were both rearranged while apart.
+                    theme::text(ui, gettext(locale, "Both orders changed"), theme::bold(20.0), palette.text);
+                    ui.add_space(8.0);
+                    let body = gettext(locale, "Sirensong custom order and your Spotify library were rearranged apart. Choose which to keep: the other follows it. What only Sirensong arranges stays either way.");
+                    ui.add(
+                        egui::Label::new(
+                            egui::RichText::new(body)
+                                .font(theme::regular(14.0))
+                                .color(palette.secondary),
+                        )
+                        .wrap(),
+                    );
+                    ui.add_space(12.0);
+                    for (title, lines) in [
+                        // Translators: Heading over what changed in the Spotify library.
+                        (gettext(locale, "On Spotify"), &spotify),
+                        // Translators: Heading over what changed in Sirensong custom order.
+                        (gettext(locale, "In Sirensong"), &local),
+                    ] {
+                        theme::text(ui, title, theme::medium(13.0), palette.secondary);
+                        ui.add_space(4.0);
+                        if lines.is_empty() {
+                            theme::text(ui, gettext(locale, "No changes"), theme::regular(14.0), palette.text);
+                        }
+                        for line in lines.iter().take(8) {
+                            ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(format!("\u{2022} {line}"))
+                                        .font(theme::regular(14.0))
+                                        .color(palette.text),
+                                )
+                                .truncate(),
+                            );
+                        }
+                        if lines.len() > 8 {
+                            let more = lines.len() - 8;
+                            theme::text(
+                                ui,
+                                crate::i18n::ngettext(
+                                    locale,
+                                    // Translators: {count} is a number of further changes not listed.
+                                    "and {count} more",
+                                    "and {count} more",
+                                    u32::try_from(more).unwrap_or(u32::MAX),
+                                )
+                                .replace("{count}", &more.to_string()),
+                                theme::regular(13.0),
+                                palette.secondary,
+                            );
+                        }
+                        ui.add_space(10.0);
+                    }
+                    buttons(ui, |ui| {
+                        // Translators: Keep Sirensong custom order and send it to Spotify.
+                        if theme::pill_button(ui, &palette, &gettext(locale, "Keep mine"), true).clicked() {
+                            app.actions.push(Action::ResolveLibraryConflict(true));
+                        }
+                        // Translators: Take the Spotify library's arrangement into Sirensong custom order.
+                        if theme::pill_button(ui, &palette, &gettext(locale, "Use Spotify's"), false).clicked() {
+                            app.actions.push(Action::ResolveLibraryConflict(false));
                         }
                     });
                 }

@@ -413,8 +413,9 @@ main fields are:
 | `pinned_contexts` | `[]` | Local Library pin order; Liked Songs uses `spotifast:liked-songs`, a local key never sent to Spotify |
 | `liked_songs_pinned` | `true` | Keep Liked Songs in the pin block; older settings place it first until moved |
 | `sidebar_compact` | `false` | Names only in the library sidebar, no covers |
-| `library_tree` | none | **Sirensong custom order**: the Library as you arranged it, folders and all; made from your Spotify folders the first time that order is chosen |
-| `library_tree_kinds` | `[]` | The kinds Sirensong custom order has placed; a kind listed for the first time goes at the end |
+| `library_trees` | `{}` | **Sirensong custom order** for each Spotify account, by account id: its `rows` (the Library as you arranged it, folders and all, made from your Spotify folders the first time that order is chosen), the `kinds` it has placed, whether it was `edited`, and the `base` Spotify tree the two last agreed on |
+| `library_sync` | `true` | **Keep in step with Spotify**: playlists and folders moved in Sirensong custom order move in your Spotify library too, and changes made in Spotify's apps come into it |
+| `library_conflicts` | `"ask"` | **When both changed** apart: `ask` shows both and lets you choose, `spotify` takes Spotify's, `local` keeps this computer's and sends it to Spotify |
 | `sidebar_grid` | `false` | Library entries as responsive cover cards instead of rows |
 | `sidebar_map` | `false` | The playlist map in the sidebar in place of the Library's rows or cards |
 | `sidebar_map_width` | `520` | The sidebar's width while it shows the map |

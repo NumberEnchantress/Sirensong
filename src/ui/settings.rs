@@ -2665,6 +2665,69 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
+    // Sirensong custom order and Spotify's library, kept in step.
+    let library = gettext(locale, "Library");
+    // Translators: A setting: what Sirensong custom order arranges of playlists and folders also moves in the Spotify library, both ways.
+    let keep_in_step = gettext(locale, "Keep in step with Spotify");
+    // Translators: A setting: what happens when Sirensong custom order and the Spotify library were both rearranged while apart.
+    let both_changed = gettext(locale, "When both changed");
+    let library_rows = [
+        RowText::new(
+            keep_in_step.clone(),
+            gettext(
+                locale,
+                "Moving a playlist or folder in Sirensong custom order moves it in your Spotify library too, and changes made in Spotify's apps come here. Albums, artists, podcasts, Liked Songs and Local Files are arranged only in Sirensong.",
+            ),
+        ),
+        RowText::new(
+            both_changed.clone(),
+            gettext(
+                locale,
+                "When Sirensong custom order and your Spotify library were both rearranged apart: show both and choose, take Spotify's, or keep this computer's and send it to Spotify.",
+            ),
+        )
+        .when(app.settings.library_sync),
+    ];
+    if section_matches(&needle, &library, &library_rows) {
+        any_visible = true;
+        section(ui, &palette, &library, |ui| {
+            filtered_row(ui, &palette, &needle, &library, &library_rows[0], |ui| {
+                let mut on = app.settings.library_sync;
+                if widgets::switch(ui, &palette, &keep_in_step, &mut on).changed() {
+                    app.actions.push(Action::SetLibrarySync(on));
+                }
+            });
+            filtered_row(ui, &palette, &needle, &library, &library_rows[1], |ui| {
+                use crate::settings::LibraryConflicts;
+                ui.horizontal_wrapped(|ui| {
+                    for (choice, label) in [
+                        // Translators: When both orders changed: show both and choose each time.
+                        (LibraryConflicts::Ask, gettext(locale, "Ask me")),
+                        // Translators: When both orders changed: take the Spotify library's.
+                        (LibraryConflicts::Spotify, gettext(locale, "Spotify's")),
+                        // Translators: When both orders changed: keep Sirensong custom order.
+                        (LibraryConflicts::Local, gettext(locale, "Mine")),
+                    ] {
+                        let chosen = app.settings.library_conflicts == choice;
+                        let response = theme::soft_button(ui, &palette, None, &label, chosen);
+                        response.widget_info(|| {
+                            egui::WidgetInfo::selected(
+                                egui::WidgetType::RadioButton,
+                                true,
+                                chosen,
+                                label.as_ref(),
+                            )
+                        });
+                        if response.clicked() && !chosen {
+                            app.settings.library_conflicts = choice;
+                            changed = true;
+                        }
+                    }
+                });
+            });
+        });
+    }
+
     // Vacuum: the Unfamiliar Sounds extension's choices.
     let vacuum = gettext(locale, "Vacuum");
     // Translators: Vacuum's main switch.

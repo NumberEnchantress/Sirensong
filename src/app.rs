@@ -6566,11 +6566,19 @@ impl App {
     /// the flat order this computer kept before Spotify's is known.
     fn seed_library_tree(&self) -> crate::library_tree::LibraryTree {
         let mut top = vec![crate::settings::LIKED_SONGS_KEY.to_string()];
-        top.extend(self.library_pins());
+        // Kept in step, Spotify's order stays as it is: only what Spotify's
+        // tree cannot hold rises with the pins, so nothing moves there.
+        let sync = self.settings.library_sync;
+        top.extend(self.library_pins().into_iter().filter(|key| {
+            !sync
+                || (!crate::library_tree::on_spotify(key) && crate::pins::folder_id(key).is_none())
+        }));
         crate::library_tree::LibraryTree {
             rows: crate::library_tree::seed(&top, &self.rootlist, &self.settings.sidebar_order),
             kinds: vec![crate::settings::LibraryShelf::Playlists],
             edited: false,
+            // Only a tree made from Spotify's agrees with it.
+            base: (self.rootlist_live || !self.rootlist.is_empty()).then(|| self.rootlist.clone()),
         }
     }
 
@@ -6654,7 +6662,12 @@ impl App {
             LibraryShelf::Artists,
             LibraryShelf::Podcasts,
         ] {
-            let (keys, whole) = self.library_keys(kind);
+            let (mut keys, whole) = self.library_keys(kind);
+            // Kept in step, Spotify's tree places its playlists, so one
+            // saved elsewhere lands where Spotify put it.
+            if self.settings.library_sync && self.rootlist_live {
+                keys.retain(|key| !crate::library_tree::on_spotify(key));
+            }
             if keys.is_empty() {
                 continue;
             }
@@ -6673,6 +6686,202 @@ impl App {
         if changed {
             self.mark_settings_dirty();
         }
+    }
+
+    /// Kept in step, the edit just made to the custom order is made on
+    /// Spotify too: the folder edits that give Spotify's tree the custom
+    /// order's playlists and folders, in their places. While Spotify has
+    /// changed since the two last agreed, nothing is sent: the comparison
+    /// after the next read decides, asking when both changed.
+    fn send_library_tree_edit(&mut self) {
+        if !self.settings.library_sync || !self.folders_editable() {
+            return;
+        }
+        let Some(account) = self.user_id().map(str::to_owned) else {
+            return;
+        };
+        let Some(tree) = self.settings.library_trees.get(&account) else {
+            return;
+        };
+        if tree.base.as_ref() != Some(&self.rootlist) {
+            return;
+        }
+        let target = crate::library_tree::projection(&tree.rows);
+        for edit in crate::library_tree::push_edits(&self.rootlist, &target) {
+            self.edit_folders(edit);
+        }
+        // What Spotify now shows is what the two agree on.
+        let agreed = self.rootlist.clone();
+        if let Some(tree) = self.settings.library_trees.get_mut(&account) {
+            tree.base = Some(agreed);
+            self.mark_settings_dirty();
+        }
+    }
+
+    /// Kept in step, after Spotify's tree is read: a side that changed
+    /// alone is followed by the other, and when both changed, the listener's
+    /// choice in Settings decides, asking by default.
+    fn sync_library_tree(&mut self) {
+        use crate::library_tree::{merge, projection};
+        if !self.settings.library_sync || !self.rootlist_live {
+            return;
+        }
+        let Some(account) = self.user_id().map(str::to_owned) else {
+            return;
+        };
+        let Some(tree) = self.settings.library_trees.get(&account) else {
+            return;
+        };
+        let spotify = self.rootlist.clone();
+        let base = tree.base.clone();
+        let local = projection(&tree.rows);
+        if local == spotify {
+            if base.as_ref() != Some(&spotify) {
+                self.agree_library_tree(&account, spotify);
+            }
+            return;
+        }
+        let (spotify_changed, local_changed) = match &base {
+            Some(base) => (*base != spotify, *base != local),
+            // Never agreed (a tree from before keeping in step): one the
+            // listener never changed follows Spotify's.
+            None => (true, tree.edited),
+        };
+        let held = base.clone().unwrap_or_default();
+        match (spotify_changed, local_changed) {
+            (true, false) => {
+                let rows = merge(&tree.rows, &spotify, &held);
+                self.take_library_tree(&account, rows, spotify);
+            }
+            (false, true) => self.push_library_tree(&account),
+            _ => match self.settings.library_conflicts {
+                crate::settings::LibraryConflicts::Spotify => {
+                    let rows = merge(&tree.rows, &spotify, &held);
+                    self.take_library_tree(&account, rows, spotify);
+                }
+                crate::settings::LibraryConflicts::Local => self.push_library_tree(&account),
+                // Asked when nothing else is open; the next read asks again.
+                crate::settings::LibraryConflicts::Ask => {
+                    if self.dialog.is_none() {
+                        let compare = base.as_ref().unwrap_or(&local);
+                        let spotify_lines = self.describe_changes(compare, &spotify);
+                        let local_lines =
+                            self.describe_changes(base.as_ref().unwrap_or(&spotify), &local);
+                        self.dialog = Some(Dialog::LibraryConflict {
+                            spotify: spotify_lines,
+                            local: local_lines,
+                        });
+                    }
+                }
+            },
+        }
+    }
+
+    fn agree_library_tree(&mut self, account: &str, spotify: Vec<crate::player::RootlistEntry>) {
+        if let Some(tree) = self.settings.library_trees.get_mut(account) {
+            tree.base = Some(spotify);
+            self.mark_settings_dirty();
+        }
+    }
+
+    /// Spotify's arrangement, with what only Sirensong holds where it was.
+    fn take_library_tree(
+        &mut self,
+        account: &str,
+        rows: Vec<crate::player::RootlistEntry>,
+        spotify: Vec<crate::player::RootlistEntry>,
+    ) {
+        if let Some(tree) = self.settings.library_trees.get_mut(account) {
+            tree.rows = rows;
+            tree.base = Some(spotify);
+            self.mark_settings_dirty();
+            self.forget_missing_library_folder();
+        }
+    }
+
+    /// This computer's arrangement, sent to Spotify edit by edit.
+    fn push_library_tree(&mut self, account: &str) {
+        if !self.folders_editable() {
+            return;
+        }
+        let Some(tree) = self.settings.library_trees.get(account) else {
+            return;
+        };
+        let target = crate::library_tree::projection(&tree.rows);
+        for edit in crate::library_tree::push_edits(&self.rootlist, &target) {
+            self.edit_folders(edit);
+        }
+        let agreed = self.rootlist.clone();
+        self.agree_library_tree(account, agreed);
+    }
+
+    /// What changed from `from` to `to`, a line each, as the listener reads
+    /// names: playlists as Vacuum shows them, folders by their own names.
+    fn describe_changes(
+        &self,
+        from: &[crate::player::RootlistEntry],
+        to: &[crate::player::RootlistEntry],
+    ) -> Vec<String> {
+        use crate::folders::Row;
+        use crate::library_tree::Change;
+        let folder_name = |id: &str| {
+            to.iter()
+                .chain(from)
+                .find_map(|row| match row {
+                    crate::player::RootlistEntry::FolderStart { id: held, name } if held == id => {
+                        Some(name.clone())
+                    }
+                    _ => None,
+                })
+                .filter(|name| !name.is_empty())
+                .unwrap_or_else(|| gettext(self.locale, "Folder").into_owned())
+        };
+        let name = |row: &Row| match row {
+            Row::Folder(id) => folder_name(id),
+            Row::Playlist(uri) => self
+                .library
+                .playlists
+                .get()
+                .and_then(|playlists| playlists.iter().find(|playlist| &playlist.uri == uri))
+                .map(|playlist| playlist.shown_name().into_owned())
+                .unwrap_or_else(|| gettext(self.locale, "Playlist").into_owned()),
+        };
+        crate::library_tree::changes(from, to)
+            .into_iter()
+            .map(|change| match change {
+                Change::Moved {
+                    row,
+                    into: Some(folder),
+                } => {
+                    // Translators: A line of the conflict dialog. {name} is a playlist or folder, {folder} the folder it moved into.
+                    gettext(self.locale, "{name} moved into {folder}")
+                        .replace("{name}", &name(&row))
+                        .replace("{folder}", &folder_name(&folder))
+                }
+                Change::Moved { row, into: None } => {
+                    // Translators: A line of the conflict dialog. {name} is a playlist or folder that moved, outside any folder.
+                    gettext(self.locale, "{name} moved").replace("{name}", &name(&row))
+                }
+                Change::Added(row) => {
+                    // Translators: A line of the conflict dialog. {name} is a playlist or folder that was added.
+                    gettext(self.locale, "{name} added").replace("{name}", &name(&row))
+                }
+                Change::Removed(row) => {
+                    // Translators: A line of the conflict dialog. {name} is a playlist or folder that was removed.
+                    gettext(self.locale, "{name} removed").replace("{name}", &name(&row))
+                }
+                // Translators: A line of the conflict dialog. {name} is the folder's new name.
+                Change::Renamed { id, name } => gettext(self.locale, "Folder renamed to {name}")
+                    .replace(
+                        "{name}",
+                        &if name.is_empty() {
+                            folder_name(&id)
+                        } else {
+                            name
+                        },
+                    ),
+            })
+            .collect()
     }
 
     /// Changes Sirensong custom order's tree, on this computer. An item the
@@ -6714,6 +6923,7 @@ impl App {
                 }
                 self.mark_settings_dirty();
                 self.forget_missing_library_folder();
+                self.send_library_tree_edit();
             }
             Err(crate::folders::Refusal::Unchanged) => {}
             // The custom order is this computer's own: nothing changed on
@@ -6743,6 +6953,7 @@ impl App {
         self.forget_missing_library_folder();
         self.editable_by_grant = rootlist.editable;
         self.rootlist_live = true;
+        self.sync_library_tree();
         if let Some(account_id) = account_id {
             self.rootlist_cache = Some(CachedRootlist {
                 account_id,
@@ -14414,6 +14625,10 @@ impl App {
             }
             Action::SignOut => {
                 self.backend.send(Command::SignOut);
+                // The choice was about this account's orders.
+                if matches!(self.dialog, Some(Dialog::LibraryConflict { .. })) {
+                    self.dialog = None;
+                }
                 self.show_friends_panel = false;
                 self.history = vec![Page::Home];
                 self.history_index = 0;
@@ -14648,6 +14863,29 @@ impl App {
                     self.dialog = None;
                 }
                 self.edit_folders(edit);
+            }
+            Action::ResolveLibraryConflict(keep) => {
+                if matches!(self.dialog, Some(Dialog::LibraryConflict { .. })) {
+                    self.dialog = None;
+                }
+                if let Some(account) = self.user_id().map(str::to_owned)
+                    && let Some(tree) = self.settings.library_trees.get(&account)
+                {
+                    if keep {
+                        self.push_library_tree(&account);
+                    } else {
+                        let spotify = self.rootlist.clone();
+                        let held = tree.base.clone().unwrap_or_default();
+                        let rows = crate::library_tree::merge(&tree.rows, &spotify, &held);
+                        self.take_library_tree(&account, rows, spotify);
+                    }
+                }
+            }
+            Action::SetLibrarySync(on) => {
+                self.settings.library_sync = on;
+                self.mark_settings_dirty();
+                // Turned on, the two are compared now.
+                self.sync_library_tree();
             }
             Action::EditLibraryTree(edit) => {
                 if matches!(
@@ -16971,7 +17209,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 21";
+pub const FORK_VERSION: &str = "mod 22";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -37441,6 +37679,263 @@ mod tests {
         };
         app.backend.take_folder_edit_requests();
         app
+    }
+
+    /// An app showing Sirensong custom order over Spotify's `folder_tree`.
+    fn custom_order_app() -> App {
+        let mut app = pins_app();
+        app.settings.library_sort.insert(
+            crate::settings::LibraryShelf::Playlists,
+            crate::settings::LibrarySort::Local,
+        );
+        app.receive_rootlist(folder_tree());
+        app.keep_library_tree(false);
+        app.backend.take_folder_edit_requests();
+        app
+    }
+
+    fn custom_projection(app: &App) -> Vec<crate::player::RootlistEntry> {
+        crate::library_tree::projection(&app.library_tree().unwrap().rows)
+    }
+
+    /// Kept in step, a playlist moved in the custom order moves on Spotify
+    /// too; an album moves only here.
+    #[test]
+    fn a_move_in_the_custom_order_moves_on_spotify_too() {
+        use crate::folders::{FolderEdit, Place};
+        let mut app = custom_order_app();
+        assert_eq!(custom_projection(&app), folder_tree());
+        app.apply(
+            Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: "spotify:playlist:b".into(),
+                place: Place::InFolder("f1".into()),
+            }),
+            &egui::Context::default(),
+        );
+        assert_eq!(app.backend.take_folder_edit_requests().len(), 1);
+        assert_eq!(
+            custom_projection(&app),
+            app.rootlist,
+            "Spotify shows the same"
+        );
+        app.apply(
+            Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: "spotify:album:x".into(),
+                place: Place::InFolder("f1".into()),
+            }),
+            &egui::Context::default(),
+        );
+        assert!(app.backend.take_folder_edit_requests().is_empty());
+        assert!(app.library_tree().unwrap().rows.contains(
+            &crate::player::RootlistEntry::Playlist("spotify:album:x".into())
+        ));
+        // Not kept in step, nothing goes to Spotify.
+        app.apply(Action::SetLibrarySync(false), &egui::Context::default());
+        app.apply(
+            Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: "spotify:playlist:b".into(),
+                place: Place::Start,
+            }),
+            &egui::Context::default(),
+        );
+        assert!(app.backend.take_folder_edit_requests().is_empty());
+        app.backend.shutdown();
+    }
+
+    /// A change made in Spotify's apps comes into the custom order, and
+    /// what only Sirensong arranges keeps its place.
+    #[test]
+    fn a_change_on_spotify_comes_into_the_custom_order() {
+        use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
+        let mut app = custom_order_app();
+        let moved = vec![
+            Playlist("spotify:playlist:b".into()),
+            FolderStart {
+                id: "f1".into(),
+                name: "Gym".into(),
+            },
+            Playlist("spotify:playlist:a".into()),
+            FolderEnd,
+        ];
+        app.receive_rootlist(moved.clone());
+        assert_eq!(custom_projection(&app), moved);
+        assert_eq!(
+            app.library_tree().unwrap().rows[0],
+            Playlist(crate::settings::LIKED_SONGS_KEY.into()),
+            "Liked Songs stays on top"
+        );
+        assert!(app.backend.take_folder_edit_requests().is_empty());
+        app.backend.shutdown();
+    }
+
+    /// When both changed apart, the listener is shown both and chooses;
+    /// either choice leaves the two in step.
+    #[test]
+    fn when_both_orders_changed_the_listener_chooses() {
+        use crate::folders::{FolderEdit, Place};
+        use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
+        let spotify_moved = vec![
+            Playlist("spotify:playlist:b".into()),
+            FolderStart {
+                id: "f1".into(),
+                name: "Gym".into(),
+            },
+            Playlist("spotify:playlist:a".into()),
+            FolderEnd,
+        ];
+        for keep in [false, true] {
+            let mut app = custom_order_app();
+            // Changed here while not kept in step.
+            app.settings.library_sync = false;
+            app.apply(
+                Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                    uri: "spotify:playlist:b".into(),
+                    place: Place::InFolder("f1".into()),
+                }),
+                &egui::Context::default(),
+            );
+            app.settings.library_sync = true;
+            // And changed on Spotify.
+            app.receive_rootlist(spotify_moved.clone());
+            let Some(Dialog::LibraryConflict { spotify, local }) = &app.dialog else {
+                panic!("no conflict shown: {:?}", app.dialog);
+            };
+            assert!(!spotify.is_empty() && !local.is_empty());
+            let mine = custom_projection(&app);
+            app.apply(
+                Action::ResolveLibraryConflict(keep),
+                &egui::Context::default(),
+            );
+            assert!(app.dialog.is_none());
+            if keep {
+                assert!(!app.backend.take_folder_edit_requests().is_empty());
+                assert_eq!(app.rootlist, mine, "Spotify takes this computer's");
+            } else {
+                assert!(app.backend.take_folder_edit_requests().is_empty());
+                assert_eq!(
+                    custom_projection(&app),
+                    spotify_moved,
+                    "this takes Spotify's"
+                );
+            }
+            app.backend.shutdown();
+        }
+        // Set to take Spotify's, no one is asked.
+        let mut app = custom_order_app();
+        app.settings.library_conflicts = crate::settings::LibraryConflicts::Spotify;
+        app.settings.library_sync = false;
+        app.apply(
+            Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: "spotify:playlist:b".into(),
+                place: Place::InFolder("f1".into()),
+            }),
+            &egui::Context::default(),
+        );
+        app.settings.library_sync = true;
+        app.receive_rootlist(spotify_moved.clone());
+        assert!(app.dialog.is_none());
+        assert_eq!(custom_projection(&app), spotify_moved);
+        app.backend.shutdown();
+    }
+
+    /// A playlist gone from Spotify goes from the custom order, so what
+    /// Spotify changes next comes in without asking.
+    #[test]
+    fn a_playlist_gone_from_spotify_leaves_no_lasting_conflict() {
+        use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
+        let mut app = custom_order_app();
+        let gym = || FolderStart {
+            id: "f1".into(),
+            name: "Gym".into(),
+        };
+        app.receive_rootlist(vec![
+            gym(),
+            Playlist("spotify:playlist:a".into()),
+            FolderEnd,
+        ]);
+        assert!(app.dialog.is_none());
+        let next = vec![gym(), FolderEnd, Playlist("spotify:playlist:a".into())];
+        app.receive_rootlist(next.clone());
+        assert!(app.dialog.is_none(), "{:?}", app.dialog);
+        assert_eq!(custom_projection(&app), next);
+        assert!(app.backend.take_folder_edit_requests().is_empty());
+        app.backend.shutdown();
+    }
+
+    /// While Spotify's change waits for the listener, an edit here is not
+    /// taken as their answer: nothing goes to Spotify, and they are asked.
+    #[test]
+    fn an_edit_while_spotify_changed_waits_for_the_comparison() {
+        use crate::folders::{FolderEdit, Place};
+        use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
+        let mut app = custom_order_app();
+        // Spotify's change arrives while another dialog is open.
+        app.dialog = Some(Dialog::ConfirmClearHistory);
+        app.settings.library_sync = false;
+        app.apply(
+            Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: "spotify:playlist:b".into(),
+                place: Place::InFolder("f1".into()),
+            }),
+            &egui::Context::default(),
+        );
+        app.settings.library_sync = true;
+        let spotify = vec![
+            Playlist("spotify:playlist:b".into()),
+            FolderStart {
+                id: "f1".into(),
+                name: "Gym".into(),
+            },
+            Playlist("spotify:playlist:a".into()),
+            FolderEnd,
+        ];
+        app.receive_rootlist(spotify.clone());
+        assert!(
+            matches!(app.dialog, Some(Dialog::ConfirmClearHistory)),
+            "the open dialog stays"
+        );
+        app.dialog = None;
+        app.apply(
+            Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: "spotify:playlist:a".into(),
+                place: Place::Start,
+            }),
+            &egui::Context::default(),
+        );
+        assert!(app.backend.take_folder_edit_requests().is_empty());
+        assert_eq!(app.rootlist, spotify);
+        app.receive_rootlist(spotify);
+        assert!(matches!(app.dialog, Some(Dialog::LibraryConflict { .. })));
+        app.backend.shutdown();
+    }
+
+    /// A custom order from before keeping in step follows Spotify's when
+    /// the listener never changed it, and asks when they did.
+    #[test]
+    fn a_custom_order_never_compared_follows_spotify_unless_changed() {
+        use crate::player::RootlistEntry::Playlist;
+        for edited in [false, true] {
+            let mut app = custom_order_app();
+            let account = app.user_id().unwrap().to_owned();
+            let tree = app.settings.library_trees.get_mut(&account).unwrap();
+            tree.base = None;
+            tree.edited = edited;
+            // Made flat, with c first, before folders were kept.
+            tree.rows = vec![
+                Playlist("spotify:playlist:c".into()),
+                Playlist("spotify:playlist:a".into()),
+                Playlist("spotify:playlist:b".into()),
+            ];
+            app.receive_rootlist(folder_tree());
+            if edited {
+                assert!(matches!(app.dialog, Some(Dialog::LibraryConflict { .. })));
+            } else {
+                assert!(app.dialog.is_none());
+                assert_eq!(custom_projection(&app), folder_tree());
+            }
+            assert!(app.backend.take_folder_edit_requests().is_empty());
+            app.backend.shutdown();
+        }
     }
 
     /// The sidebar shows a folder edit the moment it is made, and a read of

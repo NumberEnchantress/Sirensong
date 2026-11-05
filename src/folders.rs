@@ -39,7 +39,7 @@ use librespot_protocol::playlist4_external as pb;
 use crate::player::{Rootlist, RootlistEntry};
 
 /// A row of the rootlist an edit can name.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Row {
     /// A playlist, by its URI.
     Playlist(String),

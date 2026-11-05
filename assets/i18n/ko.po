@@ -5037,3 +5037,99 @@ msgstr "이 곡은 채점할 수 없었습니다."
 #: src/ui/queue.rs:362
 msgid "The queue is hidden while the guessing game plays."
 msgstr "맞히기 게임 중에는 대기열이 숨겨집니다."
+
+#. Translators: A setting: what Sirensong custom order arranges of playlists and folders also moves in the Spotify library, both ways.
+#: src/ui/settings.rs:2671
+msgid "Keep in step with Spotify"
+msgstr "Spotify와 동기화"
+
+#. Translators: A setting: what happens when Sirensong custom order and the Spotify library were both rearranged while apart.
+#: src/ui/settings.rs:2673
+msgid "When both changed"
+msgstr "둘 다 바뀌었을 때"
+
+#: src/ui/settings.rs:2679
+msgid "Moving a playlist or folder in Sirensong custom order moves it in your Spotify library too, and changes made in Spotify's apps come here. Albums, artists, podcasts, Liked Songs and Local Files are arranged only in Sirensong."
+msgstr "Sirensong 사용자 지정 순서에서 플레이리스트나 폴더를 옮기면 Spotify 보관함에서도 옮겨지고, Spotify 앱에서 바꾼 내용도 여기에 반영됩니다. 앨범, 아티스트, 팟캐스트, 좋아요 표시한 곡, 로컬 파일은 Sirensong 안에서만 정리됩니다."
+
+#: src/ui/settings.rs:2686
+msgid "When Sirensong custom order and your Spotify library were both rearranged apart: show both and choose, take Spotify's, or keep this computer's and send it to Spotify."
+msgstr "Sirensong 사용자 지정 순서와 Spotify 보관함이 따로 재정렬되었을 때: 둘 다 보여 주고 선택, Spotify의 것을 사용, 또는 이 컴퓨터의 것을 유지하고 Spotify로 보내기."
+
+#. Translators: When both orders changed: show both and choose each time.
+#: src/ui/settings.rs:2705
+msgid "Ask me"
+msgstr "묻기"
+
+#. Translators: When both orders changed: take the Spotify library's.
+#: src/ui/settings.rs:2707
+msgid "Spotify's"
+msgstr "Spotify 쪽"
+
+#. Translators: When both orders changed: keep Sirensong custom order.
+#: src/ui/settings.rs:2709
+msgid "Mine"
+msgstr "내 것"
+
+#. Translators: {name} is a folder name in Sirensong custom order.
+#: src/ui/dialogs.rs:67
+msgid "“{name}” will be removed from Sirensong custom order. What it holds stays where it is."
+msgstr "“{name}” 폴더가 Sirensong 사용자 지정 순서에서 제거됩니다. 안에 있던 항목은 그대로 남습니다."
+
+#. Translators: Sirensong custom order and the Spotify library were both rearranged while apart.
+#: src/ui/dialogs.rs:98
+msgid "Both orders changed"
+msgstr "두 순서가 모두 바뀌었습니다"
+
+#: src/ui/dialogs.rs:100
+msgid "Sirensong custom order and your Spotify library were rearranged apart. Choose which to keep: the other follows it. What only Sirensong arranges stays either way."
+msgstr "Sirensong 사용자 지정 순서와 Spotify 보관함이 따로 재정렬되었습니다. 유지할 쪽을 선택하세요. 다른 쪽이 그에 맞춰집니다. Sirensong에서만 정리하는 항목은 어느 쪽이든 그대로 남습니다."
+
+#. Translators: Heading over what changed in the Spotify library.
+#: src/ui/dialogs.rs:112
+msgid "On Spotify"
+msgstr "Spotify에서"
+
+#. Translators: Heading over what changed in Sirensong custom order.
+#: src/ui/dialogs.rs:114
+msgid "In Sirensong"
+msgstr "Sirensong에서"
+
+#: src/ui/dialogs.rs:119
+msgid "No changes"
+msgstr "변경 없음"
+
+#. Translators: Keep Sirensong custom order and send it to Spotify.
+#: src/ui/dialogs.rs:151
+msgid "Keep mine"
+msgstr "내 것 유지"
+
+#. Translators: Take the Spotify library's arrangement into Sirensong custom order.
+#: src/ui/dialogs.rs:155
+msgid "Use Spotify's"
+msgstr "Spotify 것 사용"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder, {folder} the folder it moved into.
+#: src/app.rs:6872
+msgid "{name} moved into {folder}"
+msgstr "{name}을(를) {folder}(으)로 이동"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder that moved, outside any folder.
+#: src/app.rs:6878
+msgid "{name} moved"
+msgstr "{name} 이동"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder that was added.
+#: src/app.rs:6882
+msgid "{name} added"
+msgstr "{name} 추가"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder that was removed.
+#: src/app.rs:6886
+msgid "{name} removed"
+msgstr "{name} 제거"
+
+#. Translators: A line of the conflict dialog. {name} is the folder's new name.
+#: src/app.rs:6889
+msgid "Folder renamed to {name}"
+msgstr "폴더 이름을 {name}(으)로 변경"

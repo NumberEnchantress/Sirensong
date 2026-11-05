@@ -5481,6 +5481,8 @@ mod ordering_tests {
         app.settings.pinned_contexts = vec![uri("c")];
         app.settings.library_kinds = vec![Filter::Playlists, Filter::Albums];
         app.settings.library_mixed_sort = Some(LibrarySort::Local);
+        // Not kept in step with Spotify, pins rise to the top.
+        app.settings.library_sync = false;
         app.library.albums.loaded_once = true;
         app.library.albums.next_offset = None;
         let album = app.library.albums.items[0].album.uri.clone();

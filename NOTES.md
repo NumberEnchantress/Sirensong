@@ -218,6 +218,26 @@ record its own decisions and three rounds of adversarial grading.
   to it. Pins show only in Spotify's order. The flat `sidebar_order` is kept
   in settings, read only to start a tree when Spotify's is unknown. The map
   still follows Spotify's tree (round 4).
+- **Round 3 (mod 22):** **Keep in step with Spotify** (`library_sync`, on
+  by default) makes the tree's playlists and folders Spotify's too. Each
+  tree keeps `base`, Spotify's tree when the two last agreed; comparing it
+  with Spotify's tree and with the tree's projection (its folders and
+  playlists, `library_tree::projection`) says which side changed. Only
+  Spotify: `merge` puts Spotify's tree in and Sirensong's own rows back
+  after the shared row they followed (a folder Spotify removed gives its
+  own rows to its parent; one new here stays whole; a playlist Spotify no
+  longer holds goes). Only here: `push_edits` sends folder edits row by
+  row, skipping rows whose neighbours already match. Both: `library_conflicts` decides, and
+  `ask` (the default) opens a dialog listing what changed on each side
+  (`library_tree::changes`, the moved set from a longest rising run).
+  An edit made with the setting on sends `push_edits` at once, but only
+  while Spotify is unchanged since the two agreed, so an edit never answers
+  a pending conflict. A tree from before Round 3 has no `base`: unedited, it
+  follows Spotify's; edited, it counts as both changed. The conflict dialog
+  opens only when no other dialog is, and sign-out closes it. Kept in step,
+  Spotify's tree places its playlists, not the Library's save order. With it on,
+  the first tree leaves Spotify's pins where Spotify puts them. A folder
+  made here goes to Spotify empty of what only Sirensong arranges.
 
 ### Still open
 

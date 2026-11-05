@@ -5120,3 +5120,99 @@ msgstr "Não foi possível pontuar esta música."
 #: src/ui/queue.rs:362
 msgid "The queue is hidden while the guessing game plays."
 msgstr "A fila fica oculta durante o jogo de adivinhar."
+
+#. Translators: A setting: what Sirensong custom order arranges of playlists and folders also moves in the Spotify library, both ways.
+#: src/ui/settings.rs:2671
+msgid "Keep in step with Spotify"
+msgstr "Manter sincronizado com o Spotify"
+
+#. Translators: A setting: what happens when Sirensong custom order and the Spotify library were both rearranged while apart.
+#: src/ui/settings.rs:2673
+msgid "When both changed"
+msgstr "Quando ambos mudaram"
+
+#: src/ui/settings.rs:2679
+msgid "Moving a playlist or folder in Sirensong custom order moves it in your Spotify library too, and changes made in Spotify's apps come here. Albums, artists, podcasts, Liked Songs and Local Files are arranged only in Sirensong."
+msgstr "Mover uma playlist ou pasta na ordem personalizada do Sirensong também a move na sua biblioteca do Spotify, e as alterações feitas nas apps do Spotify chegam aqui. Álbuns, artistas, podcasts, Músicas de que gostas e Ficheiros locais são organizados apenas no Sirensong."
+
+#: src/ui/settings.rs:2686
+msgid "When Sirensong custom order and your Spotify library were both rearranged apart: show both and choose, take Spotify's, or keep this computer's and send it to Spotify."
+msgstr "Quando a ordem personalizada do Sirensong e a tua biblioteca do Spotify foram reorganizadas separadamente: mostrar as duas e escolher, usar a do Spotify, ou manter a deste computador e enviá-la para o Spotify."
+
+#. Translators: When both orders changed: show both and choose each time.
+#: src/ui/settings.rs:2705
+msgid "Ask me"
+msgstr "Perguntar"
+
+#. Translators: When both orders changed: take the Spotify library's.
+#: src/ui/settings.rs:2707
+msgid "Spotify's"
+msgstr "O do Spotify"
+
+#. Translators: When both orders changed: keep Sirensong custom order.
+#: src/ui/settings.rs:2709
+msgid "Mine"
+msgstr "O meu"
+
+#. Translators: {name} is a folder name in Sirensong custom order.
+#: src/ui/dialogs.rs:67
+msgid "“{name}” will be removed from Sirensong custom order. What it holds stays where it is."
+msgstr "“{name}” será removida da ordem personalizada do Sirensong. O que contém fica onde está."
+
+#. Translators: Sirensong custom order and the Spotify library were both rearranged while apart.
+#: src/ui/dialogs.rs:98
+msgid "Both orders changed"
+msgstr "As duas ordens mudaram"
+
+#: src/ui/dialogs.rs:100
+msgid "Sirensong custom order and your Spotify library were rearranged apart. Choose which to keep: the other follows it. What only Sirensong arranges stays either way."
+msgstr "A ordem personalizada do Sirensong e a tua biblioteca do Spotify foram reorganizadas separadamente. Escolhe qual manter: a outra segue-a. O que só o Sirensong organiza fica de qualquer forma."
+
+#. Translators: Heading over what changed in the Spotify library.
+#: src/ui/dialogs.rs:112
+msgid "On Spotify"
+msgstr "No Spotify"
+
+#. Translators: Heading over what changed in Sirensong custom order.
+#: src/ui/dialogs.rs:114
+msgid "In Sirensong"
+msgstr "No Sirensong"
+
+#: src/ui/dialogs.rs:119
+msgid "No changes"
+msgstr "Sem alterações"
+
+#. Translators: Keep Sirensong custom order and send it to Spotify.
+#: src/ui/dialogs.rs:151
+msgid "Keep mine"
+msgstr "Manter a minha"
+
+#. Translators: Take the Spotify library's arrangement into Sirensong custom order.
+#: src/ui/dialogs.rs:155
+msgid "Use Spotify's"
+msgstr "Usar a do Spotify"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder, {folder} the folder it moved into.
+#: src/app.rs:6872
+msgid "{name} moved into {folder}"
+msgstr "{name} movido para {folder}"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder that moved, outside any folder.
+#: src/app.rs:6878
+msgid "{name} moved"
+msgstr "{name} movido"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder that was added.
+#: src/app.rs:6882
+msgid "{name} added"
+msgstr "{name} adicionado"
+
+#. Translators: A line of the conflict dialog. {name} is a playlist or folder that was removed.
+#: src/app.rs:6886
+msgid "{name} removed"
+msgstr "{name} removido"
+
+#. Translators: A line of the conflict dialog. {name} is the folder's new name.
+#: src/app.rs:6889
+msgid "Folder renamed to {name}"
+msgstr "Pasta renomeada para {name}"

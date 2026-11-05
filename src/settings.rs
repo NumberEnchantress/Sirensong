@@ -17,6 +17,20 @@ pub enum LibraryShelf {
     Podcasts,
 }
 
+/// What Sirensong does when its custom order and Spotify's both changed
+/// while apart.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LibraryConflicts {
+    /// Show both and let the listener choose.
+    #[default]
+    Ask,
+    /// Take Spotify's arrangement.
+    Spotify,
+    /// Keep Sirensong's and send it to Spotify.
+    Local,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LibrarySort {
@@ -485,6 +499,12 @@ pub struct Settings {
     /// (`crate::library_tree`). An account has none until that order is
     /// first shown, when it starts from Spotify's tree.
     pub library_trees: std::collections::BTreeMap<String, crate::library_tree::LibraryTree>,
+    /// Keep Sirensong custom order in step with Spotify's: what Spotify's
+    /// tree holds (playlists and folders) moves on both.
+    pub library_sync: bool,
+    /// When both orders changed apart: ask, take Spotify's, or keep this
+    /// computer's.
+    pub library_conflicts: LibraryConflicts,
     /// Explicit order per Library shelf. Missing shelves keep their previous
     /// behaviour; selecting another order never deletes the local arrangement.
     pub library_sort: std::collections::BTreeMap<LibraryShelf, LibrarySort>,
@@ -685,6 +705,8 @@ impl Default for Settings {
             liked_songs_pinned: true,
             sidebar_order: Vec::new(),
             library_trees: Default::default(),
+            library_sync: true,
+            library_conflicts: LibraryConflicts::Ask,
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,
             settings_search_in_topbar: true,

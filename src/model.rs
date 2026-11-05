@@ -1128,6 +1128,12 @@ pub enum Dialog {
     },
     /// Ask before letting go of every play kept.
     ConfirmClearHistory,
+    /// Sirensong custom order and Spotify's both changed apart: what each
+    /// side changed, as lines to read, to choose between them.
+    LibraryConflict {
+        spotify: Vec<String>,
+        local: Vec<String>,
+    },
     ConfirmPlaylistDuplicates {
         playlist_id: String,
         playlist_name: String,
@@ -1475,6 +1481,11 @@ pub enum Action {
     EditFolders(crate::folders::FolderEdit),
     /// A change to Sirensong custom order's own tree.
     EditLibraryTree(crate::folders::FolderEdit),
+    /// Settles a conflict between the custom order and Spotify's: `true`
+    /// keeps this computer's and sends it to Spotify.
+    ResolveLibraryConflict(bool),
+    /// Keep Sirensong custom order in step with Spotify's, or not.
+    SetLibrarySync(bool),
     ArrangeLibrary {
         pinned: Vec<String>,
         /// A drag outside the pin block selects this local playlist order.
