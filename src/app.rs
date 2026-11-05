@@ -17252,7 +17252,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 25";
+pub const FORK_VERSION: &str = "mod 26";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

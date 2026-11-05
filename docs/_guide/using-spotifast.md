@@ -229,7 +229,7 @@ sidebar is not in compact mode.
 ## Playing a song from search
 
 A new search opens on all its results mixed, by default. **Search opens
-on** in **Settings > Appearance** chooses another: Songs, Artists, Albums,
+on** in **Settings > Search** chooses another: Songs, Artists, Albums,
 Playlists, Podcasts or Episodes. Choosing another kind in a search keeps it
 while you type on; a recent search or a link starts again on the chosen one.
 
@@ -266,6 +266,9 @@ playback as before.
 The Settings page has its own search field under the title. Type to narrow
 the page to matching rows; sections without matches disappear. Clear the
 field to see everything again.
+
+While nothing is searched, a row of buttons at the top of the page names each
+section, from Account to About. Click one to scroll straight to it.
 
 ## Keyboard and screen readers
 
@@ -564,7 +567,7 @@ other rows. In **Spotify custom order**, it comes first after the pins, where
 Spotify's own apps show it. Dragging a song onto Liked Songs still saves that
 song, wherever the row sits.
 
-**Player bar visualizer** in **Settings > Appearance** shows the song moving
+**Player bar visualizer** in **Settings > Visualizers** shows the song moving
 behind the player bar's controls: **Spectrum** draws glowing bars from bass
 to treble with peaks that hang and fall, **Waveform** draws the sound's
 wave as a glowing line, and **Both** draws the line over the bars. With **Colour from album art** on, both sweep from
@@ -574,14 +577,14 @@ they take the accent colour. It follows the equalizer, not the volume, and moves
 song plays on this computer. It is off by default. Clicking the player
 bar's empty space switches it, as Winamp's visualizer did: off, then
 Spectrum, then Waveform, then Both, then off again. **Frame rate** in **Settings >
-Appearance** sets how often it and the mini player's analyser draw: 30, 60
+Visualizers** sets how often it and the mini player's analyser draw: 30, 60
 (the default), the rate of the screen showing the window, or Uncapped,
 which follows the display. They draw at half that rate while Sirensong's
 window is out of focus, at most 30 frames a second while the system saves
 energy, and not at all while nobody can see the window: minimised, in the
 tray, with the display off or the screen locked. MilkDrop has its own frame
 rate. Disable **Click player bar to change
-visualizer** in **Settings > Appearance** to prevent accidental changes.
+visualizer** in **Settings > Visualizers** to prevent accidental changes.
 
 Sirensong follows the system when it asks for less motion: **Animation
 effects** turned off in Windows, **Reduce motion** on macOS, or GNOME's
@@ -595,7 +598,7 @@ bullet; each artist name remains a separate link.
 
 ## Starting with your computer
 
-**Settings > Playback on this computer > Start with your computer** opens
+**Settings > Window and system > Start with your computer** opens
 Sirensong when you log in. **With the window** opens it as you would;
 **In the tray** starts it without a window, ready for media keys and the tray
 icon; on macOS it reads **In the menu bar**. **Off** leaves your login alone.
@@ -671,7 +674,7 @@ the window is closed to the menu bar.
 
 ### Menu bar only
 
-Turn off **Show in Dock** under **Settings > Playback on this computer** to
+Turn off **Show in Dock** under **Settings > Window and system** to
 run Sirensong from the menu bar alone. The Dock icon goes at once, without a
 restart, and the window stays open in front. Sirensong then also leaves the
 Cmd+Tab switcher and shows no menu bar of its own while you use it, as other
@@ -721,7 +724,7 @@ When music is paused, hovering still reveals the controls so you can
 resume playback directly from the notch.
 
 To turn on the notch overlay, check **MacBook notch widget** in
-Settings under **Playback on this computer**.
+Settings under **Window and system**.
 
 ## Where the music is playing from
 
@@ -902,17 +905,17 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 25 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 26 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 25` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 26` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 
 ## Local files
 
 Sirensong plays songs from this computer only where you point it. In
-**Settings → Playback on this computer → Local files**, **Add folder** adds a
+**Settings → Library → Local files**, **Add folder** adds a
 folder, searched with its subfolders, and **Add files** picks songs one at a
 time. Picked songs are copied into Sirensong's own folder, so the originals can
 move or go; a song already there is not copied twice. Each folder is listed

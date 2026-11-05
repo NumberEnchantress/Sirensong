@@ -59,7 +59,7 @@ keys.
 
 ### What works
 
-Since 0.15, you can choose **Settings → Spotify Soloist** to play through
+Since 0.15, you can choose **Settings → Playback** to play through
 Spotify's own player on this computer. [Soloist setup](/soloist/#setup) guides
 you through getting a personal Soloist key and pairing once in Spotify. It
 uses Spotify's playback implementation, so it may avoid the refused-key

@@ -26,7 +26,7 @@ a lossless indicator or offer an unsupported quality selector.
 
 1. Sign in to Spotify in Sirensong. Spotify Premium is required.
 2. Choose **Set up Soloist**, and follow the three steps. You can also start
-   from **Settings → Spotify Soloist** later.
+   from **Settings → Playback** later.
 3. Copy your personal key from
    [Spotify's Soloist page](https://developer.spotify.com/dashboard/soloist).
    It is separate from the Client ID of your Web API app. Paste it and choose
@@ -70,7 +70,7 @@ While Soloist is enabled, built-in playback preferences are hidden. On Linux
 with PipeWire, EQ and visualization settings appear once the private Soloist
 audio route is established, even while paused. This is automatic and separate
 from account verification. Shared controls for the tray, startup and Spotifast update notices remain
-under **Application**. **Settings → Spotify Soloist** holds its rows: status,
+under **Window and system**. **Settings → Playback** holds its rows: status,
 with the one action that helps when it needs you, version and expiry, audio
 quality, **Spotify access** and **Turn off Soloist**, with a link to this guide.
 Setup itself stays in setup: with Soloist off, **Set up Soloist** there tries
@@ -147,7 +147,7 @@ Lyrics also keep their existing sources. Spotify's own lyrics are tried when
 the separate librespot session is signed in, even while Soloist plays. Soloist
 does not supply lyrics through its API or replace that session's login. Without
 it, cached Spotify lyrics remain usable and LRCLIB provides the fallback.
-If these features are missing, choose **Settings → Spotify Soloist → Spotify
+If these features are missing, choose **Settings → Playback → Spotify
 access → Authorize**. This separate browser approval enables Made for you, listening
 activity and Spotify lyrics while keeping Soloist selected. The listening
 activity panel also offers this approval when its connection is missing.

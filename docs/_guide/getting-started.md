@@ -85,10 +85,10 @@ You can rename it in Settings.
   bar only. On Linux, including Flatpak, a desktop with a working system
   tray is required for this behavior.
 - **The tray icon can match your panel.** On Linux and Windows, **Settings >
-  Playback on this computer > Tray icon** shows it in colour, white or black.
+  Window and system > Tray icon** shows it in colour, white or black.
   The macOS menu bar already draws it black or white to match itself.
-- **Sirensong can start with your computer.** Under **Settings > Playback on
-  this computer**, **Start with your computer** opens it when you log in,
+- **Sirensong can start with your computer.** Under **Settings > Window and
+  system**, **Start with your computer** opens it when you log in,
   **With the window** or quietly **In the tray** (**In the menu bar** on
   macOS).
 - **Play and Pause fade.** With the default audio settings, music played on
@@ -178,7 +178,7 @@ xdg-mime default spotifast.desktop x-scheme-handler/spotify
 
 **In development, not included in 0.8.0:** you can configure a proxy, a server
 your network uses to reach the internet, on the sign-in screen or in
-**Settings → Proxy**. Enter the address, port, and any login details supplied
+**Settings → Network**. Enter the address, port, and any login details supplied
 by your network administrator. Sirensong protects the saved proxy password.
 If it cannot save the password, it tells you and uses it only until you quit.
 

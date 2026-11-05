@@ -32,7 +32,7 @@ current release.
   and copies the songs you add one at a time into its own state folder.
   Nothing about them is sent anywhere, except a song's artist, title, album
   and length to LRCLIB when the file has no lyrics of its own.
-- **Spotify's app.** **Import from Spotify** in Settings → Equalizer reads
+- **Spotify's app.** **Import from Spotify** in Settings → Sound reads
   the equalizer presets saved in Spotify's desktop app on this computer,
   from that app's own storage, and only when you choose it. Only the
   presets are kept; nothing there is sent anywhere or written to.

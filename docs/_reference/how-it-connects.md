@@ -86,7 +86,7 @@ Sirensong uses separate credentials for Web API access and local playback:
    to disk or logged. If the feed fails, the session's older
    `presence-view/v1/buddylist` stands in.
 
-When Soloist plays, **Settings → Spotify Soloist → Spotify access** keeps this separate
+When Soloist plays, **Settings → Playback → Spotify access** keeps this separate
 connection available. **Authorize** opens the existing browser approval without
 switching playback to the built-in player. Once connected, missing Made for you,
 listening activity and lyrics can be read again through the session.
@@ -773,7 +773,7 @@ connector. The change adds no destination or background polling.
 
 ## Proxy
 
-Since 0.9.0, Settings → Proxy has four modes:
+Since 0.9.0, Settings → Network has four modes:
 
 - **Off**: a direct connection. Environment proxy variables are ignored.
 - **System**: `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, and on macOS and

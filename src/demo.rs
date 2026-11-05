@@ -8099,6 +8099,66 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// Settings groups its rows by task, and the buttons above the
+    /// sections name every one; a search shows a row under its new heading.
+    #[test]
+    fn settings_group_rows_by_task_with_a_button_for_each_section() {
+        let (ctx, mut app) = accessible_app("settings-sections");
+        app.backend.shutdown();
+        for _ in 0..3 {
+            view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+        }
+        let painted = view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+        for title in [
+            "Account",
+            "Playback",
+            "Library",
+            "Home and map",
+            "Search",
+            "Appearance",
+            "Mini player",
+            "Window and system",
+            "Vacuum",
+            "Network",
+            "Storage",
+            "About",
+        ] {
+            assert!(
+                painted.iter().any(|(text, _)| text == title),
+                "{title} has its button"
+            );
+        }
+        assert!(
+            !painted
+                .iter()
+                .any(|(text, _)| text == "Suggestions" || text == "Application"),
+            "the old headings are gone"
+        );
+        for (query, heading) in [
+            ("Tray icon", "Window and system"),
+            ("Playlist map on Home", "Home and map"),
+            ("Only what I ask for", "Home and map"),
+            ("Search opens on", "Search"),
+            ("Compact library sidebar", "Library"),
+            ("Local files", "Library"),
+            ("Mode, host", "Network"),
+        ] {
+            ctx.data_mut(|data| {
+                data.insert_temp(egui::Id::new("settings-filter"), query.to_string())
+            });
+            view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+            let painted = view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
+            assert!(
+                painted.iter().any(|(text, _)| text == heading),
+                "{query} shows under {heading}"
+            );
+            assert!(
+                !painted.iter().any(|(text, _)| text == "Appearance") || heading == "Appearance",
+                "{query} is no longer under Appearance"
+            );
+        }
+    }
+
     /// Settings offers Off, the window and the tray for a start at login,
     /// and a pick is an action; a run that cannot register shows no row.
     #[test]

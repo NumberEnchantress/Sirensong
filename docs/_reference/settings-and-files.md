@@ -39,7 +39,7 @@ Sirensong follows each platform's conventions. On Linux:
 | Last run's log | `~/.local/state/sirensong/sirensong.log` | Always |
 | Crash log | `~/.local/state/sirensong/panic.log` | Always |
 
-Starting with your computer (Settings > Playback on this computer) is kept
+Starting with your computer (Settings > Window and system) is kept
 where each system keeps it, not in `settings.json`:
 
 | Platform | Where |
@@ -570,7 +570,7 @@ directory; the ordinary demo does not scan your real themes folder.
 
 ## Home shelves
 
-**Playlist map on Home**, in Settings → Appearance (`"home": {"playlist_map":
+**Playlist map on Home**, in Settings → Home and map (`"home": {"playlist_map":
 true}`), shows Home as a map of your Library in place of its shelves. It
 holds what the Library lists, in its order: the kinds ticked above the
 Library, By You and the Library search, each folder holding what it holds,
@@ -633,7 +633,7 @@ opens it beside the map, as a row would. It is kept as `"sidebar_map"`.
 
 Home's map and the Library's keep their own Tree or Circles: choosing one
 in the Library's header leaves Home's as it was. **Same map view on Home
-and in the Library**, in Settings → Appearance and off by default, makes a
+and in the Library**, in Settings → Home and map and off by default, makes a
 choice in either place choose it in both. **One map at a time**, on by
 default, shows the Library's list or grid while Home shows its map, so the
 two are never on screen together; the Library's map buttons wait, and the
@@ -685,7 +685,7 @@ file is written. Turning it off moves any plays kept past the newest 500
 there too, and from then on the oldest are let go again. **Clear history**
 asks first, then deletes both. Neither is ever uploaded.
 
-**Only what I ask for**, in Settings → Suggestions, hides everything
+**Only what I ask for**, in Settings → Home and map, hides everything
 Spotify suggests rather than what you looked for, clicked or opened: Home's
 Made for you, Your top mixes, New releases and Recommended for you, and an
 artist's Fans also like. Sirensong stops asking Spotify for them, which also
@@ -902,7 +902,7 @@ existing user files are preserved. Selecting Dark or Light is sufficient to stop
 
 ## Spotify Soloist
 
-**Settings → Spotify Soloist** offers the optional Spotify player. The
+**Settings → Playback** offers the optional Spotify player. The
 `soloist_enabled` preference defaults to false. Its personal key lives in the
 system credential store, never in settings. Under the state directory,
 `soloist/builds/` holds downloaded executables, license notices and build

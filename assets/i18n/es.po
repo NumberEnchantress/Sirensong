@@ -1429,14 +1429,6 @@ msgstr "Requiere Spotify Premium y un inicio de sesión único en el navegador."
 msgid "Enable playback here"
 msgstr "Activar la reproducción aquí"
 
-#: src/ui/settings.rs:746
-msgid "Playback on this computer"
-msgstr "Reproducción en esta computadora"
-
-#: src/ui/settings.rs:748
-msgid "Application"
-msgstr "Aplicación"
-
 #: src/ui/settings.rs:750
 msgid "Normalize volume"
 msgstr "Normalizar el volumen"
@@ -4606,11 +4598,6 @@ msgstr "Mostrar versión"
 msgid "With the custom title bar, show Spotifast's version and this fork's beside the update button."
 msgstr "Con la barra de título propia, muestra la versión de Spotifast y la de esta bifurcación junto al botón de actualización."
 
-#. Translators: A settings section about what Spotify suggests: mixes, recommendations, related artists.
-#: src/ui/settings.rs:2375
-msgid "Suggestions"
-msgstr "Sugerencias"
-
 #. Translators: A setting: show only what you look for, click or open, none of Spotify's suggestions.
 #: src/ui/settings.rs:2377
 msgid "Only what I ask for"
@@ -5271,3 +5258,33 @@ msgstr "Mientras hay un mapa abierto, el cuadro de búsqueda de la Biblioteca es
 #: src/ui/settings.rs:1535
 msgid "Searching rings what matches and leaves the rest in place. Off, the search is a filter, as Zoom in and Only selected treat the others."
 msgstr "La búsqueda rodea lo que coincide y deja el resto en su sitio. Desactivada, la búsqueda es un filtro, como tratan Acercar y Solo lo seleccionado a los demás."
+
+#. Translators: A settings section: how songs play, on this computer or through Spotify Soloist.
+#: src/ui/settings.rs:739
+msgid "Playback"
+msgstr "Reproducción"
+
+#. Translators: A settings section: the equalizer, which shapes the sound.
+#: src/ui/settings.rs:1475
+msgid "Sound"
+msgstr "Sonido"
+
+#. Translators: A settings section: the playlist map on Home and in the Library, and what Home suggests.
+#: src/ui/settings.rs:1477
+msgid "Home and map"
+msgstr "Inicio y mapa"
+
+#. Translators: A settings section: the player bar visualizer and MilkDrop.
+#: src/ui/settings.rs:1481
+msgid "Visualizers"
+msgstr "Visualizadores"
+
+#. Translators: A settings section: the window, the tray, starting with the computer, and updates.
+#: src/ui/settings.rs:1483
+msgid "Window and system"
+msgstr "Ventana y sistema"
+
+#. Translators: A settings section: the proxy for network requests.
+#: src/ui/settings.rs:1485
+msgid "Network"
+msgstr "Red"

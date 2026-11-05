@@ -276,6 +276,23 @@ record its own decisions and three rounds of adversarial grading.
   `MapRow::matched` and `Node::matched` ring and name what it finds, and the
   view does not refit as you type. Off, it filters as before.
 
+### Settings regrouped, 5 November 2026 (mod 26)
+
+- **Visual scope approved by the user** (the regrouping and the jump bar, as
+  proposed): 14 sections by task, Account, Playback (Soloist at its top),
+  Sound, Library, Home and map, Search, Appearance, Visualizers (MilkDrop as
+  a part), Mini player, Window and system, Vacuum, Network, Storage, About,
+  with a button for each above them while nothing is searched.
+- `settings::show` makes every section's text first, then moves rows with
+  `take`, which leaves a row that never shows in the old array, so the old
+  indices hold. A section's rows still match on its own title; Sound and
+  Network keep matching on Equalizer and Proxy, so those words find them.
+- The jump bar stores the title asked for (`SETTINGS_JUMP_ID`), and
+  `section` scrolls its heading to the top when it draws it.
+- "Suggestions", "Application" and "Playback on this computer" left the
+  catalogs.
+- Noticed, not changed: the Vacuum card draws wider than the others.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

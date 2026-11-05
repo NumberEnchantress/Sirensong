@@ -69,7 +69,7 @@ While Soloist starts and its account is verified, the Spotify loading screen sho
 steps, and ends with choosing the named device in Spotify, with the built-in
 player available as a quiet alternative below the card. If Soloist stops later,
 a banner over the app says so while Sirensong restarts it, and offers **Try
-again** if that does not work. **Settings → Spotify Soloist → Spotify access**
+again** if that does not work. **Settings → Playback → Spotify access**
 connects the separate Spotify session for Made for you, listening activity and
 Spotify lyrics without changing players.
 
