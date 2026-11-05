@@ -238,6 +238,12 @@ record its own decisions and three rounds of adversarial grading.
   Spotify's tree places its playlists, not the Library's save order. With it on,
   the first tree leaves Spotify's pins where Spotify puts them. A folder
   made here goes to Spotify empty of what only Sirensong arranges.
+- **Round 4 (mod 23):** the map follows Sirensong custom order while the
+  Library shows it: `sidebar::custom_map_rows` walks the custom tree whole,
+  every folder open, any kind in place, unplaced rows last, with no kind
+  branches. A drag on it can move any row (`row_of(node, custom)`), is
+  checked against `App::shown_tree`, and goes through `tree_action`, so it
+  edits the custom order and syncs as any other edit.
 
 ### Still open
 

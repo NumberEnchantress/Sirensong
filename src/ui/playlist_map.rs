@@ -1170,19 +1170,24 @@ pub fn sidebar(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// What a playlist or folder dragged on the map would become.
-struct Landing {
+pub(super) struct Landing {
     /// The node it would join.
     to: String,
-    edit: crate::folders::FolderEdit,
+    pub(super) edit: crate::folders::FolderEdit,
     /// Where it is and where it would go, as `Folder\Name → Folder\Name`.
     text: String,
 }
 
 /// The Library's row a node stands for, where it can move: a folder, or a
-/// playlist in the Library's tree.
-fn row_of(node: &Node) -> Option<crate::folders::Row> {
+/// playlist in Spotify's tree, or anything at all in Sirensong custom
+/// order (`custom`).
+fn row_of(node: &Node, custom: bool) -> Option<crate::folders::Row> {
     match &node.kind {
         Kind::Folder(id) if !id.is_empty() => Some(crate::folders::Row::Folder(id.clone())),
+        Kind::Item(_) if custom => node
+            .entry
+            .as_ref()
+            .map(|entry| crate::folders::Row::Playlist(entry.ordering_key().to_string())),
         Kind::Item(Page::Playlist(_)) => node
             .entry
             .as_ref()
@@ -1196,7 +1201,7 @@ fn folder_called(app: &App, id: Option<&str>) -> String {
     let Some(id) = id else {
         return gettext(app.locale, "Library").into_owned();
     };
-    app.rootlist
+    app.shown_tree()
         .iter()
         .find_map(|row| match row {
             crate::player::RootlistEntry::FolderStart { id: found, name } if found == id => {
@@ -1209,13 +1214,24 @@ fn folder_called(app: &App, id: Option<&str>) -> String {
 }
 
 /// Where `row` would land dropped on `node`: into a folder, beside a
-/// playlist in its folder, or at the top of the Library. `None` where it
+/// playlist (in Sirensong custom order, anything) in its folder, or at the
+/// top of the Library, in the tree the Library shows. `None` where it
 /// cannot go, or would stay where it is.
-fn landing(app: &App, node: &Node, row: &crate::folders::Row, name: &str) -> Option<Landing> {
+pub(super) fn landing(
+    app: &App,
+    node: &Node,
+    row: &crate::folders::Row,
+    name: &str,
+) -> Option<Landing> {
     use crate::folders::{FolderEdit, Place as Spot, Row};
+    let custom = super::sidebar::custom_order_shown(app);
+    let tree = app.shown_tree();
     let place = match &node.kind {
         Kind::Library | Kind::Group(LibraryShelf::Playlists) => Spot::Start,
         Kind::Folder(id) if !id.is_empty() => Spot::InFolder(id.clone()),
+        Kind::Item(_) if custom => Spot::Before(Row::Playlist(
+            node.entry.as_ref()?.ordering_key().to_string(),
+        )),
         Kind::Item(Page::Playlist(_)) => {
             Spot::Before(Row::Playlist(node.entry.as_ref()?.uri().to_string()))
         }
@@ -1231,11 +1247,11 @@ fn landing(app: &App, node: &Node, row: &crate::folders::Row, name: &str) -> Opt
             place: place.clone(),
         },
     };
-    crate::folders::apply(&app.rootlist, &edit).ok()?;
-    let from = crate::folders::parent(&app.rootlist, row);
+    crate::folders::apply(tree, &edit).ok()?;
+    let from = crate::folders::parent(tree, row);
     let into = match &place {
         Spot::InFolder(id) => Some(id.clone()),
-        Spot::Before(beside) => crate::folders::parent(&app.rootlist, beside),
+        Spot::Before(beside) => crate::folders::parent(tree, beside),
         _ => None,
     };
     // Let go inside the folder it is in already, as in Circles, where the
@@ -1510,13 +1526,15 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
 
     // A playlist or folder being dragged: where it would land, on the
     // smallest thing under the pointer.
-    let editable = app.folders_editable();
+    // Sirensong custom order is always this computer's to arrange.
+    let custom = super::sidebar::custom_order_shown(app);
+    let editable = custom || app.folders_editable();
     let pointer = ui.ctx().pointer_latest_pos();
     let dragging = state
         .moving
         .as_ref()
         .and_then(|key| nodes.iter().find(|node| &node.key == key))
-        .and_then(|node| Some((node, row_of(node)?)));
+        .and_then(|node| Some((node, row_of(node, custom)?)));
     // Only over the map itself, where the line and the note can be seen.
     let shown = rect.intersect(ui.clip_rect());
     let dropping = dragging.as_ref().and_then(|(moved, row)| {
@@ -1584,9 +1602,9 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
             area
         };
         let on_it = |at: Pos2| container || at.distance(centre) <= radius + 2.0;
-        // A playlist or folder can be dragged somewhere else.
-        let movable = editable && matches!(&node.kind, Kind::Folder(id) if !id.is_empty())
-            || editable && matches!(node.kind, Kind::Item(Page::Playlist(_)));
+        // A playlist or folder can be dragged somewhere else, and in
+        // Sirensong custom order anything.
+        let movable = editable && row_of(node, custom).is_some();
         let sense = if movable {
             Sense::click_and_drag()
         } else {
@@ -1782,7 +1800,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
                 Kind::Folder(id) if open_folder.as_ref() == Some(id) => {
                     app.actions
                         .push(Action::EnterLibraryFolder(crate::folders::parent(
-                            &app.rootlist,
+                            app.shown_tree(),
                             &crate::folders::Row::Folder(id.clone()),
                         )));
                 }
@@ -1892,7 +1910,8 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         && !escaped
         && let Some(drop) = dropping
     {
-        app.actions.push(Action::EditFolders(drop.edit));
+        let action = super::sidebar::tree_action(app, drop.edit);
+        app.actions.push(action);
     }
     if let Some(key) = drag_started {
         state.moving = Some(key);

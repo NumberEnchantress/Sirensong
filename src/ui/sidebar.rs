@@ -46,7 +46,7 @@ impl Entry {
         &self.uri
     }
 
-    fn ordering_key(&self) -> &str {
+    pub(crate) fn ordering_key(&self) -> &str {
         if self.liked {
             LIKED_SONGS_KEY
         } else if let Some(key) = &self.pin_key {
@@ -757,6 +757,10 @@ pub(crate) fn map_rows(app: &App) -> Vec<MapRow> {
     let branches = listed.len() > 1;
     let needle = app.library.filter.trim().to_lowercase();
     let mut rows = Vec::new();
+    if custom_order_shown(app) {
+        custom_map_rows(app, &listed, &needle, &mut rows);
+        return rows;
+    }
     let block = |rows: &mut Vec<MapRow>,
                  shelves: &[Filter],
                  sort: LibrarySort,
@@ -855,47 +859,148 @@ fn map_block(
             .map(|entry| entry.ordering_key().to_string())
             .collect()
     });
-    let by_you = app.settings.library_by_you;
-    let playlists = app.library.playlists.get();
     let start = rows.len();
     for entry in tree {
-        let songs = if entry.liked {
-            app.library.liked.total
-        } else {
-            entry
-                .playlist_index
-                .and_then(|index| playlists?.get(index))
-                .map(crate::api::models::Playlist::track_total)
-        };
-        let listed = ticked
-            && !(by_you && entry.playlist_index.is_some() && !entry.owned)
-            && found
-                .as_ref()
-                .is_none_or(|found| found.contains(entry.ordering_key()));
-        let page = entry.folder.is_none().then(|| entry.page.clone());
-        rows.push(MapRow {
-            key: match (&entry.folder, &entry.page) {
-                (Some((id, _, _)), _) => format!("folder:{id}"),
-                (None, Page::LocalFiles) => "local-files".to_string(),
-                _ => entry.ordering_key().to_string(),
-            },
-            takes_songs: entry.liked || entry.editable,
-            folder: entry.folder.as_ref().map(|(id, _, _)| id.clone()),
-            name: entry.name.clone(),
-            image: entry.image.clone(),
-            round: entry.round,
-            page,
-            group: None,
-            depth: base + entry.depth,
-            songs,
-            listed,
-            entry: Some(entry),
-        });
+        let listed = ticked && map_listed(app, &entry, found.as_ref());
+        rows.push(map_row(app, entry, listed, base));
     }
-    // A folder is listed while anything inside it is: walking back, each
-    // depth remembers whether a listed row lay below it.
+    folders_listed(&mut rows[start..]);
+}
+
+/// Whether the Library's own choices list `entry`: By You and the search.
+fn map_listed(app: &App, entry: &Entry, found: Option<&std::collections::HashSet<String>>) -> bool {
+    !(app.settings.library_by_you && entry.playlist_index.is_some() && !entry.owned)
+        && found.is_none_or(|found| found.contains(entry.ordering_key()))
+}
+
+/// The map's row for the Library's `entry`, `base` levels down.
+fn map_row(app: &App, entry: Entry, listed: bool, base: u8) -> MapRow {
+    let songs = if entry.liked {
+        app.library.liked.total
+    } else {
+        entry
+            .playlist_index
+            .and_then(|index| app.library.playlists.get()?.get(index))
+            .map(crate::api::models::Playlist::track_total)
+    };
+    let page = entry.folder.is_none().then(|| entry.page.clone());
+    MapRow {
+        key: match (&entry.folder, &entry.page) {
+            (Some((id, _, _)), _) => format!("folder:{id}"),
+            (None, Page::LocalFiles) => "local-files".to_string(),
+            _ => entry.ordering_key().to_string(),
+        },
+        takes_songs: entry.liked || entry.editable,
+        folder: entry.folder.as_ref().map(|(id, _, _)| id.clone()),
+        name: entry.name.clone(),
+        image: entry.image.clone(),
+        round: entry.round,
+        page,
+        group: None,
+        depth: base + entry.depth,
+        songs,
+        listed,
+        entry: Some(entry),
+    }
+}
+
+/// The map in Sirensong custom order: its own tree whole, every folder
+/// open and every kind loaded in its place, as the listener arranged them.
+/// What the ticked kinds, By You and the search leave out is not listed;
+/// what the tree has not placed yet comes last.
+fn custom_map_rows(app: &App, ticked: &[Filter], needle: &str, rows: &mut Vec<MapRow>) {
+    use crate::player::RootlistEntry;
+    let shelves: Vec<Filter> = SHELVES
+        .into_iter()
+        .filter(|shelf| ticked.contains(shelf) || shelf_loaded(app, *shelf))
+        .collect();
+    let mut pool = Vec::new();
+    for &shelf in &shelves {
+        shelf_rows(app, shelf, LibrarySort::Library, "", false, true, &mut pool);
+    }
+    let found: Option<std::collections::HashSet<String>> = (!needle.is_empty()).then(|| {
+        let mut found = Vec::new();
+        for &shelf in &shelves {
+            shelf_rows(
+                app,
+                shelf,
+                LibrarySort::Library,
+                needle,
+                false,
+                true,
+                &mut found,
+            );
+        }
+        found
+            .iter()
+            .map(|entry| entry.ordering_key().to_string())
+            .collect()
+    });
+    let order: Vec<String> = pool
+        .iter()
+        .map(|entry| entry.ordering_key().to_string())
+        .collect();
+    let mut by_key: std::collections::HashMap<String, Entry> = pool
+        .into_iter()
+        .map(|entry| (entry.ordering_key().to_string(), entry))
+        .collect();
+    let tree = app.shown_tree();
+    let holdings = folder_holdings(tree);
+    let user_id = app.user_id().unwrap_or("");
+    let mut entries = Vec::new();
+    let mut depth = 0u8;
+    for row in tree {
+        match row {
+            RootlistEntry::FolderStart { id, name } => {
+                let held = holdings.get(id.as_str()).copied().unwrap_or_default();
+                entries.push(folder_entry(
+                    app,
+                    user_id,
+                    id,
+                    name,
+                    (false, 0),
+                    held,
+                    depth,
+                ));
+                depth = depth.saturating_add(1);
+            }
+            RootlistEntry::FolderEnd => depth = depth.saturating_sub(1),
+            RootlistEntry::Playlist(key) => {
+                if let Some(mut entry) = by_key.remove(key) {
+                    entry.depth = depth;
+                    entries.push(entry);
+                }
+            }
+        }
+    }
+    entries.extend(
+        order
+            .iter()
+            .filter_map(|key| by_key.remove(key))
+            .map(|mut entry| {
+                entry.depth = 0;
+                entry
+            }),
+    );
+    let start = rows.len();
+    for entry in entries {
+        let kind = match crate::library_tree::kind_of(entry.ordering_key()) {
+            crate::settings::LibraryShelf::Playlists => Filter::Playlists,
+            crate::settings::LibraryShelf::Albums => Filter::Albums,
+            crate::settings::LibraryShelf::Artists => Filter::Artists,
+            crate::settings::LibraryShelf::Podcasts => Filter::Podcasts,
+        };
+        let listed = ticked.contains(&kind) && map_listed(app, &entry, found.as_ref());
+        rows.push(map_row(app, entry, listed, 0));
+    }
+    folders_listed(&mut rows[start..]);
+}
+
+/// A folder is listed while anything inside it is: walking back, each
+/// depth remembers whether a listed row lay below it.
+fn folders_listed(rows: &mut [MapRow]) {
     let mut below = vec![false; 258];
-    for row in rows[start..].iter_mut().rev() {
+    for row in rows.iter_mut().rev() {
         let depth = usize::from(row.depth);
         if row.folder.is_some() {
             row.listed = below[depth + 1];
@@ -1503,7 +1608,7 @@ fn tree_editable(app: &App) -> bool {
 }
 
 /// The action that makes a folder edit on the tree the sidebar shows.
-fn tree_action(app: &App, edit: FolderEdit) -> Action {
+pub(crate) fn tree_action(app: &App, edit: FolderEdit) -> Action {
     if custom_order_shown(app) {
         Action::EditLibraryTree(edit)
     } else {
@@ -5442,6 +5547,77 @@ mod ordering_tests {
         assert!(!LibrarySort::RecentlyAdded.supports(Filter::Playlists));
         assert!(!LibrarySort::RecentlyAdded.supports(Filter::Artists));
         assert!(LibrarySort::RecentlyAdded.supports(Filter::Podcasts));
+        app.backend.shutdown();
+    }
+
+    /// The map follows Sirensong custom order: its own tree, any kind in
+    /// any folder, and a drag on it arranges that tree.
+    #[test]
+    fn the_map_follows_the_custom_order() {
+        use crate::folders::{FolderEdit, Place, Row};
+        use crate::player::RootlistEntry::{FolderEnd, FolderStart, Playlist};
+        let mut app = app("custom-map");
+        app.rootlist = vec![
+            FolderStart {
+                id: "f".into(),
+                name: "Folder".into(),
+            },
+            Playlist(uri("b")),
+            FolderEnd,
+            Playlist(uri("a")),
+        ];
+        app.collapsed_folders.clear();
+        app.settings.library_kinds = vec![Filter::Playlists, Filter::Albums];
+        app.settings.library_mixed_sort = Some(LibrarySort::Local);
+        app.library.albums.loaded_once = true;
+        app.library.albums.next_offset = None;
+        let album = app.library.albums.items[0].album.uri.clone();
+        app.keep_library_tree(false);
+        app.actions
+            .push(Action::EditLibraryTree(FolderEdit::MovePlaylist {
+                uri: album.clone(),
+                place: Place::InFolder("f".into()),
+            }));
+        apply_actions(&mut app);
+        let rows = map_rows(&app);
+        assert!(
+            rows.iter().all(|row| row.group.is_none()),
+            "one tree, no kind branches"
+        );
+        let folder = rows
+            .iter()
+            .position(|row| row.folder.as_deref() == Some("f"))
+            .unwrap();
+        let inside: Vec<&str> = rows[folder + 1..]
+            .iter()
+            .take_while(|row| row.depth > rows[folder].depth)
+            .map(|row| row.key.as_str())
+            .collect();
+        assert!(
+            inside.contains(&album.as_str()) && inside.contains(&uri("b").as_str()),
+            "{inside:?}"
+        );
+        let nodes = crate::ui::playlist_map::graph(&app);
+        let moved = nodes.iter().find(|node| node.key == uri("a")).unwrap();
+        let into = nodes.iter().find(|node| node.key == "folder:f").unwrap();
+        let landing =
+            crate::ui::playlist_map::landing(&app, into, &Row::Playlist(uri("a")), &moved.name)
+                .unwrap();
+        assert!(matches!(
+            tree_action(&app, landing.edit),
+            Action::EditLibraryTree(_)
+        ));
+        // An album can be moved on the map too.
+        let album_node = nodes.iter().find(|node| node.key == album).unwrap();
+        assert!(
+            crate::ui::playlist_map::landing(
+                &app,
+                moved,
+                &Row::Playlist(album.clone()),
+                &album_node.name
+            )
+            .is_some()
+        );
         app.backend.shutdown();
     }
 

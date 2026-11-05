@@ -588,7 +588,9 @@ becomes the root: **Open folder: Zoom in** keeps the rest of the Library
 further out and zooms in on the folder, and **Only selected** leaves the
 rest out. **Filters: Zoom in** keeps what the Library's filters leave out
 beside the rest, faded, and zooms in on what they list; **Only selected**
-leaves it out. Another kind already loaded has a branch of its own.
+leaves it out. Another kind already loaded has a branch of its own. In
+**Sirensong custom order** the map is that order's own tree, every kind in
+the place and folder you gave it, with nothing on branches of its own.
 Zoom in is the default for both. Clicking the open folder at the root goes
 back out of it. Where the choices' names would not fit on one line, they show
 their icons alone: Tree and Circles their views, Time listened headphones,
@@ -606,7 +608,9 @@ details, move to a folder, pin, remove and the rest; right-click the Library
 at the root to make a playlist or folder. Where folders can be changed, drag
 a playlist or folder onto a folder to move it inside, onto a playlist to put
 it just before that playlist in its folder, or onto the Library to move it
-to the top. While you drag, a dotted line runs to where it would go and a
+to the top. In Sirensong custom order anything can be dragged, an album or
+Liked Songs too, and dropped beside anything; it arranges that order, and
+reaches Spotify as **Keep in step with Spotify** says. While you drag, a dotted line runs to where it would go and a
 note says where it is and where it would land, such as `Curated\People →
 Archive\People`; Escape, or letting go where it cannot go or inside the
 folder it is in already, or outside the map, leaves it where it was.
