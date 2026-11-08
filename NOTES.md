@@ -308,6 +308,9 @@ record its own decisions and three rounds of adversarial grading.
 - With Both, the waveform takes `over_bars`: the hue opposite the bass
   bars', or the accent over grey bars, in the same brightness band.
   `--demo-show player-bar-both` shows it.
+- **Changed at the user's request (mod 28):** the other way round. The line
+  keeps the cover's colours, and the bars take `under_line`: each colour
+  turned across the wheel, a grey turned into the accent.
 
 ### Still open
 

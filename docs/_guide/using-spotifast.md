@@ -576,8 +576,9 @@ song, wherever the row sits.
 **Player bar visualizer** in **Settings > Visualizers** shows the song moving
 behind the player bar's controls: **Spectrum** draws glowing bars from bass
 to treble with peaks that hang and fall, **Waveform** draws the sound's
-wave as a glowing line, and **Both** draws the line over the bars, in the
-colour across the colour wheel from theirs so the two stay apart. With **Colour from album art** on, both sweep from
+wave as a glowing line, and **Both** draws the line over the bars: the line
+keeps the usual colours, and the bars take the colours across the colour
+wheel from them, so the two stay apart. With **Colour from album art** on, both sweep from
 bass to treble across up to four colours read from the cover, its hues first
 and its greys after, so a black and white cover moves in grey; with it off,
 they take the accent colour. It follows the equalizer, not the volume, and moves only while the
@@ -912,10 +913,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 27 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 28 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 27` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 28` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 
