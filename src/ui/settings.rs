@@ -14,6 +14,8 @@ use super::widgets;
 const PLAYBACK_DIRTY_ID: &str = "playback-settings-dirty";
 pub(crate) const PERSONAL_APP_FOCUS_ID: &str = "focus-personal-app-setup";
 const SETTINGS_FILTER_ID: &str = "settings-filter";
+/// How wide Vacuum's field for a seed of your own is.
+const SEED_FIELD_WIDTH: f32 = 240.0;
 /// The section a click above the sections asked to see, by its title.
 const SETTINGS_JUMP_ID: &str = "settings-jump";
 
@@ -3182,115 +3184,124 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     }
                 });
             });
-            filtered_row(ui, &palette, &needle, &vacuum, &vacuum_rows[8], |ui| {
-                let entry_id = egui::Id::new("vacuum-seed-entry");
-                let shown_id = egui::Id::new("vacuum-seed-shown");
-                ui.vertical(|ui| {
-                    match app.settings.vacuum.seed.clone() {
-                        None => {
-                            theme::text(
-                                ui,
-                                gettext(locale, "Using the shared seed"),
-                                theme::regular(12.5),
-                                palette.secondary,
+            // The seed's field and button side by side, so the text wraps
+            // before them and a narrow card puts them under it, rather than
+            // the card growing wider than the others.
+            let use_seed = gettext(locale, "Use this seed");
+            let seed_width = SEED_FIELD_WIDTH + 6.0 + theme::soft_button_width(ui, &use_seed);
+            filtered_row_sized(
+                ui,
+                &palette,
+                &needle,
+                &vacuum,
+                &vacuum_rows[8],
+                seed_width,
+                |ui| {
+                    let entry_id = egui::Id::new("vacuum-seed-entry");
+                    let shown_id = egui::Id::new("vacuum-seed-shown");
+                    ui.vertical(|ui| {
+                        match app.settings.vacuum.seed.clone() {
+                            None => {
+                                theme::text(
+                                    ui,
+                                    gettext(locale, "Using the shared seed"),
+                                    theme::regular(12.5),
+                                    palette.secondary,
+                                );
+                            }
+                            Some(seed) => {
+                                let shown = ui
+                                    .data(|data| data.get_temp::<bool>(shown_id))
+                                    .unwrap_or(false);
+                                theme::text(
+                                    ui,
+                                    if shown {
+                                        seed.clone()
+                                    } else {
+                                        gettext(locale, "Using your own seed").into_owned()
+                                    },
+                                    theme::regular(12.5),
+                                    palette.secondary,
+                                );
+                                ui.horizontal_wrapped(|ui| {
+                                    let label = if shown {
+                                        gettext(locale, "Hide")
+                                    } else {
+                                        gettext(locale, "Show")
+                                    };
+                                    if theme::soft_button(ui, &palette, None, &label, false)
+                                        .clicked()
+                                    {
+                                        ui.data_mut(|data| data.insert_temp(shown_id, !shown));
+                                    }
+                                    if theme::soft_button(
+                                        ui,
+                                        &palette,
+                                        None,
+                                        &gettext(locale, "Copy"),
+                                        false,
+                                    )
+                                    .clicked()
+                                    {
+                                        ui.ctx().copy_text(seed.clone());
+                                    }
+                                    if theme::soft_button(
+                                        ui,
+                                        &palette,
+                                        None,
+                                        &gettext(locale, "Save…"),
+                                        false,
+                                    )
+                                    .clicked()
+                                    {
+                                        app.backend.save_vacuum_seed(seed.clone());
+                                    }
+                                    if theme::soft_button(
+                                        ui,
+                                        &palette,
+                                        None,
+                                        &gettext(locale, "Use the shared seed"),
+                                        false,
+                                    )
+                                    .clicked()
+                                    {
+                                        app.settings.vacuum.seed = None;
+                                        changed = true;
+                                    }
+                                });
+                            }
+                        }
+                        let mut entry = ui
+                            .data(|data| data.get_temp::<String>(entry_id))
+                            .unwrap_or_default();
+                        ui.horizontal_wrapped(|ui| {
+                            let edit = ui.add(
+                                egui::TextEdit::singleline(&mut entry)
+                                    .hint_text(gettext(
+                                        locale,
+                                        "A seed of your own, 8 to 500 characters",
+                                    ))
+                                    .desired_width(SEED_FIELD_WIDTH),
                             );
-                        }
-                        Some(seed) => {
-                            let shown = ui
-                                .data(|data| data.get_temp::<bool>(shown_id))
-                                .unwrap_or(false);
-                            theme::text(
-                                ui,
-                                if shown {
-                                    seed.clone()
-                                } else {
-                                    gettext(locale, "Using your own seed").into_owned()
-                                },
-                                theme::regular(12.5),
-                                palette.secondary,
-                            );
-                            ui.horizontal_wrapped(|ui| {
-                                let label = if shown {
-                                    gettext(locale, "Hide")
-                                } else {
-                                    gettext(locale, "Show")
-                                };
-                                if theme::soft_button(ui, &palette, None, &label, false).clicked() {
-                                    ui.data_mut(|data| data.insert_temp(shown_id, !shown));
-                                }
-                                if theme::soft_button(
-                                    ui,
-                                    &palette,
-                                    None,
-                                    &gettext(locale, "Copy"),
-                                    false,
-                                )
+                            if edit.changed() {
+                                ui.data_mut(|data| data.insert_temp(entry_id, entry.clone()));
+                            }
+                            let valid = crate::vacuum::Seed::custom(&entry).is_some();
+                            if ui
+                                .add_enabled_ui(valid, |ui| {
+                                    theme::soft_button(ui, &palette, None, &use_seed, false)
+                                })
+                                .inner
                                 .clicked()
-                                {
-                                    ui.ctx().copy_text(seed.clone());
-                                }
-                                if theme::soft_button(
-                                    ui,
-                                    &palette,
-                                    None,
-                                    &gettext(locale, "Save…"),
-                                    false,
-                                )
-                                .clicked()
-                                {
-                                    app.backend.save_vacuum_seed(seed.clone());
-                                }
-                                if theme::soft_button(
-                                    ui,
-                                    &palette,
-                                    None,
-                                    &gettext(locale, "Use the shared seed"),
-                                    false,
-                                )
-                                .clicked()
-                                {
-                                    app.settings.vacuum.seed = None;
-                                    changed = true;
-                                }
-                            });
-                        }
-                    }
-                    let mut entry = ui
-                        .data(|data| data.get_temp::<String>(entry_id))
-                        .unwrap_or_default();
-                    ui.horizontal_wrapped(|ui| {
-                        let edit = ui.add(
-                            egui::TextEdit::singleline(&mut entry)
-                                .hint_text(gettext(
-                                    locale,
-                                    "A seed of your own, 8 to 500 characters",
-                                ))
-                                .desired_width(240.0),
-                        );
-                        if edit.changed() {
-                            ui.data_mut(|data| data.insert_temp(entry_id, entry.clone()));
-                        }
-                        let valid = crate::vacuum::Seed::custom(&entry).is_some();
-                        if ui
-                            .add_enabled_ui(valid, |ui| {
-                                theme::soft_button(
-                                    ui,
-                                    &palette,
-                                    None,
-                                    &gettext(locale, "Use this seed"),
-                                    false,
-                                )
-                            })
-                            .inner
-                            .clicked()
-                        {
-                            app.settings.vacuum.seed = Some(entry.clone());
-                            ui.data_mut(|data| data.remove::<String>(entry_id));
-                            changed = true;
-                        }
+                            {
+                                app.settings.vacuum.seed = Some(entry.clone());
+                                ui.data_mut(|data| data.remove::<String>(entry_id));
+                                changed = true;
+                            }
+                        });
                     });
-                });
-            });
+                },
+            );
         });
     }
 

@@ -312,6 +312,12 @@ record its own decisions and three rounds of adversarial grading.
   keeps the cover's colours, and the bars take `under_line`: each colour
   turned across the wheel, a grey turned into the accent.
 
+### Vacuum card width, 11 November 2026 (mod 29)
+
+- The seed row now reserves room for its field and button
+  (`filtered_row_sized`, `SEED_FIELD_WIDTH`), so its text wraps before them
+  and the Vacuum card no longer draws wider than the others.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the
