@@ -24,6 +24,7 @@ Sirensong follows each platform's conventions. On Linux:
 | Legacy proxy password | `~/.local/state/sirensong/proxy_password` | Removed after protected migration |
 | Last session | `~/.local/state/sirensong/session.json` | Yes |
 | Play history | `~/.local/state/sirensong/history.json` | Yes |
+| Search log, with **Keep a search log** on | `~/.local/state/sirensong/search-log.json` | Yes, you lose the log |
 | Older plays, with Keep every play | `~/.local/state/sirensong/plays/` | Yes, those plays and their listening time are gone |
 | Vacuum's museum picks and learnt stand-ins, by seed id | `~/.local/state/sirensong/vacuum/` | Yes, pictures are looked up again; searching an old stand-in no longer finds its real name |
 | Vacuum's list of picture addresses of your own | `~/.config/sirensong/vacuum-pictures.txt` | Yes, load the list again |
@@ -402,6 +403,7 @@ main fields are:
 | `theme_pair` | absent | The themes Follow system uses in light and dark mode: `{"light": {"filename": "Catppuccin Latte.json", "palette": {...}}, "dark": {...}}`. Each `palette` is the last accepted copy of that file's colours. A missing side, or the whole field, is Sirensong's own Light or Dark; it is written only once you choose one |
 | `accent_from_art` | `true` | Tint pages with album art, and colour the player bar visualizer with the cover's colours |
 | `player_bar_vis` | `off` | Since 0.11.0: what moves behind the player bar while a song plays on this computer: `off`, `spectrum`, `waveform` or `both` (the waveform over the spectrum) |
+| `search_log` | `false` | **Keep a search log**: what each search showed, the last 1,000 searches, kept in `search-log.json` on this computer only |
 | `search_default` | `"all"` | The results a new search opens on: `all`, `songs`, `artists`, `albums`, `playlists`, `podcasts` or `episodes` |
 | `player_bar_vis_click` | `true` | Allow clicks on empty player bar space to cycle visualizer modes |
 | `visualizer_fps` | `60` | Frame rate of the player bar and mini player visualizers; `0` is uncapped. Half that out of focus, at most 30 while the system saves energy, none while the window is hidden. MilkDrop uses `milkdrop_fps` |

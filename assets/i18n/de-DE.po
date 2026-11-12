@@ -5341,3 +5341,12 @@ msgstr "Funnel für Firefox"
 #: src/ui/settings.rs:2278
 msgid "Funnel for Android"
 msgstr "Funnel für Android"
+
+#. Translators: A setting: keep the results of every search on this computer.
+#: src/ui/settings.rs:949
+msgid "Keep a search log"
+msgstr "Suchprotokoll führen"
+
+#: src/ui/settings.rs:1603
+msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
+msgstr "Hält fest, was jede Suche gezeigt hat, nur auf diesem Computer, für die letzten 1.000 Suchen. Nichts wird hochgeladen."

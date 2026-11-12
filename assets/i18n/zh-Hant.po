@@ -5163,3 +5163,12 @@ msgstr "Funnel Firefox 版"
 #: src/ui/settings.rs:2278
 msgid "Funnel for Android"
 msgstr "Funnel Android 版"
+
+#. Translators: A setting: keep the results of every search on this computer.
+#: src/ui/settings.rs:949
+msgid "Keep a search log"
+msgstr "保留搜尋紀錄"
+
+#: src/ui/settings.rs:1603
+msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
+msgstr "僅在這台電腦上保存每次搜尋顯示的結果，最多保留最近 1,000 次搜尋。不會上傳任何內容。"

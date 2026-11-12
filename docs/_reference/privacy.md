@@ -26,6 +26,9 @@ current release.
   directory. A copy started from the Windows ZIP keeps them, its state and
   its caches in `sirensong-data` next to it, so anyone who can read that
   folder, on a shared USB drive say, can read them.
+- **Search log.** Off by default. With **Keep a search log** on, the results
+  each search showed are kept in `search-log.json` in the state directory,
+  for the last 1,000 searches, and never leave this computer.
 - **Caches.** Downloaded audio, artwork, lyrics and library metadata live in
   the cache directory and can be deleted at any time.
 - **Local files.** Sirensong reads only the folders you add for local files,

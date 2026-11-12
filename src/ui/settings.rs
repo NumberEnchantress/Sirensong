@@ -945,6 +945,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let one_map = gettext(locale, "One map at a time");
     // Translators: A setting: which results a new search shows first, all mixed or one kind.
     let search_default = gettext(locale, "Search opens on");
+    // Translators: A setting: keep the results of every search on this computer.
+    let search_log = gettext(locale, "Keep a search log");
     // Translators: A setting: while the playlist map is open, the Library's search box sits above the map.
     let map_search = gettext(locale, "Search box above the map");
     // Translators: A setting: searching marks what matches on the playlist map instead of filtering it.
@@ -1594,6 +1596,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let search_rows = [
         take(&mut appearance_rows, 19),
         take(&mut appearance_rows, 14),
+        RowText::new(
+            search_log.clone(),
+            gettext(
+                locale,
+                "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded.",
+            ),
+        ),
     ];
     let visualizer_rows = [
         take(&mut appearance_rows, 8),
@@ -2342,6 +2351,20 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                         &mut app.settings.settings_search_in_topbar,
                     )
                     .changed()
+                    {
+                        changed = true;
+                    }
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &search_title,
+                &search_rows[2],
+                |ui| {
+                    if widgets::switch(ui, &palette, &search_log, &mut app.settings.search_log)
+                        .changed()
                     {
                         changed = true;
                     }

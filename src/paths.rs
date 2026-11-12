@@ -181,6 +181,11 @@ impl AppDirs {
         self.state.join("history.json")
     }
 
+    /// The search log, kept only while Keep a search log is on.
+    pub fn search_log_file(&self) -> PathBuf {
+        self.state.join("search-log.json")
+    }
+
     /// Older plays, kept with Keep every play, in files of their own. See
     /// [`crate::history`].
     pub fn plays_dir(&self) -> PathBuf {

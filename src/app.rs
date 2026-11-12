@@ -636,6 +636,8 @@ pub struct App {
     vacuum_judged: HashMap<String, usize>,
     /// Writes settings, session and history off the UI thread.
     files: fastframe_file::Writer,
+    /// What searches showed, while Keep a search log is on.
+    pub(crate) search_log: crate::search_log::SearchLog,
     /// Current track timing used to decide when a play counts.
     listening: Option<Listening>,
     pub recents: crate::model::CursorList<crate::api::models::PlayHistory>,
@@ -1465,6 +1467,7 @@ impl App {
             vacuum_own_key: None,
             vacuum_learnt: None,
             files: fastframe_file::Writer::new(),
+            search_log: Default::default(),
             listening: None,
             recents: crate::model::CursorList::default(),
             recents_view: std::sync::Arc::from([]),
@@ -10696,6 +10699,19 @@ impl App {
                         self.request_contains(uris);
                         let typed = self.search.typed.clone();
                         self.remember_search(&typed);
+                        // Kept on this computer only, and written with the
+                        // play history, not at every answer of a search typed
+                        // on.
+                        if self.settings.search_log {
+                            let entry = crate::search_log::Entry::of(
+                                &typed,
+                                &results,
+                                jiff::Timestamp::now().to_string(),
+                            );
+                            let run = self.search.committed_run.map(|(run, _)| run);
+                            self.search_log
+                                .record(&self.dirs.search_log_file(), entry, run);
+                        }
                         self.search.results = Loadable::Loaded(results);
                         self.search.results_serial = serial;
                         self.show_search_playlists();
@@ -15353,6 +15369,8 @@ impl App {
                 self.storage_usage.invalidate();
                 self.plays.clear();
                 self.plays.save(&self.files, &self.dirs.history_file());
+                self.search_log
+                    .save(&self.files, &self.dirs.search_log_file());
                 self.rebuild_recents();
                 self.toast(gettext(self.locale, "Play history cleared"));
             }
@@ -16156,6 +16174,8 @@ impl App {
                     self.save_state();
                     self.settle_listening();
                     self.plays.save(&self.files, &self.dirs.history_file());
+                    self.search_log
+                        .save(&self.files, &self.dirs.search_log_file());
                     // A clear still under way finishes, within a share of
                     // the time the system holds for the app.
                     self.plays.flush(SUSPEND_FLUSH_TIMEOUT / 3);
@@ -16713,6 +16733,8 @@ impl App {
         self.plays.set_keep_all(self.settings.keep_every_play);
         if self.plays.poll() {
             self.plays.save(&self.files, &self.dirs.history_file());
+            self.search_log
+                .save(&self.files, &self.dirs.search_log_file());
             self.rebuild_recents();
         }
         let Some(now) = self.now_playing_live() else {
@@ -16769,6 +16791,8 @@ impl App {
             listened,
         );
         self.plays.save(&self.files, &self.dirs.history_file());
+        self.search_log
+            .save(&self.files, &self.dirs.search_log_file());
         self.rebuild_recents();
     }
 
@@ -16784,6 +16808,8 @@ impl App {
         };
         if self.plays.listened(&listening.uri, at, listening.so_far()) {
             self.plays.save(&self.files, &self.dirs.history_file());
+            self.search_log
+                .save(&self.files, &self.dirs.search_log_file());
         }
     }
 
@@ -16887,6 +16913,8 @@ impl App {
         self.sync_vacuum(ctx);
         self.keep_library_tree(false);
         self.keep_playlist_copies();
+        self.search_log
+            .save_if_settled(&self.files, &self.dirs.search_log_file());
         self.pixels_per_point = ctx.pixels_per_point();
         self.refresh_frame_now();
         self.apply_theme(ctx);
@@ -17133,6 +17161,8 @@ impl App {
         self.save_vacuum_names();
         self.settle_listening();
         self.plays.save(&self.files, &self.dirs.history_file());
+        self.search_log
+            .save(&self.files, &self.dirs.search_log_file());
         // A clear or a batch of old plays still being written finishes
         // first, so Clear history holds and nothing waits half done.
         self.plays.flush(fastframe_file::FLUSH_TIMEOUT);
@@ -17328,7 +17358,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 32";
+pub const FORK_VERSION: &str = "mod 33";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -24717,6 +24747,33 @@ mod tests {
             assert_eq!(shown.tracks.as_ref().unwrap().items.len(), 1);
             assert_eq!(shown.playlists.as_ref().unwrap().items[0].id, "p");
         }
+    }
+
+    /// With Keep a search log on, what a search showed is kept; off, by
+    /// default, nothing is.
+    #[test]
+    fn a_search_is_logged_only_with_the_log_on() {
+        let mut app = test_app("search-log");
+        assert!(!app.settings.search_log);
+        let serial = searching(&mut app, "portishead");
+        app.handle_api(ApiResponse::Search {
+            query: "portishead".into(),
+            serial,
+            result: Ok(catalogue_answer()),
+        });
+        let path = app.dirs.search_log_file();
+        assert!(app.search_log.entries(&path).is_empty());
+        app.settings.search_log = true;
+        let serial = searching(&mut app, "massive attack");
+        app.handle_api(ApiResponse::Search {
+            query: "massive attack".into(),
+            serial,
+            result: Ok(catalogue_answer()),
+        });
+        let entries = app.search_log.entries(&path);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].query, "massive attack");
+        assert!(!entries[0].results.is_empty());
     }
 
     #[test]

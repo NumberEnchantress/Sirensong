@@ -347,6 +347,18 @@ record its own decisions and three rounds of adversarial grading.
   label for the Android app, which has no page yet. The jump bar lists it
   after Home and map.
 
+### Search log, 12 November 2026 (mod 33)
+
+- **Asked by the user.** `search_log` (off) keeps what each search showed in
+  `crate::search_log`: one `Entry` per search run (a search typed on
+  replaces its own entry, as the search history does), the newest
+  `KEEP` = 1000, in `AppDirs::search_log_file` (`state/search-log.json`).
+  It is read the first time it is needed and written whole through the
+  app's `fastframe_file::Writer`, readable by its owner only: ten seconds
+  after it last changed (`save_if_settled`, each frame) and wherever the
+  play history is saved. Names are kept as Spotify gave them; anything
+  showing them must pass them through Vacuum's gate.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the
