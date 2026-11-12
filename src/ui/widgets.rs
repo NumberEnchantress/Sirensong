@@ -775,6 +775,11 @@ pub fn picked_menu(
 }
 
 fn add_to_playlist_menu(ui: &mut Ui, app: &mut App, items: &[PlayableItem]) {
+    add_to_playlist_menu_for(ui, app, Adding::Items(items));
+}
+
+/// The **Add to playlist** submenu for what `adding` names.
+fn add_to_playlist_menu_for(ui: &mut Ui, app: &mut App, adding: Adding<'_>) {
     let query_id = ui.make_persistent_id("add-to-playlist-query");
     let palette = app.palette;
     let opened = menu_submenu_with_field(
@@ -789,7 +794,7 @@ fn add_to_playlist_menu(ui: &mut Ui, app: &mut App, items: &[PlayableItem]) {
                 .filter(|(last_frame, _)| frame.saturating_sub(*last_frame) <= 1);
             let fresh = previous.is_none();
             let mut query = previous.map(|(_, query)| query).unwrap_or_default();
-            let field = playlist_picker(ui, app, items, &mut query);
+            let field = playlist_picker_for(ui, app, adding, &mut query);
             if fresh {
                 field.request_focus();
             }
@@ -801,12 +806,49 @@ fn add_to_playlist_menu(ui: &mut Ui, app: &mut App, items: &[PlayableItem]) {
     }
 }
 
+/// What a playlist picker adds: songs in hand, or every song of the
+/// playlist with this id.
+#[derive(Clone, Copy)]
+pub(crate) enum Adding<'a> {
+    Items(&'a [PlayableItem]),
+    Playlist(&'a str),
+}
+
+impl Adding<'_> {
+    /// The action that adds them to the playlist chosen.
+    fn action(self, playlist_id: &str, playlist_name: &str) -> Action {
+        match self {
+            Self::Items(items) => Action::AddToPlaylist {
+                playlist_id: playlist_id.to_string(),
+                playlist_name: playlist_name.to_string(),
+                items: items.to_vec(),
+            },
+            Self::Playlist(from) => Action::AddPlaylistToPlaylist {
+                from: from.to_string(),
+                playlist_id: playlist_id.to_string(),
+                playlist_name: playlist_name.to_string(),
+            },
+        }
+    }
+}
+
 /// Shared by single-item and selection menus. Filtering is local and keeps
 /// the existing playlist edit permissions and library order.
 pub(crate) fn playlist_picker(
     ui: &mut Ui,
     app: &mut App,
     items: &[PlayableItem],
+    query: &mut String,
+) -> egui::Response {
+    playlist_picker_for(ui, app, Adding::Items(items), query)
+}
+
+/// [`playlist_picker`] for what `adding` names. A playlist is not offered
+/// to itself, and a new one is made only for songs in hand.
+pub(crate) fn playlist_picker_for(
+    ui: &mut Ui,
+    app: &mut App,
+    adding: Adding<'_>,
     query: &mut String,
 ) -> egui::Response {
     let palette = app.palette;
@@ -816,7 +858,10 @@ pub(crate) fn playlist_picker(
     let width = ui.available_width();
     let field_id = ui.make_persistent_id("playlist-filter");
     let highlight_id = ui.make_persistent_id("playlist-highlight");
-    let playlists = app.editable_playlists();
+    let mut playlists = app.editable_playlists();
+    if let Adding::Playlist(from) = adding {
+        playlists.retain(|(id, _)| id != from);
+    }
     let matching = |query: &str| {
         let needle = query.trim().to_lowercase();
         playlists
@@ -873,19 +918,21 @@ pub(crate) fn playlist_picker(
         highlighted = (!query.trim().is_empty()).then_some(0);
     }
     ui.add_space(4.0);
-    if menu_item(
-        ui,
-        &palette,
-        Some(Icon::Plus),
-        &gettext(locale, "New playlist"),
-    ) {
-        app.actions.push(Action::ShowDialog(Dialog::CreatePlaylist {
-            name: String::new(),
-            public: false,
-            add_uris: items.iter().map(|item| item.uri().to_string()).collect(),
-        }));
+    if let Adding::Items(items) = adding {
+        if menu_item(
+            ui,
+            &palette,
+            Some(Icon::Plus),
+            &gettext(locale, "New playlist"),
+        ) {
+            app.actions.push(Action::ShowDialog(Dialog::CreatePlaylist {
+                name: String::new(),
+                public: false,
+                add_uris: items.iter().map(|item| item.uri().to_string()).collect(),
+            }));
+        }
+        menu_separator(ui, &palette);
     }
-    menu_separator(ui, &palette);
     let needle = query.trim().to_lowercase();
     let matches: Vec<_> = playlists
         .iter()
@@ -894,11 +941,7 @@ pub(crate) fn playlist_picker(
     highlighted = highlighted.filter(|index| *index < matches.len());
     ui.data_mut(|data| data.insert_temp(highlight_id, (frame, highlighted, query.clone())));
     if enter && let Some((id, name)) = highlighted.and_then(|index| matches.get(index)) {
-        app.actions.push(Action::AddToPlaylist {
-            playlist_id: id.clone(),
-            playlist_name: name.clone(),
-            items: items.to_vec(),
-        });
+        app.actions.push(adding.action(id, name));
         ui.close();
     }
     if matches.is_empty() {
@@ -933,11 +976,7 @@ pub(crate) fn playlist_picker(
                         row.scroll_to_me(None);
                     }
                     if clicked {
-                        app.actions.push(Action::AddToPlaylist {
-                            playlist_id: id.clone(),
-                            playlist_name: name.clone(),
-                            items: items.to_vec(),
-                        });
+                        app.actions.push(adding.action(id, name));
                     }
                 });
             }
@@ -1291,6 +1330,12 @@ pub fn context_menu_items(
             uri: uri.to_string(),
             label: name.to_string(),
         });
+    }
+    // Every song of this playlist, added to another one, as in Spotify.
+    if kind == "playlist"
+        && let Some(id) = uri.strip_prefix("spotify:playlist:")
+    {
+        add_to_playlist_menu_for(ui, app, Adding::Playlist(id));
     }
     let saved = app.is_saved(uri).unwrap_or(false);
     let (icon, text) = match (kind, saved) {

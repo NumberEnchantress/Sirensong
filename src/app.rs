@@ -370,6 +370,14 @@ struct Immersive {
     controls_until: f64,
 }
 
+/// A playlist whose songs are to be added to another, once all are read.
+#[derive(Clone, Debug)]
+pub(crate) struct PlaylistCopy {
+    from: String,
+    playlist_id: String,
+    playlist_name: String,
+}
+
 pub struct App {
     pub dirs: AppDirs,
     pub(crate) storage_usage: crate::storage::Usage,
@@ -873,6 +881,8 @@ pub struct App {
     /// Context loads keep it; explicit skips consume their rows immediately.
     queue_start_pending: Option<Target>,
     pub playlist_busy: bool,
+    /// Playlists waiting to be read to their end and added to another.
+    pub(crate) playlist_copies: Vec<PlaylistCopy>,
     pub quit_requested: bool,
     /// Wheel step, Linux touchpad scale and glide, and the axis a gesture
     /// holds, for the window on screen.
@@ -1583,6 +1593,7 @@ impl App {
             last_now_playing_sequence: 0,
             queue_start_pending: None,
             playlist_busy: false,
+            playlist_copies: Vec::new(),
             quit_requested: false,
             scrolling: fastframe_scroll::Scrolling::default(),
             autoscroll: crate::autoscroll::Autoscroll::default(),
@@ -13457,6 +13468,50 @@ impl App {
         page.pending_cache = None;
     }
 
+    /// Each playlist waiting to be added to another: read to its end, then
+    /// all its songs added at once, through the same duplicate check as any
+    /// other add. A read that fails says so and gives up.
+    pub(crate) fn keep_playlist_copies(&mut self) {
+        if self.playlist_copies.is_empty() {
+            return;
+        }
+        for copy in std::mem::take(&mut self.playlist_copies) {
+            let page = Page::Playlist(copy.from.clone());
+            let Some(source) = self.playlist_pages.get(&copy.from) else {
+                self.ensure_loaded(page);
+                if self.playlist_pages.contains_key(&copy.from) {
+                    self.playlist_copies.push(copy);
+                }
+                continue;
+            };
+            if source.items.is_complete() {
+                let items: Vec<PlayableItem> = source
+                    .items
+                    .items
+                    .iter()
+                    .filter_map(|item| item.playable().cloned())
+                    .collect();
+                if items.is_empty() {
+                    // Translators: A playlist chosen to add to another one turned out to hold no songs.
+                    self.toast(gettext(self.locale, "That playlist has no songs to add"));
+                } else {
+                    self.request_playlist_add(copy.playlist_id, copy.playlist_name, items, None);
+                }
+            } else if let Some(error) = source.items.error.clone() {
+                self.toast_error(error);
+            } else {
+                if !source.items.loading {
+                    if source.items.loaded_once && source.items.can_load_more() {
+                        self.load_more(page);
+                    } else {
+                        self.ensure_loaded(page);
+                    }
+                }
+                self.playlist_copies.push(copy);
+            }
+        }
+    }
+
     fn request_playlist_add(
         &mut self,
         playlist_id: String,
@@ -14217,6 +14272,18 @@ impl App {
                 items,
             } => {
                 self.request_playlist_add(playlist_id, playlist_name, items, None);
+            }
+            Action::AddPlaylistToPlaylist {
+                from,
+                playlist_id,
+                playlist_name,
+            } => {
+                self.playlist_copies.push(PlaylistCopy {
+                    from,
+                    playlist_id,
+                    playlist_name,
+                });
+                self.keep_playlist_copies();
             }
             Action::InsertInPlaylist {
                 playlist_id,
@@ -16811,6 +16878,7 @@ impl App {
         // Before anything draws, so nothing real is drawn first.
         self.sync_vacuum(ctx);
         self.keep_library_tree(false);
+        self.keep_playlist_copies();
         self.pixels_per_point = ctx.pixels_per_point();
         self.refresh_frame_now();
         self.apply_theme(ctx);
@@ -17252,7 +17320,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 29";
+pub const FORK_VERSION: &str = "mod 30";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -31526,6 +31594,83 @@ mod tests {
                 ..
             }) if duplicate_uris == &["spotify:track:honey"]
         ));
+    }
+
+    /// Adding a playlist to another adds all its songs, as in Spotify,
+    /// once every one is read; a song already there asks first.
+    #[test]
+    fn a_whole_playlist_adds_all_its_songs_to_another() {
+        let mut app = headless_app();
+        app.backend.set_offline(true);
+        app.user = Some(User {
+            id: "alice".into(),
+            ..Default::default()
+        });
+        let page = |id: &str, rows: &[&str]| PlaylistPage {
+            playlist: Loadable::Loaded(Playlist {
+                id: id.into(),
+                ..Default::default()
+            }),
+            items: PagedList {
+                items: rows.iter().map(|uri| cached_playlist_row(uri)).collect(),
+                total: Some(rows.len() as u32),
+                next_offset: None,
+                loaded_once: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        app.playlist_pages.insert(
+            "from".into(),
+            page("from", &["spotify:track:a", "spotify:track:b"]),
+        );
+        app.playlist_pages
+            .insert("best".into(), page("best", &["spotify:track:z"]));
+        app.apply(
+            Action::AddPlaylistToPlaylist {
+                from: "from".into(),
+                playlist_id: "best".into(),
+                playlist_name: "The best".into(),
+            },
+            &egui::Context::default(),
+        );
+        let rows: Vec<_> = app.playlist_pages["best"]
+            .items
+            .items
+            .iter()
+            .filter_map(|row| row.playable().map(|item| item.uri().to_string()))
+            .collect();
+        assert_eq!(
+            rows,
+            ["spotify:track:z", "spotify:track:a", "spotify:track:b"]
+        );
+        assert!(app.playlist_copies.is_empty());
+
+        // Still being read: it waits, and adds when the last page is in.
+        app.playlist_pages
+            .get_mut("from")
+            .unwrap()
+            .items
+            .next_offset = Some(2);
+        app.playlist_pages.get_mut("from").unwrap().items.loading = true;
+        app.apply(
+            Action::AddPlaylistToPlaylist {
+                from: "from".into(),
+                playlist_id: "best".into(),
+                playlist_name: "The best".into(),
+            },
+            &egui::Context::default(),
+        );
+        assert_eq!(app.playlist_copies.len(), 1, "waiting for the rest");
+        let source = app.playlist_pages.get_mut("from").unwrap();
+        source.items.next_offset = None;
+        source.items.loading = false;
+        app.keep_playlist_copies();
+        assert!(app.playlist_copies.is_empty());
+        assert!(
+            matches!(app.dialog, Some(Dialog::ConfirmPlaylistDuplicates { .. })),
+            "its songs are there already, so it asks"
+        );
     }
 
     #[test]

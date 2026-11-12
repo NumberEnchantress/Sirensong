@@ -5303,3 +5303,8 @@ msgstr "Desativado enquanto {setting} estiver ativado."
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "Requer {setting} em {choice}."
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "Essa playlist não tem músicas para adicionar"

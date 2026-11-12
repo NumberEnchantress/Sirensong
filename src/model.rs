@@ -1273,6 +1273,13 @@ pub enum Action {
         playlist_name: String,
         items: Vec<PlayableItem>,
     },
+    /// Every song of the playlist `from`, added to another playlist once all
+    /// of them have been read.
+    AddPlaylistToPlaylist {
+        from: String,
+        playlist_id: String,
+        playlist_name: String,
+    },
     /// Copy dragged songs into an open playlist at an absolute position.
     InsertInPlaylist {
         playlist_id: String,

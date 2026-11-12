@@ -5320,3 +5320,8 @@ msgstr "Выключено, пока включено: {setting}."
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "Требуется {setting}: {choice}."
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "В этом плейлисте нет треков для добавления"

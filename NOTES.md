@@ -318,6 +318,17 @@ record its own decisions and three rounds of adversarial grading.
   (`filtered_row_sized`, `SEED_FIELD_WIDTH`), so its text wraps before them
   and the Vacuum card no longer draws wider than the others.
 
+### Add a playlist to another, 12 November 2026 (mod 30)
+
+- **Asked by the user.** A playlist's menu (its page's **…**,
+  and every menu built by `widgets::context_menu_items`) has **Add to
+  playlist**, as in Spotify: `Action::AddPlaylistToPlaylist` queues an
+  `App::playlist_copies` entry, and `keep_playlist_copies` (each frame)
+  reads the source to its end, then adds all its songs through
+  `request_playlist_add`, so duplicates still ask. The picker takes
+  `widgets::Adding`, leaves the source playlist out, and offers New
+  playlist only for songs in hand.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

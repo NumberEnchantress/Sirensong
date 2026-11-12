@@ -5294,3 +5294,8 @@ msgstr "Uit zolang {setting} aan staat."
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "Vereist {setting} op {choice}."
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "Die afspeellijst heeft geen nummers om toe te voegen"

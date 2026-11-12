@@ -5143,3 +5143,8 @@ msgstr "「{setting}」開啟時關閉。"
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "需要將「{setting}」設為「{choice}」。"
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "該播放清單中沒有可新增的歌曲"

@@ -5220,3 +5220,8 @@ msgstr "{setting}이(가) 켜져 있는 동안 꺼집니다."
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "{setting}을(를) {choice}(으)로 설정해야 합니다."
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "그 플레이리스트에는 추가할 곡이 없습니다"

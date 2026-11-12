@@ -5260,3 +5260,8 @@ msgstr "{setting} がオンの間はオフです。"
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "{setting} を {choice} にする必要があります。"
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "そのプレイリストには追加する曲がありません"

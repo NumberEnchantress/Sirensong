@@ -5321,3 +5321,8 @@ msgstr "Aus, solange {setting} an ist."
 #: src/ui/settings.rs:202
 msgid "Needs {setting} set to {choice}."
 msgstr "Braucht {setting} auf {choice}."
+
+#. Translators: A playlist chosen to add to another one turned out to hold no songs.
+#: src/app.rs:13496
+msgid "That playlist has no songs to add"
+msgstr "Diese Playlist enthält keine Songs zum Hinzufügen"
