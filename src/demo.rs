@@ -8225,6 +8225,36 @@ mod tests {
         );
     }
 
+    /// While a playback change waits, Apply and restart playback stays at
+    /// the foot of the view, though its own row is further down the page.
+    #[test]
+    fn a_waiting_playback_change_keeps_apply_in_view() {
+        let (ctx, mut app) = accessible_app("settings-apply-stuck");
+        app.backend.shutdown();
+        let size = egui::vec2(1280.0, 700.0);
+        app.open(Page::Settings);
+        let apply = |painted: &[(String, egui::Rect)]| {
+            painted
+                .iter()
+                .filter(|(text, _)| text == "Apply and restart playback")
+                .map(|(_, rect)| *rect)
+                .collect::<Vec<_>>()
+        };
+        let painted = view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
+        assert!(apply(&painted).is_empty(), "nothing waits");
+        ctx.data_mut(|data| data.insert_temp(egui::Id::new("playback-settings-dirty"), true));
+        view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
+        let painted = view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
+        // At the page's top, Apply's own row is far below the view, which
+        // draws nothing out of sight: what shows is the copy kept in view.
+        assert!(app.page_scroll.as_ref().is_none_or(|(_, at)| *at < 1.0));
+        let shown = apply(&painted);
+        assert!(
+            !shown.is_empty() && shown.iter().all(|rect| rect.bottom() <= size.y),
+            "Apply is in view: {shown:?}"
+        );
+    }
+
     /// Settings shows one category at a time, chosen from the list beside
     /// it; a search looks through all of them, each match under its
     /// category's name; and the list stays in view as the page scrolls.

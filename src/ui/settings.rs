@@ -2145,17 +2145,49 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     || playback_rows[10].matches(&needle, &playback)
                     || playback_rows[11].matches(&needle, &playback))
             {
-                ui.horizontal(|ui| {
-                    if playback_dirty {
-                        if theme::pill_button(ui, &palette, &apply_playback, true).clicked() {
-                            app.actions.push(Action::RestartEngine);
-                            playback_dirty = false;
+                let footer = ui
+                    .horizontal(|ui| {
+                        if playback_dirty {
+                            if theme::pill_button(ui, &palette, &apply_playback, true).clicked() {
+                                app.actions.push(Action::RestartEngine);
+                                playback_dirty = false;
+                            }
+                            theme::subtle(ui, &palette, &apply_playback_note);
+                        } else {
+                            theme::subtle(ui, &palette, &gettext(locale, "Playback settings applied."));
                         }
-                        theme::subtle(ui, &palette, &apply_playback_note);
-                    } else {
-                        theme::subtle(ui, &palette, &gettext(locale, "Playback settings applied."));
-                    }
-                });
+                    })
+                    .response
+                    .rect;
+                // While a change waits, its Apply stays at the foot of the
+                // view wherever the page is scrolled to.
+                let view = ui.clip_rect();
+                if playback_dirty && !view.contains_rect(footer) {
+                    let ctx = ui.ctx().clone();
+                    egui::Area::new(egui::Id::new("settings-apply-stuck"))
+                        .pivot(egui::Align2::LEFT_BOTTOM)
+                        .fixed_pos(egui::pos2(footer.left(), view.bottom() - 12.0))
+                        .order(egui::Order::Middle)
+                        .constrain(false)
+                        .show(&ctx, |ui| {
+                            Frame::new()
+                                .fill(palette.overlay)
+                                .stroke(Stroke::new(1.0, palette.outline))
+                                .corner_radius(CornerRadius::same(theme::RADIUS + 2))
+                                .inner_margin(Margin::symmetric(14, 10))
+                                .show(ui, |ui| {
+                                    ui.horizontal(|ui| {
+                                        if theme::pill_button(ui, &palette, &apply_playback, true)
+                                            .clicked()
+                                        {
+                                            app.actions.push(Action::RestartEngine);
+                                            playback_dirty = false;
+                                        }
+                                        theme::subtle(ui, &palette, &apply_playback_note);
+                                    });
+                                });
+                        });
+                }
             }
         });
     }

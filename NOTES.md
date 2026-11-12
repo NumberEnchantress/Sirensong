@@ -399,6 +399,9 @@ record its own decisions and three rounds of adversarial grading.
   moved there from Storage (`take`), with the search log beside them: its
   size, read from the file, and **Clear search log**, which asks in the
   search log's window. It comes before Vacuum.
+- **Apply in view (mod 38):** while a playback change waits, a copy of
+  Apply and restart playback sits at the foot of the view (an
+  `egui::Area`, pivoted at its bottom) whenever its own row is out of view.
 
 ### Still open
 

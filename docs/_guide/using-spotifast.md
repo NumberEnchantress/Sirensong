@@ -303,6 +303,10 @@ it in a narrow window), which stays in view as the page scrolls:
 A search looks through every category, and shows each match under its
 category's name. Choosing a category ends the search.
 
+A change to how this computer plays, such as Audio quality or Normalize
+volume, waits for **Apply and restart playback**. While it waits, that button
+stays at the foot of the view wherever the page is scrolled to.
+
 A setting that another one leaves with nothing to do is greyed out, with a
 line saying which: **When both changed** needs **Keep in step with Spotify**,
 Vacuum's choices need **Listen in a vacuum**, **Autoplay** is off while
@@ -947,10 +951,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 37 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 38 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 37` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 38` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 
