@@ -947,6 +947,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let search_default = gettext(locale, "Search opens on");
     // Translators: A setting: keep the results of every search on this computer.
     let search_log = gettext(locale, "Keep a search log");
+    // Translators: A setting: a button on Home that opens the search log.
+    let search_log_button = gettext(locale, "Search log button on Home");
     // Translators: A setting: while the playlist map is open, the Library's search box sits above the map.
     let map_search = gettext(locale, "Search box above the map");
     // Translators: A setting: searching marks what matches on the playlist map instead of filtering it.
@@ -1593,7 +1595,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         take(&mut appearance_rows, 21),
     ];
     let funnel_rows = [take(&mut suggestion_rows, 0)];
-    let search_rows = [
+    let mut search_rows = [
         take(&mut appearance_rows, 19),
         take(&mut appearance_rows, 14),
         RowText::new(
@@ -1603,7 +1605,17 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded.",
             ),
         ),
+        RowText::new(
+            search_log_button.clone(),
+            gettext(
+                locale,
+                "A button on Home, beside the map's choices or under the greeting, opens the searches kept.",
+            ),
+        ),
     ];
+    if !app.settings.search_log {
+        search_rows[3].needs = Some(needs_on(locale, &search_log));
+    }
     let visualizer_rows = [
         take(&mut appearance_rows, 8),
         take(&mut appearance_rows, 9),
@@ -2365,6 +2377,25 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 |ui| {
                     if widgets::switch(ui, &palette, &search_log, &mut app.settings.search_log)
                         .changed()
+                    {
+                        changed = true;
+                    }
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &search_title,
+                &search_rows[3],
+                |ui| {
+                    if widgets::switch(
+                        ui,
+                        &palette,
+                        &search_log_button,
+                        &mut app.settings.search_log_button,
+                    )
+                    .changed()
                     {
                         changed = true;
                     }

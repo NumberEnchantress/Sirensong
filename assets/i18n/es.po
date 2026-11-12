@@ -5332,3 +5332,41 @@ msgstr "Guardar un registro de búsquedas"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "Guarda lo que mostró cada búsqueda, solo en este ordenador, para las últimas 1000 búsquedas. No se sube nada."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "Registro de búsquedas"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "Se eliminarán todas las búsquedas guardadas. No se puede deshacer."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "Aún no hay búsquedas guardadas."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "«Guardar un registro de búsquedas» está desactivado, en Ajustes > Buscar."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "Resultados: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "Borrar registro de búsquedas"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "Botón del registro de búsquedas en Inicio"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "Un botón en Inicio, junto a las opciones del mapa o bajo el saludo, abre las búsquedas guardadas."

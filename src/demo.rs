@@ -1390,6 +1390,61 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 app.library.playlists = Loadable::Loaded(playlists);
             }
             "sidebar-map" => app.settings.sidebar_map = true,
+            // The search log, with a few searches kept, open from Home's
+            // button; `search-log-open` shows the first search's results.
+            "search-log" | "search-log-open" => {
+                use crate::search_log::{Entry, Found};
+                app.settings.search_log = true;
+                app.settings.search_log_button = true;
+                let path = app.dirs.search_log_file();
+                let found = |kind: &str, uri: &str, name: &str, by: &str| Found {
+                    kind: kind.into(),
+                    uri: uri.into(),
+                    name: name.into(),
+                    by: by.into(),
+                };
+                for (index, (query, results)) in [
+                    (
+                        "khruangbin",
+                        vec![
+                            found("song", "spotify:track:t2", "Otomo", "Khruangbin"),
+                            found("artist", "spotify:artist:art0", "Khruangbin", ""),
+                            found("album", "spotify:album:al2", "Mordechai", "Khruangbin"),
+                        ],
+                    ),
+                    (
+                        "late night",
+                        vec![found(
+                            "playlist",
+                            "spotify:playlist:pl1",
+                            "Late night focus",
+                            "",
+                        )],
+                    ),
+                    (
+                        "bonobo",
+                        vec![found("song", "spotify:track:t1", "Rosewood", "Bonobo")],
+                    ),
+                ]
+                .into_iter()
+                .rev()
+                .enumerate()
+                {
+                    app.search_log.record(
+                        &path,
+                        Entry {
+                            at: format!("2026-11-12T1{index}:30:00Z"),
+                            query: query.into(),
+                            results,
+                        },
+                        None,
+                    );
+                }
+                app.dialog = Some(crate::model::Dialog::SearchLog {
+                    open: (surface == "search-log-open").then_some(0),
+                    clearing: false,
+                });
+            }
             // The guessing game, its playing song being guessed.
             "game-typed" | "game-grid" | "game-colour" | "game-honor" => {
                 let mode = match surface {
@@ -10137,6 +10192,50 @@ mod tests {
             }
         }
         app.backend.shutdown();
+    }
+
+    /// Home's search log button, off by default, opens the searches kept;
+    /// Clear search log forgets them at once.
+    #[test]
+    fn homes_search_log_button_opens_the_log_and_clear_empties_it() {
+        let (ctx, mut app) = accessible_app("search-log-button");
+        app.backend.shutdown();
+        let size = egui::vec2(1280.0, 800.0);
+        let frame = |ctx: &egui::Context, app: &mut App, events: Vec<egui::Event>| {
+            view_frame_sized(ctx, app, events, App::frame_ui, size)
+        };
+        app.open(Page::Home);
+        let painted = frame(&ctx, &mut app, vec![]);
+        assert!(
+            !painted.iter().any(|(text, _)| text == "Search log"),
+            "off by default"
+        );
+        app.settings.search_log_button = true;
+        let path = app.dirs.search_log_file();
+        app.search_log.record(
+            &path,
+            crate::search_log::Entry {
+                at: "2026-11-12T20:00:00Z".into(),
+                query: "bonobo".into(),
+                results: Vec::new(),
+            },
+            None,
+        );
+        frame(&ctx, &mut app, vec![]);
+        let painted = frame(&ctx, &mut app, vec![]);
+        let button = sidebar_text(&painted, "Search log").center();
+        frame(
+            &ctx,
+            &mut app,
+            pointer_click(button, egui::PointerButton::Primary),
+        );
+        frame(&ctx, &mut app, vec![]);
+        assert!(matches!(
+            app.dialog,
+            Some(Dialog::SearchLog { open: None, .. })
+        ));
+        app.apply(Action::ClearSearchLog, &ctx);
+        assert!(app.search_log.entries(&path).is_empty());
     }
 
     /// A playlist left and come back to opens where it was scrolled to,

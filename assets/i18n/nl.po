@@ -5323,3 +5323,41 @@ msgstr "Zoeklogboek bijhouden"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "Bewaart wat elke zoekopdracht liet zien, alleen op deze computer, voor de laatste 1000 zoekopdrachten. Er wordt niets geüpload."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "Zoeklogboek"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "Elke bewaarde zoekopdracht wordt verwijderd. Dit kan niet ongedaan worden gemaakt."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "Nog geen zoekopdrachten bewaard."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "‘Zoeklogboek bijhouden’ staat uit, in Instellingen > Zoeken."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "Resultaten: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "Zoeklogboek wissen"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "Knop voor het zoeklogboek op Home"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "Een knop op Home, naast de keuzes van de kaart of onder de begroeting, opent de bewaarde zoekopdrachten."

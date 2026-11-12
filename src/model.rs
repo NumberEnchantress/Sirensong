@@ -1129,6 +1129,12 @@ pub enum Dialog {
     },
     /// Ask before letting go of every play kept.
     ConfirmClearHistory,
+    /// The search log: its searches, newest first, or the results of the one
+    /// `open`; `clearing` while it asks before forgetting them all.
+    SearchLog {
+        open: Option<usize>,
+        clearing: bool,
+    },
     /// Sirensong custom order and Spotify's both changed apart: what each
     /// side changed, as lines to read, to choose between them.
     LibraryConflict {
@@ -1525,6 +1531,8 @@ pub enum Action {
     ClearAudioCache,
     /// Clear local play history.
     ClearPlayHistory,
+    /// Forget every search the search log keeps.
+    ClearSearchLog,
     /// Open or close the Winamp window.
     ToggleWinampWindow,
     /// The pointer or a key on a view of a Windows Media Player skin.

@@ -5289,3 +5289,41 @@ msgstr "検索ログを残す"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "各検索で表示された結果を、このコンピュータにだけ、直近 1,000 件分残します。何もアップロードされません。"
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "検索ログ"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "残した検索はすべて削除されます。元に戻せません。"
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "まだ検索は残っていません。"
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "「検索ログを残す」はオフです（設定 > 検索）。"
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "結果: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "検索ログを消去"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "ホームに検索ログのボタン"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "ホームのマップの選択肢の横、またはあいさつの下にあるボタンで、残した検索を開きます。"

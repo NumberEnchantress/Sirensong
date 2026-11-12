@@ -359,6 +359,19 @@ record its own decisions and three rounds of adversarial grading.
   play history is saved. Names are kept as Spotify gave them; anything
   showing them must pass them through Vacuum's gate.
 
+### Search log button, 12 November 2026 (mod 34)
+
+- **Asked by the user.** `search_log_button` (off) puts a **Search log**
+  button on Home (`playlist_map::search_log_button`): in the map's toolbar
+  on Home, or under the greeting without the map. It opens
+  `Dialog::SearchLog { open, clearing }` (`dialogs::search_log`): the
+  searches, one line each and drawn only where seen (`show_rows`), an open
+  one's results as menu items that open them (`Action::OpenLink`), and
+  **Clear search log**, which asks, then `Action::ClearSearchLog` forgets
+  and writes at once. Every name shown passes `vacuum::gate::name`. The
+  setting row greys out without Keep a search log. `--demo-show search-log`
+  and `search-log-open` show it.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

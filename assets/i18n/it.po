@@ -5332,3 +5332,41 @@ msgstr "Tieni un registro delle ricerche"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "Conserva ciò che ogni ricerca ha mostrato, solo su questo computer, per le ultime 1000 ricerche. Non viene caricato nulla."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "Registro ricerche"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "Tutte le ricerche conservate verranno eliminate. Non si può annullare."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "Ancora nessuna ricerca conservata."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "«Tieni un registro delle ricerche» è disattivato, in Impostazioni > Cerca."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "Risultati: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "Cancella registro ricerche"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "Pulsante del registro ricerche in Home"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "Un pulsante in Home, accanto alle scelte della mappa o sotto il saluto, apre le ricerche conservate."

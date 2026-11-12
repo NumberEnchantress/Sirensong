@@ -5349,3 +5349,41 @@ msgstr "Вести журнал поиска"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "Сохраняет то, что показал каждый поиск, только на этом компьютере, для последних 1000 поисков. Ничего не отправляется."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "Журнал поиска"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "Все сохранённые поиски будут удалены. Это нельзя отменить."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "Сохранённых поисков пока нет."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "«Вести журнал поиска» выключено: Настройки > Поиск."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "Результаты: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "Очистить журнал поиска"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "Кнопка журнала поиска на Главной"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "Кнопка на Главной, рядом с параметрами карты или под приветствием, открывает сохранённые поиски."

@@ -5292,3 +5292,41 @@ msgstr "Spara en sökhistorik"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "Sparar vad varje sökning visade, bara på den här datorn, för de senaste 1 000 sökningarna. Inget laddas upp."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "Sökhistorik"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "Alla sparade sökningar raderas. Det går inte att ångra."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "Inga sökningar sparade än."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "”Spara en sökhistorik” är av, under Inställningar > Sök."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "Resultat: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "Rensa sökhistorik"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "Knapp för sökhistorik på Hem"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "En knapp på Hem, bredvid kartans val eller under hälsningen, öppnar de sparade sökningarna."

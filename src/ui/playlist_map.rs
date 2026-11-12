@@ -1122,6 +1122,10 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
                 });
             }
             ui.add_space(10.0);
+            if app.settings.search_log_button {
+                search_log_button(app, ui, icons);
+                ui.add_space(10.0);
+            }
         }
         let response = if icons {
             theme::soft_icon_button(
@@ -1181,6 +1185,25 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
             });
         }
     });
+}
+
+/// The button that opens the search log, its name beside its icon unless
+/// `icons` leaves room for the icon alone.
+pub(super) fn search_log_button(app: &mut App, ui: &mut egui::Ui, icons: bool) {
+    let palette = app.palette;
+    let label = gettext(app.locale, "Search log");
+    let response = if icons {
+        theme::soft_icon_button(ui, &palette, Icon::Clock, &label, false)
+    } else {
+        theme::soft_button(ui, &palette, Some(Icon::Clock), &label, false)
+    };
+    if response.clicked() {
+        app.actions
+            .push(Action::ShowDialog(crate::model::Dialog::SearchLog {
+                open: None,
+                clearing: false,
+            }));
+    }
 }
 
 /// The map on Home, filling what is left of the page.

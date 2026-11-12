@@ -248,6 +248,13 @@ episodes, for the last 1,000 searches, in `search-log.json` on this computer.
 A search typed on in one go keeps one entry, for what it ended on. Nothing is
 uploaded.
 
+**Search log button on Home**, also off by default, puts a **Search log**
+button on Home: beside the map's choices when Home shows the map, and under
+the greeting otherwise. It opens the searches kept, newest first, each with
+when it was made and how many results it found. Click one to see what it
+found, and click a result to open it. **Clear search log** asks, then
+forgets every search kept at once.
+
 A song picked from the search results plays on its own, and, with Autoplay on,
 Spotify continues with songs it suggests after it, as in the Spotify apps. The other results are
 not queued after it.
@@ -928,10 +935,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 33 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 34 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 33` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 34` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

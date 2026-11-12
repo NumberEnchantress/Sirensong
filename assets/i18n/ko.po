@@ -5249,3 +5249,41 @@ msgstr "검색 기록 남기기"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "각 검색에서 표시된 결과를 이 컴퓨터에만 최근 1,000개 검색까지 남깁니다. 아무것도 업로드되지 않습니다."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "검색 기록"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "남긴 모든 검색이 삭제됩니다. 되돌릴 수 없습니다."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "아직 남긴 검색이 없습니다."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "‘검색 기록 남기기’가 꺼져 있습니다(설정 > 검색)."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "결과: {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "검색 기록 지우기"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "홈에 검색 기록 버튼"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "홈의 지도 선택 옆이나 인사말 아래에 있는 버튼으로 남긴 검색을 엽니다."

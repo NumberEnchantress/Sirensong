@@ -43,6 +43,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let greeting = crate::util::greeting(app.locale);
     theme::text(ui, greeting.as_ref(), theme::bold(30.0), palette.text);
     ui.add_space(12.0);
+    // Without the map, the search log's button sits under the greeting; the
+    // map has it with its own choices.
+    if app.settings.search_log_button && !app.settings.home.playlist_map {
+        super::playlist_map::search_log_button(app, ui, false);
+        ui.add_space(12.0);
+    }
     // The playlist map takes the shelves' place when it is chosen.
     if app.settings.home.playlist_map {
         super::playlist_map::show(app, ui);

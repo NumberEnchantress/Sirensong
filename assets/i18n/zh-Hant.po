@@ -5172,3 +5172,41 @@ msgstr "保留搜尋紀錄"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "僅在這台電腦上保存每次搜尋顯示的結果，最多保留最近 1,000 次搜尋。不會上傳任何內容。"
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "搜尋紀錄"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "保存的所有搜尋都將被刪除。此操作無法復原。"
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "還沒有保存的搜尋。"
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "「保留搜尋紀錄」已關閉，位於 設定 > 搜尋。"
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "結果：{count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "清除搜尋紀錄"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "首頁上的搜尋紀錄按鈕"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "首頁上地圖選項旁或問候語下方的按鈕會開啟保存的搜尋。"

@@ -554,6 +554,8 @@ pub struct Settings {
     pub search_default: crate::model::SearchFilter,
     /// Every search's results are kept on this computer, in the search log.
     pub search_log: bool,
+    /// Home has a button that opens the search log.
+    pub search_log_button: bool,
     /// Explicit order per Library shelf. Missing shelves keep their previous
     /// behaviour; selecting another order never deletes the local arrangement.
     pub library_sort: std::collections::BTreeMap<LibraryShelf, LibrarySort>,
@@ -758,6 +760,7 @@ impl Default for Settings {
             library_conflicts: LibraryConflicts::Ask,
             search_default: crate::model::SearchFilter::All,
             search_log: false,
+            search_log_button: false,
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,
             settings_search_in_topbar: true,

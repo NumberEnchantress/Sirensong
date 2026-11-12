@@ -5361,3 +5361,41 @@ msgstr "Tenir un journal des recherches"
 #: src/ui/settings.rs:1603
 msgid "Keeps what every search showed, on this computer only, for the last 1,000 searches. Nothing is uploaded."
 msgstr "Garde ce que chaque recherche a affiché, sur cet ordinateur seulement, pour les 1 000 dernières recherches. Rien n’est envoyé."
+
+#. Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+#: src/ui/dialogs.rs:372
+msgid "Search log"
+msgstr "Journal des recherches"
+
+#. Translators: Asked before the search log is emptied.
+#: src/ui/dialogs.rs:383
+msgid "Every search kept will be deleted. This cannot be undone."
+msgstr "Toutes les recherches gardées seront supprimées. Cette action est irréversible."
+
+#: src/ui/dialogs.rs:441
+msgid "No searches kept yet."
+msgstr "Aucune recherche gardée pour l’instant."
+
+#. Translators: In the empty search log, while Keep a search log is off.
+#: src/ui/dialogs.rs:448
+msgid "Keep a search log is off, in Settings > Search."
+msgstr "« Tenir un journal des recherches » est désactivé, dans Paramètres > Rechercher."
+
+#. Translators: How many results a search in the search log found. {count} is a number.
+#: src/ui/dialogs.rs:471
+msgid "Results: {count}"
+msgstr "Résultats : {count}"
+
+#. Translators: The button that empties the search log.
+#: src/ui/dialogs.rs:516
+msgid "Clear search log"
+msgstr "Effacer le journal des recherches"
+
+#. Translators: A setting: a button on Home that opens the search log.
+#: src/ui/settings.rs:951
+msgid "Search log button on Home"
+msgstr "Bouton du journal des recherches dans Accueil"
+
+#: src/ui/settings.rs:1612
+msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
+msgstr "Un bouton dans Accueil, à côté des choix de la carte ou sous le message d’accueil, ouvre les recherches gardées."

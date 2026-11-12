@@ -15358,6 +15358,16 @@ impl App {
                     }
                 });
             }
+            Action::ClearSearchLog => {
+                // Forgotten now, not when the log would next be written.
+                self.search_log.clear();
+                self.search_log
+                    .save(&self.files, &self.dirs.search_log_file());
+                if let Some(Dialog::SearchLog { open, clearing }) = &mut self.dialog {
+                    *open = None;
+                    *clearing = false;
+                }
+            }
             Action::ClearPlayHistory => {
                 if matches!(self.dialog, Some(Dialog::ConfirmClearHistory)) {
                     self.dialog = None;
@@ -17358,7 +17368,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 33";
+pub const FORK_VERSION: &str = "mod 34";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

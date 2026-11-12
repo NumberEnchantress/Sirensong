@@ -157,6 +157,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         }
                     });
                 }
+                Dialog::SearchLog { open, clearing } => search_log(app, ui, open, clearing),
                 Dialog::ConfirmClearHistory => {
                     theme::text(ui, gettext(locale, "Clear play history?"), theme::bold(20.0), palette.text);
                     ui.add_space(8.0);
@@ -355,6 +356,192 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 }
 
 // Keep button rows content-sized when the shared modal area last held a taller dialog.
+/// The search log: each search kept, newest first, one line each; one
+/// opened shows what it found, a click on which opens it. Names pass through
+/// Vacuum's gate as everywhere else.
+fn search_log(app: &mut App, ui: &mut egui::Ui, open: Option<usize>, clearing: bool) {
+    use crate::vacuum::gate::name;
+    let palette = app.palette;
+    let locale = app.locale;
+    ui.set_width(520.0);
+    let path = app.dirs.search_log_file();
+    let mut actions = Vec::new();
+    // Translators: The title of the list of searches Sirensong kept, and the button on Home that opens it.
+    theme::text(
+        ui,
+        gettext(locale, "Search log"),
+        theme::bold(20.0),
+        palette.text,
+    );
+    ui.add_space(10.0);
+    let entries = app.search_log.entries(&path);
+    let row_height = 34.0;
+    if clearing {
+        // Translators: Asked before the search log is emptied.
+        let body = gettext(
+            locale,
+            "Every search kept will be deleted. This cannot be undone.",
+        );
+        ui.add(
+            egui::Label::new(
+                egui::RichText::new(body)
+                    .font(theme::regular(14.0))
+                    .color(palette.secondary),
+            )
+            .wrap(),
+        );
+    } else if let Some(entry) = open.and_then(|index| entries.get(index)) {
+        if theme::soft_button(
+            ui,
+            &palette,
+            Some(theme::Icon::ArrowLeft),
+            &gettext(locale, "Back"),
+            false,
+        )
+        .clicked()
+        {
+            actions.push(Action::ShowDialog(Dialog::SearchLog {
+                open: None,
+                clearing: false,
+            }));
+        }
+        ui.add_space(6.0);
+        theme::text(
+            ui,
+            name(&entry.query).into_owned(),
+            theme::medium(15.0),
+            palette.text,
+        );
+        ui.add_space(6.0);
+        egui::ScrollArea::vertical()
+            .max_height(420.0)
+            .auto_shrink([false, true])
+            .show(ui, |ui| {
+                for found in &entry.results {
+                    let icon = match found.kind.as_str() {
+                        "song" => theme::Icon::Music,
+                        "artist" => theme::Icon::User,
+                        "album" => theme::Icon::Disc,
+                        "playlist" => theme::Icon::ListMusic,
+                        "podcast" => theme::Icon::Mic,
+                        _ => theme::Icon::Headphones,
+                    };
+                    let label = if found.by.is_empty() {
+                        name(&found.name).into_owned()
+                    } else {
+                        format!("{} \u{00b7} {}", name(&found.name), name(&found.by))
+                    };
+                    if super::widgets::menu_item(ui, &palette, Some(icon), &label) {
+                        actions.push(Action::CloseDialog);
+                        actions.push(Action::OpenLink(found.uri.clone()));
+                    }
+                }
+            });
+    } else if entries.is_empty() {
+        theme::subtle(ui, &palette, &gettext(locale, "No searches kept yet."));
+        if !app.settings.search_log {
+            ui.add_space(4.0);
+            // Translators: In the empty search log, while Keep a search log is off.
+            theme::subtle(
+                ui,
+                &palette,
+                &gettext(locale, "Keep a search log is off, in Settings > Search."),
+            );
+        }
+    } else {
+        // One line a search, drawn only where it can be seen.
+        egui::ScrollArea::vertical()
+            .max_height(420.0)
+            .auto_shrink([false, true])
+            .show_rows(ui, row_height, entries.len(), |ui, rows| {
+                for index in rows {
+                    let entry = &entries[index];
+                    let when = entry
+                        .at
+                        .parse::<jiff::Timestamp>()
+                        .map(|at| {
+                            at.to_zoned(jiff::tz::TimeZone::system())
+                                .strftime("%Y-%m-%d %H:%M")
+                                .to_string()
+                        })
+                        .unwrap_or_default();
+                    let count = entry.results.len();
+                    // Translators: How many results a search in the search log found. {count} is a number.
+                    let found =
+                        gettext(locale, "Results: {count}").replace("{count}", &count.to_string());
+                    let label = format!("{}   {when}   {found}", name(&entry.query));
+                    let (rect, response) = ui.allocate_exact_size(
+                        egui::vec2(ui.available_width(), row_height),
+                        egui::Sense::click(),
+                    );
+                    response.widget_info(|| {
+                        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label)
+                    });
+                    if response.hovered() {
+                        ui.painter().rect_filled(
+                            rect,
+                            CornerRadius::same(6),
+                            palette.surface_hover,
+                        );
+                    }
+                    let text = rect.shrink2(egui::vec2(8.0, 0.0));
+                    ui.painter().text(
+                        text.left_center(),
+                        egui::Align2::LEFT_CENTER,
+                        name(&entry.query),
+                        theme::regular(14.0),
+                        palette.text,
+                    );
+                    ui.painter().text(
+                        text.right_center(),
+                        egui::Align2::RIGHT_CENTER,
+                        format!("{when}   {found}"),
+                        theme::regular(12.5),
+                        palette.secondary,
+                    );
+                    if response.clicked() {
+                        actions.push(Action::ShowDialog(Dialog::SearchLog {
+                            open: Some(index),
+                            clearing: false,
+                        }));
+                    }
+                }
+            });
+    }
+    let any = !entries.is_empty();
+    ui.add_space(16.0);
+    buttons(ui, |ui| {
+        if clearing {
+            // Translators: The button that empties the search log.
+            if theme::pill_button(ui, &palette, &gettext(locale, "Clear search log"), true)
+                .clicked()
+            {
+                actions.push(Action::ClearSearchLog);
+            }
+            if theme::pill_button(ui, &palette, &gettext(locale, "Cancel"), false).clicked() {
+                actions.push(Action::ShowDialog(Dialog::SearchLog {
+                    open: None,
+                    clearing: false,
+                }));
+            }
+        } else {
+            if theme::pill_button(ui, &palette, &gettext(locale, "Close"), true).clicked() {
+                actions.push(Action::CloseDialog);
+            }
+            if any
+                && theme::pill_button(ui, &palette, &gettext(locale, "Clear search log"), false)
+                    .clicked()
+            {
+                actions.push(Action::ShowDialog(Dialog::SearchLog {
+                    open: None,
+                    clearing: true,
+                }));
+            }
+        }
+    });
+    app.actions.extend(actions);
+}
+
 fn buttons(ui: &mut egui::Ui, add_buttons: impl FnOnce(&mut egui::Ui)) {
     ui.allocate_ui_with_layout(
         egui::vec2(ui.available_width(), ui.spacing().interact_size.y),
