@@ -5397,3 +5397,23 @@ msgstr "Кнопка журналу пошуку на Головній"
 #: src/ui/settings.rs:1612
 msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
 msgstr "Кнопка на Головній, поруч із параметрами мапи або під привітанням, відкриває збережені пошуки."
+
+#. Translators: A Settings category: the account, playback and the equalizer.
+#: src/model.rs:1113
+msgid "Listening"
+msgstr "Слухання"
+
+#. Translators: A Settings category: the Library, the Home map and Funnel.
+#: src/model.rs:1115
+msgid "Library & Home"
+msgstr "Бібліотека й Головна"
+
+#. Translators: A Settings category: themes, the visualizers and the mini player's skins.
+#: src/model.rs:1118
+msgid "Look & feel"
+msgstr "Вигляд"
+
+#. Translators: A Settings category: Vacuum, and what Sirensong keeps of what you did.
+#: src/model.rs:1120
+msgid "Privacy"
+msgstr "Конфіденційність"

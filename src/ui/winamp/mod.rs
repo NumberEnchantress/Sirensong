@@ -803,6 +803,9 @@ fn options_menu(app: &mut App, ui: &mut Ui, unit: f32) {
         .clicked()
     {
         app.actions.push(Action::Open(Page::Settings));
+        app.actions.push(Action::SetSettingsCategory(
+            crate::model::SettingsCategory::Look,
+        ));
         app.actions.push(Action::ToggleWinampWindow);
     }
     if ui.button(gettext(locale, "Big window").as_ref()).clicked() {

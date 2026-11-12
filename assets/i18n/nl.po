@@ -5361,3 +5361,23 @@ msgstr "Knop voor het zoeklogboek op Home"
 #: src/ui/settings.rs:1612
 msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
 msgstr "Een knop op Home, naast de keuzes van de kaart of onder de begroeting, opent de bewaarde zoekopdrachten."
+
+#. Translators: A Settings category: the account, playback and the equalizer.
+#: src/model.rs:1113
+msgid "Listening"
+msgstr "Luisteren"
+
+#. Translators: A Settings category: the Library, the Home map and Funnel.
+#: src/model.rs:1115
+msgid "Library & Home"
+msgstr "Bibliotheek en Home"
+
+#. Translators: A Settings category: themes, the visualizers and the mini player's skins.
+#: src/model.rs:1118
+msgid "Look & feel"
+msgstr "Uiterlijk"
+
+#. Translators: A Settings category: Vacuum, and what Sirensong keeps of what you did.
+#: src/model.rs:1120
+msgid "Privacy"
+msgstr "Privacy"

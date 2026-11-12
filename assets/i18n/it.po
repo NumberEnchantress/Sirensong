@@ -5370,3 +5370,23 @@ msgstr "Pulsante del registro ricerche in Home"
 #: src/ui/settings.rs:1612
 msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
 msgstr "Un pulsante in Home, accanto alle scelte della mappa o sotto il saluto, apre le ricerche conservate."
+
+#. Translators: A Settings category: the account, playback and the equalizer.
+#: src/model.rs:1113
+msgid "Listening"
+msgstr "Ascolto"
+
+#. Translators: A Settings category: the Library, the Home map and Funnel.
+#: src/model.rs:1115
+msgid "Library & Home"
+msgstr "Libreria e Home"
+
+#. Translators: A Settings category: themes, the visualizers and the mini player's skins.
+#: src/model.rs:1118
+msgid "Look & feel"
+msgstr "Aspetto"
+
+#. Translators: A Settings category: Vacuum, and what Sirensong keeps of what you did.
+#: src/model.rs:1120
+msgid "Privacy"
+msgstr "Privacy"

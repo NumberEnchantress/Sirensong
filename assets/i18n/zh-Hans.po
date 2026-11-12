@@ -5204,3 +5204,23 @@ msgstr "首页上的搜索日志按钮"
 #: src/ui/settings.rs:1612
 msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
 msgstr "首页上地图选项旁或问候语下方的按钮会打开保存的搜索。"
+
+#. Translators: A Settings category: the account, playback and the equalizer.
+#: src/model.rs:1113
+msgid "Listening"
+msgstr "收听"
+
+#. Translators: A Settings category: the Library, the Home map and Funnel.
+#: src/model.rs:1115
+msgid "Library & Home"
+msgstr "音乐库和首页"
+
+#. Translators: A Settings category: themes, the visualizers and the mini player's skins.
+#: src/model.rs:1118
+msgid "Look & feel"
+msgstr "外观"
+
+#. Translators: A Settings category: Vacuum, and what Sirensong keeps of what you did.
+#: src/model.rs:1120
+msgid "Privacy"
+msgstr "隐私"

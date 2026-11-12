@@ -380,6 +380,22 @@ record its own decisions and three rounds of adversarial grading.
   bar's height is kept (`SETTINGS_JUMP_HEIGHT_ID`) so `section` lands a
   section jumped to just below it.
 
+### Settings in six categories, 12 November 2026 (mod 36)
+
+- **Visual scope approved by the user** (the proposal of six category pages
+  on a list beside them, with these names). `model::SettingsCategory`:
+  Listening, Library & Home, Search, Look & feel, Privacy, System.
+  `App::settings_category` holds the one shown for the session;
+  `Action::SetSettingsCategory` changes it and opens it at its top. The
+  list (`settings::category_list`) replaces the jump bar: a column beside
+  the sections from `CATEGORY_LIST_WIDE` up, which stays at the top of the
+  view as the page scrolls (an `egui::Area`, as the bar did), and a wrapping
+  row above them in a narrow window. Each section draws only for its
+  category, or for every one while searching, with `CategoryHeading`
+  naming the category above its first match. Vacuum moved before System's
+  sections. Opening the Client ID setup chooses Listening; the mini
+  player's Choose a skin chooses Look & feel.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

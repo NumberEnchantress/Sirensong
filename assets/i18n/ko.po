@@ -5287,3 +5287,23 @@ msgstr "홈에 검색 기록 버튼"
 #: src/ui/settings.rs:1612
 msgid "A button on Home, beside the map's choices or under the greeting, opens the searches kept."
 msgstr "홈의 지도 선택 옆이나 인사말 아래에 있는 버튼으로 남긴 검색을 엽니다."
+
+#. Translators: A Settings category: the account, playback and the equalizer.
+#: src/model.rs:1113
+msgid "Listening"
+msgstr "듣기"
+
+#. Translators: A Settings category: the Library, the Home map and Funnel.
+#: src/model.rs:1115
+msgid "Library & Home"
+msgstr "라이브러리 및 홈"
+
+#. Translators: A Settings category: themes, the visualizers and the mini player's skins.
+#: src/model.rs:1118
+msgid "Look & feel"
+msgstr "모양과 느낌"
+
+#. Translators: A Settings category: Vacuum, and what Sirensong keeps of what you did.
+#: src/model.rs:1120
+msgid "Privacy"
+msgstr "개인정보"

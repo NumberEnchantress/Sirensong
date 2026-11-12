@@ -4,7 +4,7 @@ use egui::{Align, CornerRadius, Frame, Layout, Margin, Stroke, Vec2, vec2};
 
 use crate::app::App;
 use crate::i18n::{gettext, ngettext, pgettext};
-use crate::model::{Action, Dialog};
+use crate::model::{Action, Dialog, SettingsCategory};
 use crate::settings::{LanguageChoice, ProxyMode, ThemeChoice};
 use crate::theme::{self, Icon, Palette};
 use crate::winamp::SkinKind;
@@ -16,23 +16,169 @@ pub(crate) const PERSONAL_APP_FOCUS_ID: &str = "focus-personal-app-setup";
 const SETTINGS_FILTER_ID: &str = "settings-filter";
 /// How wide Vacuum's field for a seed of your own is.
 const SEED_FIELD_WIDTH: f32 = 240.0;
-/// The section a click above the sections asked to see, by its title.
-const SETTINGS_JUMP_ID: &str = "settings-jump";
-/// How tall the section buttons are while they stay at the top of the view,
-/// for a section jumped to to land below them.
-const SETTINGS_JUMP_HEIGHT_ID: &str = "settings-jump-height";
-/// The space above and below the buttons while they stay at the top.
+/// The page at least this wide lists the categories beside the settings;
+/// narrower, above them.
+const CATEGORY_LIST_WIDE: f32 = 700.0;
+/// How wide the list of categories is beside the settings.
+const CATEGORY_LIST_WIDTH: f32 = 180.0;
+/// The space above and below the list while it stays at the top.
 const STUCK_PADDING: f32 = 8.0;
 
-/// The section buttons: a click asks for that section.
-fn jump_bar(ui: &mut egui::Ui, palette: &Palette, jumps: &[&str]) {
-    ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
-    for title in jumps {
-        if theme::soft_button(ui, palette, None, title, false).clicked() {
-            ui.data_mut(|data| {
-                data.insert_temp(egui::Id::new(SETTINGS_JUMP_ID), title.to_string())
-            });
+/// While a search shows every category, each one's name above its first
+/// match.
+struct CategoryHeading {
+    searching: bool,
+    last: Option<SettingsCategory>,
+}
+
+impl CategoryHeading {
+    fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        palette: &Palette,
+        locale: crate::i18n::Locale,
+        category: SettingsCategory,
+    ) {
+        if !self.searching || self.last == Some(category) {
+            return;
         }
+        self.last = Some(category);
+        ui.add_space(12.0);
+        theme::text(
+            ui,
+            category.label(locale),
+            theme::medium(13.0),
+            palette.secondary,
+        );
+    }
+}
+
+fn category_icon(category: SettingsCategory) -> Icon {
+    match category {
+        SettingsCategory::Listening => Icon::Headphones,
+        SettingsCategory::LibraryHome => Icon::Library,
+        SettingsCategory::Search => Icon::Search,
+        SettingsCategory::Look => Icon::Brush,
+        SettingsCategory::Privacy => Icon::EyeOff,
+        SettingsCategory::System => Icon::Monitor,
+    }
+}
+
+/// The categories, the one shown filled: a column beside the settings when
+/// `wide`, which stays at the top of the view once the page scrolls, or a
+/// wrapping row above them. Choosing one while searching ends the search.
+fn category_list(app: &mut App, ui: &mut egui::Ui, wide: bool, searching: bool) {
+    let palette = app.palette;
+    let locale = app.locale;
+    let current = app.settings_category;
+    let mut chosen = None;
+    let mut draw = |ui: &mut egui::Ui| {
+        ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
+        for category in SettingsCategory::ALL {
+            let label = category.label(locale);
+            let selected = !searching && category == current;
+            let response = if wide {
+                // A row the list's width: its icon and name, the one shown
+                // filled, as the sidebar's Home and Search are.
+                let (rect, response) =
+                    ui.allocate_exact_size(vec2(CATEGORY_LIST_WIDTH, 34.0), egui::Sense::click());
+                if ui.is_rect_visible(rect) {
+                    let fill = if selected {
+                        palette.surface
+                    } else if response.hovered() {
+                        palette.surface_hover.gamma_multiply(0.6)
+                    } else {
+                        egui::Color32::TRANSPARENT
+                    };
+                    ui.painter().rect_filled(rect, CornerRadius::same(8), fill);
+                    let colour = if selected || response.hovered() {
+                        palette.text
+                    } else {
+                        palette.secondary
+                    };
+                    let icon = egui::Rect::from_center_size(
+                        egui::pos2(rect.left() + 20.0, rect.center().y),
+                        vec2(16.0, 16.0),
+                    );
+                    category_icon(category)
+                        .image(colour, 16.0)
+                        .paint_at(ui, icon);
+                    ui.painter().text(
+                        egui::pos2(rect.left() + 38.0, rect.center().y),
+                        egui::Align2::LEFT_CENTER,
+                        label.as_ref(),
+                        if selected {
+                            theme::bold(14.0)
+                        } else {
+                            theme::medium(14.0)
+                        },
+                        colour,
+                    );
+                }
+                theme::focus_ring(ui, &response);
+                response
+            } else {
+                theme::soft_button(
+                    ui,
+                    &palette,
+                    Some(category_icon(category)),
+                    &label,
+                    selected,
+                )
+            };
+            response.widget_info(|| {
+                egui::WidgetInfo::selected(
+                    egui::WidgetType::RadioButton,
+                    true,
+                    selected,
+                    label.as_ref(),
+                )
+            });
+            if response.clicked() {
+                chosen = Some(category);
+            }
+        }
+    };
+    if wide {
+        let list = ui
+            .allocate_ui_with_layout(
+                vec2(CATEGORY_LIST_WIDTH, 0.0),
+                Layout::top_down(Align::Min),
+                |ui| {
+                    ui.set_width(CATEGORY_LIST_WIDTH);
+                    draw(ui);
+                },
+            )
+            .response
+            .rect;
+        // Once the page scrolls past it, the list stays at the top of the
+        // page's view, beside the settings.
+        let view = ui.clip_rect();
+        if list.top() < view.top() {
+            let ctx = ui.ctx().clone();
+            egui::Area::new(egui::Id::new("settings-categories-stuck"))
+                .fixed_pos(egui::pos2(list.left(), view.top()))
+                .order(egui::Order::Middle)
+                .constrain(false)
+                .show(&ctx, |ui| {
+                    Frame::new()
+                        .fill(palette.window)
+                        .inner_margin(Margin::symmetric(0, STUCK_PADDING as i8))
+                        .show(ui, |ui| {
+                            ui.set_width(CATEGORY_LIST_WIDTH);
+                            ui.with_layout(Layout::top_down(Align::Min), |ui| draw(ui));
+                        });
+                });
+        }
+    } else {
+        ui.horizontal_wrapped(|ui| draw(ui));
+        ui.add_space(4.0);
+    }
+    if let Some(category) = chosen {
+        if searching {
+            clear_search(ui.ctx());
+        }
+        app.actions.push(Action::SetSettingsCategory(category));
     }
 }
 
@@ -482,23 +628,7 @@ fn section(
     add_contents: impl FnOnce(&mut egui::Ui),
 ) {
     ui.add_space(10.0);
-    let heading = theme::text(ui, title, theme::bold(18.0), palette.text);
-    // Asked for from above the sections: brought to the top of the page.
-    let jump = egui::Id::new(SETTINGS_JUMP_ID);
-    if ui
-        .data(|data| data.get_temp::<String>(jump))
-        .is_some_and(|wanted| wanted == title)
-    {
-        ui.data_mut(|data| data.remove::<String>(jump));
-        // Below the bar, which stays at the top once the page scrolls.
-        let stuck = ui
-            .data(|data| data.get_temp::<f32>(egui::Id::new(SETTINGS_JUMP_HEIGHT_ID)))
-            .unwrap_or(0.0);
-        ui.scroll_to_rect(
-            heading.rect.with_min_y(heading.rect.top() - stuck - 6.0),
-            Some(Align::TOP),
-        );
-    }
+    theme::text(ui, title, theme::bold(18.0), palette.text);
     ui.add_space(8.0);
     Frame::new()
         .fill(
@@ -1655,75 +1785,32 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         take(&mut playback_rows, 12),
     ];
 
-    // Every section a click away, while nothing is searched.
-    if needle.is_empty() {
-        let mut jumps: Vec<&str> = vec![account.as_ref(), playback.as_ref()];
-        if audio_processing {
-            jumps.push(&sound);
-        }
-        jumps.extend([
-            library.as_ref(),
-            &home_map,
-            &funnel,
-            &search_title,
-            &appearance,
-        ]);
-        if visualizers {
-            jumps.push(&visualizers_title);
-        }
-        jumps.extend([
-            mini_player.as_ref(),
-            &system,
-            &vacuum,
-            &network,
-            &storage,
-            &about,
-        ]);
-        let bar = ui
-            .horizontal_wrapped(|ui| jump_bar(ui, &palette, &jumps))
-            .response
-            .rect;
-        ui.add_space(4.0);
-        // Once the page scrolls past it, the bar stays at the top of the
-        // page's view, over the sections, so every section stays a click away.
-        let view = ui.clip_rect();
-        let stuck = bar.top() < view.top();
-        // A jump scrolls the page, and the bar is then at the top: the
-        // section jumped to lands below it either way.
-        let height = bar.height() + 2.0 * STUCK_PADDING;
-        ui.data_mut(|data| data.insert_temp(egui::Id::new(SETTINGS_JUMP_HEIGHT_ID), height));
-        if stuck {
-            let ctx = ui.ctx().clone();
-            egui::Area::new(egui::Id::new("settings-jump-bar-stuck"))
-                .fixed_pos(egui::pos2(view.left(), view.top()))
-                .order(egui::Order::Middle)
-                .constrain(false)
-                .show(&ctx, |ui| {
-                    Frame::new()
-                        .fill(palette.window)
-                        .inner_margin(Margin::symmetric(
-                            (bar.left() - view.left()).max(0.0) as i8,
-                            STUCK_PADDING as i8,
-                        ))
-                        .show(ui, |ui| {
-                            // The page's whole width, so nothing shows beside it.
-                            ui.set_width(view.width() - 2.0 * (bar.left() - view.left()).max(0.0));
-                            ui.horizontal_wrapped(|ui| jump_bar(ui, &palette, &jumps));
-                        });
-                    let rect = ui.min_rect();
-                    ui.painter().hline(
-                        rect.x_range(),
-                        rect.bottom(),
-                        Stroke::new(1.0, palette.outline),
-                    );
-                });
-        }
+    // Six categories, one shown at a time, chosen from a list beside them
+    // (above them in a narrow window). A search looks through every one, and
+    // shows each match under its category's name.
+    let category = app.settings_category;
+    let searching = !needle.is_empty();
+    let shows = |c: SettingsCategory| searching || c == category;
+    let mut heading = CategoryHeading {
+        searching,
+        last: None,
+    };
+    let wide = ui.available_width() >= CATEGORY_LIST_WIDE;
+    let layout = if wide {
+        Layout::left_to_right(Align::Min)
     } else {
-        ui.data_mut(|data| data.insert_temp(egui::Id::new(SETTINGS_JUMP_HEIGHT_ID), 0.0_f32));
-    }
+        Layout::top_down(Align::Min)
+    };
+    ui.with_layout(layout, |ui| {
+        category_list(app, ui, wide, searching);
+        if wide {
+            ui.add_space(20.0);
+        }
+        ui.vertical(|ui| {
 
-    if section_matches(&needle, &account, &account_rows) {
+    if shows(SettingsCategory::Listening) && (section_matches(&needle, &account, &account_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Listening);
         section(ui, &palette, &account, |ui| {
             if row_matches(&needle, &format!("{sign_out} {account}"), "") {
                 ui.horizontal(|ui| {
@@ -1848,8 +1935,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let playback_named = !needle.is_empty() && playback.to_lowercase().contains(needle.as_str());
     let soloist_shown =
         soloist_keywords || playback_named || section_matches(&needle, &soloist, &soloist_rows);
-    if soloist_shown || section_matches(&needle, &playback, &playback_rows) {
+    if shows(SettingsCategory::Listening) && (soloist_shown || section_matches(&needle, &playback, &playback_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Listening);
         section(ui, &palette, &playback, |ui| {
             if soloist_shown {
                 // A word only the section knows shows it whole.
@@ -2056,8 +2144,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if audio_processing && section_matches(&needle, &equalizer, &equalizer_rows) {
+    if shows(SettingsCategory::Listening) && (audio_processing && section_matches(&needle, &equalizer, &equalizer_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Listening);
         section(ui, &palette, &sound, |ui| {
             filtered_row(
                 ui,
@@ -2163,10 +2252,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &library, &library_rows)
-        || section_matches(&needle, &library, &library_more)
+    if shows(SettingsCategory::LibraryHome)
+        && (section_matches(&needle, &library, &library_rows)
+            || section_matches(&needle, &library, &library_more))
     {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::LibraryHome);
         section(ui, &palette, &library, |ui| {
             filtered_row(ui, &palette, &needle, &library, &library_rows[0], |ui| {
                 let mut on = app.settings.library_sync;
@@ -2248,8 +2339,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &home_map, &home_rows) {
+    if shows(SettingsCategory::LibraryHome) && (section_matches(&needle, &home_map, &home_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::LibraryHome);
         section(ui, &palette, &home_map, |ui| {
             filtered_row(ui, &palette, &needle, &home_map, &home_rows[0], |ui| {
                 if widgets::switch(
@@ -2307,8 +2399,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 
     // Funnel: only what you ask for, as in the Funnel browser extension and
     // app, with a small way to each of them.
-    if section_matches(&needle, &funnel, &funnel_rows) {
+    if shows(SettingsCategory::LibraryHome) && (section_matches(&needle, &funnel, &funnel_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::LibraryHome);
         section(ui, &palette, &funnel, |ui| {
             filtered_row(ui, &palette, &needle, &funnel, &funnel_rows[0], |ui| {
                 if widgets::switch(
@@ -2360,8 +2453,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &search_title, &search_rows) {
+    if shows(SettingsCategory::Search) && (section_matches(&needle, &search_title, &search_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Search);
         section(ui, &palette, &search_title, |ui| {
             filtered_row(
                 ui,
@@ -2458,8 +2552,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &appearance, &appearance_rows) {
+    if shows(SettingsCategory::Look) && (section_matches(&needle, &appearance, &appearance_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Look);
         section(ui, &palette, &appearance, |ui| {
             // Wide enough for the theme's two buttons side by side.
             let theme_buttons_width = theme::soft_button_width(ui, &theme_guide)
@@ -2716,10 +2811,12 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     }
 
     let milkdrop_shown = section_matches(&needle, "MilkDrop", &milkdrop_rows);
-    if visualizers
+    if shows(SettingsCategory::Look)
+        && visualizers
         && (milkdrop_shown || section_matches(&needle, &visualizers_title, &visualizer_rows))
     {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Look);
         section(ui, &palette, &visualizers_title, |ui| {
             {
                 use crate::settings::PlayerBarVis;
@@ -2925,8 +3022,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &mini_player, &mini_rows) {
+    if shows(SettingsCategory::Look) && (section_matches(&needle, &mini_player, &mini_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Look);
         section(ui, &palette, &mini_player, |ui| {
             filtered_row(ui, &palette, &needle, &mini_player, &mini_rows[0], |ui| {
                 if theme::pill_button(ui, &palette, &gettext(locale, "Switch to it"), true)
@@ -3131,143 +3229,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &system, &system_rows) {
+    if shows(SettingsCategory::Privacy) && (section_matches(&needle, &vacuum, &vacuum_rows)) {
         any_visible = true;
-        section(ui, &palette, &system, |ui| {
-            filtered_row(ui, &palette, &needle, &system, &system_rows[0], |ui| {
-                if widgets::switch(
-                    ui,
-                    &palette,
-                    &keep_playing,
-                    &mut app.settings.keep_playing_in_background,
-                )
-                .changed()
-                {
-                    changed = true;
-                }
-            });
-            // Applied by the app's next pass (App::sync_dock_icon).
-            #[cfg(target_os = "macos")]
-            filtered_row(ui, &palette, &needle, &system, &system_rows[1], |ui| {
-                if widgets::switch(
-                    ui,
-                    &palette,
-                    &show_in_dock,
-                    &mut app.settings.mac_show_in_dock,
-                )
-                .changed()
-                {
-                    changed = true;
-                }
-            });
-            {
-                use crate::settings::TrayIcon;
-                let choices = [
-                    (TrayIcon::Colour, pgettext(locale, "tray icon", "Colour")),
-                    (TrayIcon::White, pgettext(locale, "tray icon", "White")),
-                    (TrayIcon::Black, pgettext(locale, "tray icon", "Black")),
-                ];
-                let choice_gap = 6.0;
-                let choices_width = choices
-                    .iter()
-                    .map(|(_, label)| theme::soft_button_width(ui, label))
-                    .sum::<f32>()
-                    + choice_gap * (choices.len() - 1) as f32;
-                filtered_row_sized(
-                    ui,
-                    &palette,
-                    &needle,
-                    &system,
-                    &system_rows[2],
-                    choices_width,
-                    |ui| {
-                        let mut choose = |ui: &mut egui::Ui, icon: TrayIcon, label: &str| {
-                            if theme::soft_button(
-                                ui,
-                                &palette,
-                                None,
-                                label,
-                                app.settings.tray_icon == icon,
-                            )
-                            .clicked()
-                                && app.settings.tray_icon != icon
-                            {
-                                app.settings.tray_icon = icon;
-                                changed = true;
-                            }
-                        };
-                        if ui.available_width() >= choices_width {
-                            // Laid right to left, so the last choice goes first.
-                            ui.horizontal(|ui| {
-                                ui.spacing_mut().item_spacing.x = choice_gap;
-                                for (icon, label) in choices.iter().rev() {
-                                    choose(ui, *icon, label);
-                                }
-                            });
-                        } else {
-                            ui.with_layout(Layout::top_down(Align::Max), |ui| {
-                                ui.spacing_mut().item_spacing.y = choice_gap;
-                                for (icon, label) in &choices {
-                                    choose(ui, *icon, label);
-                                }
-                            });
-                        }
-                    },
-                );
-            }
-            if start_available {
-                start_with_computer_row(
-                    app,
-                    ui,
-                    &palette,
-                    &needle,
-                    &system,
-                    &system_rows[3],
-                    start_choice,
-                );
-            }
-            #[cfg(target_os = "macos")]
-            filtered_row(ui, &palette, &needle, &system, &system_rows[4], |ui| {
-                if widgets::switch(
-                    ui,
-                    &palette,
-                    &gettext(locale, "MacBook notch widget"),
-                    &mut app.settings.mac_notch_widget,
-                )
-                .changed()
-                {
-                    changed = true;
-                }
-            });
-            filtered_row(ui, &palette, &needle, &system, &system_rows[5], |ui| {
-                if widgets::switch(
-                    ui,
-                    &palette,
-                    &update_checks,
-                    &mut app.settings.check_for_updates,
-                )
-                .changed()
-                {
-                    changed = true;
-                }
-            });
-            filtered_row(ui, &palette, &needle, &system, &system_rows[6], |ui| {
-                if widgets::switch(
-                    ui,
-                    &palette,
-                    &download_updates,
-                    &mut app.settings.download_updates_automatically,
-                )
-                .changed()
-                {
-                    changed = true;
-                }
-            });
-        });
-    }
-
-    if section_matches(&needle, &vacuum, &vacuum_rows) {
-        any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Privacy);
         section(ui, &palette, &vacuum, |ui| {
             let switches = [
                 (0, vacuum_on.clone()),
@@ -3458,8 +3422,145 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &proxy, &proxy_rows) {
+    if shows(SettingsCategory::System) && (section_matches(&needle, &system, &system_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::System);
+        section(ui, &palette, &system, |ui| {
+            filtered_row(ui, &palette, &needle, &system, &system_rows[0], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &keep_playing,
+                    &mut app.settings.keep_playing_in_background,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+            // Applied by the app's next pass (App::sync_dock_icon).
+            #[cfg(target_os = "macos")]
+            filtered_row(ui, &palette, &needle, &system, &system_rows[1], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &show_in_dock,
+                    &mut app.settings.mac_show_in_dock,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+            {
+                use crate::settings::TrayIcon;
+                let choices = [
+                    (TrayIcon::Colour, pgettext(locale, "tray icon", "Colour")),
+                    (TrayIcon::White, pgettext(locale, "tray icon", "White")),
+                    (TrayIcon::Black, pgettext(locale, "tray icon", "Black")),
+                ];
+                let choice_gap = 6.0;
+                let choices_width = choices
+                    .iter()
+                    .map(|(_, label)| theme::soft_button_width(ui, label))
+                    .sum::<f32>()
+                    + choice_gap * (choices.len() - 1) as f32;
+                filtered_row_sized(
+                    ui,
+                    &palette,
+                    &needle,
+                    &system,
+                    &system_rows[2],
+                    choices_width,
+                    |ui| {
+                        let mut choose = |ui: &mut egui::Ui, icon: TrayIcon, label: &str| {
+                            if theme::soft_button(
+                                ui,
+                                &palette,
+                                None,
+                                label,
+                                app.settings.tray_icon == icon,
+                            )
+                            .clicked()
+                                && app.settings.tray_icon != icon
+                            {
+                                app.settings.tray_icon = icon;
+                                changed = true;
+                            }
+                        };
+                        if ui.available_width() >= choices_width {
+                            // Laid right to left, so the last choice goes first.
+                            ui.horizontal(|ui| {
+                                ui.spacing_mut().item_spacing.x = choice_gap;
+                                for (icon, label) in choices.iter().rev() {
+                                    choose(ui, *icon, label);
+                                }
+                            });
+                        } else {
+                            ui.with_layout(Layout::top_down(Align::Max), |ui| {
+                                ui.spacing_mut().item_spacing.y = choice_gap;
+                                for (icon, label) in &choices {
+                                    choose(ui, *icon, label);
+                                }
+                            });
+                        }
+                    },
+                );
+            }
+            if start_available {
+                start_with_computer_row(
+                    app,
+                    ui,
+                    &palette,
+                    &needle,
+                    &system,
+                    &system_rows[3],
+                    start_choice,
+                );
+            }
+            #[cfg(target_os = "macos")]
+            filtered_row(ui, &palette, &needle, &system, &system_rows[4], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &gettext(locale, "MacBook notch widget"),
+                    &mut app.settings.mac_notch_widget,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &system, &system_rows[5], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &update_checks,
+                    &mut app.settings.check_for_updates,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &system, &system_rows[6], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &download_updates,
+                    &mut app.settings.download_updates_automatically,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+        });
+    }
+
+    if shows(SettingsCategory::System) && (section_matches(&needle, &proxy, &proxy_rows)) {
+        any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::System);
         ui.push_id("proxy-settings", |ui| {
     section(ui, &palette, &network, |ui| {
         widgets::setting_row(
@@ -3542,8 +3643,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &storage, &storage_rows) {
+    if shows(SettingsCategory::System) && (section_matches(&needle, &storage, &storage_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::System);
         app.storage_usage.update(&app.dirs, ui.ctx());
         for (row, size) in storage_rows.iter_mut().zip(app.storage_usage.sizes) {
             let size = match size {
@@ -3609,8 +3711,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
-    if section_matches(&needle, &about, &about_rows) {
+    if shows(SettingsCategory::System) && (section_matches(&needle, &about, &about_rows)) {
         any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::System);
         section(ui, &palette, &about, |ui| {
             ui.horizontal(|ui| {
                 let (logo, _) = ui.allocate_exact_size(Vec2::splat(40.0), egui::Sense::hover());
@@ -3690,6 +3793,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             &gettext(locale, "Try fewer words, or check the spelling."),
         );
     }
+
+        });
+    });
 
     ui.data_mut(|data| data.insert_temp(dirty_id, playback_dirty));
     ui.data_mut(|data| data.insert_temp(proxy_dirty_id, proxy_dirty));

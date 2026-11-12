@@ -5248,6 +5248,8 @@ mod tests {
         let (ctx, mut app) = accessible_app("settings-search");
         // The page's own box, with the top bar searching Spotify.
         app.settings.settings_search_in_topbar = false;
+        // Compact track list's category, so clearing the search shows it.
+        app.settings_category = crate::model::SettingsCategory::Look;
         app.open(Page::Settings);
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
@@ -6142,6 +6144,8 @@ mod tests {
     fn the_windows_taskbar_setting_keeps_its_choice_without_closing_settings() {
         use egui::accesskit::Role;
         let (ctx, mut app) = accessible_app("winamp-taskbar-setting");
+        // The mini player's category.
+        app.settings_category = crate::model::SettingsCategory::Look;
         app.open(Page::Settings);
         accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
@@ -6242,6 +6246,8 @@ mod tests {
     fn wayland_on_top_setting_is_disabled_and_does_not_look_active() {
         use egui::accesskit::{Role, Toggled};
         let (ctx, mut app) = accessible_app("wayland-on-top");
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::Look;
         app.window_level_supported = false;
         app.settings.winamp_on_top = true;
         app.open(Page::Settings);
@@ -7987,6 +7993,8 @@ mod tests {
         use crate::settings::LanguageChoice;
         use egui::accesskit::Role;
         let (ctx, mut app) = accessible_app("language-picker");
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::Look;
         app.open(Page::Settings);
         ctx.data_mut(|data| {
             data.insert_temp(egui::Id::new("settings-filter"), "Language".to_string())
@@ -7996,7 +8004,14 @@ mod tests {
             view_frame(&ctx, &mut app, vec![], App::frame_ui);
         }
         let painted = view_frame(&ctx, &mut app, vec![], App::frame_ui);
-        let picker = sidebar_text(&painted, "System").center();
+        // The language picker's System, not the System category in the list.
+        let picker = painted
+            .iter()
+            .filter(|(text, _)| text == "System")
+            .max_by(|a, b| a.1.center().x.total_cmp(&b.1.center().x))
+            .unwrap()
+            .1
+            .center();
         view_frame(
             &ctx,
             &mut app,
@@ -8004,9 +8019,13 @@ mod tests {
             App::frame_ui,
         );
         let painted = view_frame(&ctx, &mut app, vec![], App::frame_ui);
+        // The menu, drawn last over the page.
+        let menu = &painted[painted
+            .iter()
+            .rposition(|(text, _)| text == "System")
+            .unwrap()..];
         let menu_y = |name: &str| {
-            painted
-                .iter()
+            menu.iter()
                 .filter(|(text, rect)| text == name && rect.center().y > picker.y)
                 .map(|(_, rect)| rect.center().y)
                 .next()
@@ -8091,6 +8110,8 @@ mod tests {
     #[test]
     fn custom_theme_picker_applies_the_clicked_palette_and_exposes_its_name_and_value() {
         let (ctx, mut app) = accessible_app("custom-theme-picker");
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::Look;
         app.open(Page::Settings);
         ctx.data_mut(|data| {
             data.insert_temp(egui::Id::new("settings-filter"), "Appearance".to_string())
@@ -8116,9 +8137,14 @@ mod tests {
             App::frame_ui,
         );
         let painted = view_frame(&ctx, &mut app, vec![], App::frame_ui);
+        // The menu is drawn last, over the page, whose own Light and Dark
+        // choices are below the picker too.
+        let menu = &painted[painted
+            .iter()
+            .rposition(|(text, _)| text == "Follow system")
+            .unwrap()..];
         let menu_y = |name: &str| {
-            painted
-                .iter()
+            menu.iter()
                 .filter(|(text, rect)| text == name && rect.center().y > picker.y)
                 .map(|(_, rect)| rect.center().y)
                 .next()
@@ -8199,65 +8225,82 @@ mod tests {
         );
     }
 
-    /// Settings groups its rows by task, and the buttons above the
-    /// sections name every one; a search shows a row under its new heading.
+    /// Settings shows one category at a time, chosen from the list beside
+    /// it; a search looks through all of them, each match under its
+    /// category's name; and the list stays in view as the page scrolls.
     #[test]
-    fn settings_group_rows_by_task_with_a_button_for_each_section() {
-        let (ctx, mut app) = accessible_app("settings-sections");
+    fn settings_show_one_category_at_a_time() {
+        use crate::model::SettingsCategory;
+        let (ctx, mut app) = accessible_app("settings-categories");
         app.backend.shutdown();
-        for _ in 0..3 {
-            view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
-        }
-        let painted = view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
-        for title in [
-            "Account",
-            "Playback",
-            "Library",
-            "Home and map",
-            "Funnel",
+        let size = egui::vec2(1280.0, 800.0);
+        let frame = |ctx: &egui::Context, app: &mut App, events: Vec<egui::Event>| {
+            view_frame_sized(ctx, app, events, App::frame_ui, size)
+        };
+        let shows = |painted: &[(String, egui::Rect)], text: &str| {
+            painted.iter().any(|(shown, _)| shown == text)
+        };
+        app.open(Page::Settings);
+        frame(&ctx, &mut app, vec![]);
+        let painted = frame(&ctx, &mut app, vec![]);
+        for name in [
+            "Listening",
+            "Library & Home",
             "Search",
-            "Appearance",
-            "Mini player",
-            "Window and system",
-            "Vacuum",
-            "Network",
-            "Storage",
-            "About",
+            "Look & feel",
+            "Privacy",
+            "System",
         ] {
-            assert!(
-                painted.iter().any(|(text, _)| text == title),
-                "{title} has its button"
-            );
+            assert!(shows(&painted, name), "{name} is listed");
         }
-        assert!(
-            !painted
-                .iter()
-                .any(|(text, _)| text == "Suggestions" || text == "Application"),
-            "the old headings are gone"
+        assert!(shows(&painted, "Account") && shows(&painted, "Playback"));
+        assert!(!shows(&painted, "Appearance"), "one category at a time");
+
+        let look = sidebar_text(&painted, "Look & feel").center();
+        frame(
+            &ctx,
+            &mut app,
+            pointer_click(look, egui::PointerButton::Primary),
         );
-        for (query, heading) in [
-            ("Tray icon", "Window and system"),
-            ("Playlist map on Home", "Home and map"),
-            ("Only what I ask for", "Funnel"),
-            ("Search opens on", "Search"),
-            ("Compact library sidebar", "Library"),
-            ("Local files", "Library"),
-            ("Mode, host", "Network"),
-        ] {
-            ctx.data_mut(|data| {
-                data.insert_temp(egui::Id::new("settings-filter"), query.to_string())
-            });
-            view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
-            let painted = view_frame(&ctx, &mut app, vec![], crate::ui::settings::show);
-            assert!(
-                painted.iter().any(|(text, _)| text == heading),
-                "{query} shows under {heading}"
-            );
-            assert!(
-                !painted.iter().any(|(text, _)| text == "Appearance") || heading == "Appearance",
-                "{query} is no longer under Appearance"
-            );
+        frame(&ctx, &mut app, vec![]);
+        let painted = frame(&ctx, &mut app, vec![]);
+        assert_eq!(app.settings_category, SettingsCategory::Look);
+        assert!(shows(&painted, "Appearance") && !shows(&painted, "Account"));
+
+        // Scrolled down, the list is still at the top of the view.
+        let wheel = vec![
+            egui::Event::PointerMoved(egui::pos2(900.0, 500.0)),
+            egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(0.0, -2000.0),
+                modifiers: egui::Modifiers::NONE,
+                phase: egui::TouchPhase::Move,
+            },
+        ];
+        frame(&ctx, &mut app, wheel);
+        let mut painted = Vec::new();
+        for _ in 0..30 {
+            painted = frame(&ctx, &mut app, vec![]);
         }
+        assert!(app.page_scroll.as_ref().is_some_and(|(_, at)| *at > 500.0));
+        assert!(
+            painted
+                .iter()
+                .any(|(text, rect)| text == "Listening" && rect.top() < 200.0),
+            "the list stays in view"
+        );
+
+        // A search looks through every category.
+        ctx.data_mut(|data| {
+            data.insert_temp(egui::Id::new("settings-filter"), "Tray icon".to_string())
+        });
+        frame(&ctx, &mut app, vec![]);
+        let painted = frame(&ctx, &mut app, vec![]);
+        assert!(shows(&painted, "Window and system"), "found in System");
+        assert!(
+            painted.iter().filter(|(text, _)| text == "System").count() >= 2,
+            "under its category's name, beside the list's"
+        );
     }
 
     /// Settings offers Off, the window and the tray for a start at login,
@@ -9446,6 +9489,8 @@ mod tests {
     fn only_what_i_ask_for_hides_spotifys_suggestions() {
         use egui::accesskit::{Action as Do, Role};
         let (ctx, mut app) = accessible_app("only-asked");
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::LibraryHome;
         app.settings.autoplay = true;
         // A page as tall as Home with all its shelves, drawn twice so the
         // second frame has every shelf's size.
@@ -9479,6 +9524,9 @@ mod tests {
         );
         assert!(app.settings.only_what_i_ask_for);
         assert!(!app.settings.autoplay_on(), "no Autoplay");
+        // Autoplay is under Listening.
+        app.settings_category = crate::model::SettingsCategory::Listening;
+        accessible_frame(&ctx, &mut app, vec![]);
         let tree = accessible_frame(&ctx, &mut app, vec![]);
         let autoplay = tree
             .nodes
@@ -9525,6 +9573,8 @@ mod tests {
     fn show_version_puts_the_versions_in_the_borderless_top_bar() {
         use egui::accesskit::{Action as Do, Role};
         let (ctx, mut app) = accessible_app("show-version");
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::Look;
         app.demo_windows_controls = true;
         app.settings.custom_titlebar = true;
         let versions = format!(
@@ -10238,51 +10288,6 @@ mod tests {
         assert!(app.search_log.entries(&path).is_empty());
     }
 
-    /// Settings' section buttons stay at the top of the view once the page
-    /// scrolls, and a section jumped to lands below them.
-    #[test]
-    fn settings_section_buttons_stay_at_the_top() {
-        let (ctx, mut app) = accessible_app("settings-sticky-jumps");
-        app.backend.shutdown();
-        let size = egui::vec2(1280.0, 800.0);
-        app.open(Page::Settings);
-        for _ in 0..3 {
-            view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
-        }
-        ctx.data_mut(|data| data.insert_temp(egui::Id::new("settings-jump"), "Vacuum".to_string()));
-        let mut painted = Vec::new();
-        for _ in 0..60 {
-            painted = view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
-        }
-        assert!(
-            app.page_scroll.as_ref().is_some_and(|(_, at)| *at > 500.0),
-            "the page scrolled to the section"
-        );
-        let account: Vec<_> = painted
-            .iter()
-            .filter(|(text, _)| text == "Account")
-            .collect();
-        assert!(
-            account.iter().any(|(_, rect)| rect.top() < 160.0),
-            "the buttons are still at the top: {account:?}"
-        );
-        let buttons_bottom = painted
-            .iter()
-            .filter(|(text, _)| text == "About")
-            .map(|(_, rect)| rect.bottom())
-            .fold(f32::MIN, f32::max);
-        let headings: Vec<_> = painted
-            .iter()
-            .filter(|(text, _)| text == "Vacuum")
-            .collect();
-        assert!(
-            headings
-                .iter()
-                .any(|(_, rect)| rect.top() > buttons_bottom && rect.top() < buttons_bottom + 80.0),
-            "the heading shows just below the buttons: {headings:?}, buttons end at {buttons_bottom}"
-        );
-    }
-
     /// A playlist left and come back to opens where it was scrolled to,
     /// each playlist its own place, as in Spotify.
     #[test]
@@ -10562,6 +10567,8 @@ mod tests {
             },
         );
         app.attach(&ctx);
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::Look;
         populate(&mut app);
         app.settings.zoom = 1.0;
         app.open(Page::Settings);
@@ -10731,6 +10738,8 @@ mod tests {
             },
         );
         app.attach(&ctx);
+        // The Settings category with the rows this looks at.
+        app.settings_category = crate::model::SettingsCategory::Look;
         populate(&mut app);
         app.open(Page::Settings);
 

@@ -553,6 +553,8 @@ pub struct App {
     /// How far down each playlist was last seen this session, by page, so
     /// one left and come back to opens where it was.
     pub(crate) page_offsets: std::collections::HashMap<String, f32>,
+    /// The Settings category shown, for the session.
+    pub(crate) settings_category: crate::model::SettingsCategory,
     /// A place being returned to: the page, its offset, and the frames
     /// spent, until the page is long enough to hold it again.
     pub(crate) scroll_return: Option<(String, f32, u16)>,
@@ -1417,6 +1419,7 @@ impl App {
             page_scroll: None,
             restore_scroll: None,
             page_offsets: Default::default(),
+            settings_category: Default::default(),
             scroll_return: None,
             devices: Vec::new(),
             receivers: Vec::new(),
@@ -14740,6 +14743,8 @@ impl App {
                 self.settings_dirty = true;
                 self.slow_banner = false;
                 self.dialog = None;
+                // The Client ID is in Listening, under Account.
+                self.settings_category = crate::model::SettingsCategory::Listening;
                 self.open(Page::Settings);
                 // A saved search could be hiding the Client ID field the
                 // flow is about to focus, so drop it before landing.
@@ -15357,6 +15362,11 @@ impl App {
                         log::warn!("unable to open {url}: {error}");
                     }
                 });
+            }
+            Action::SetSettingsCategory(category) => {
+                self.settings_category = category;
+                // Each category opens at its top.
+                self.restore_scroll = Some((Page::Settings.encode(), 0.0));
             }
             Action::ClearSearchLog => {
                 // Forgotten now, not when the log would next be written.
@@ -17368,7 +17378,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 35";
+pub const FORK_VERSION: &str = "mod 36";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

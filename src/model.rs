@@ -1079,6 +1079,51 @@ pub struct DragEntry {
     pub image: Option<String>,
 }
 
+/// The Settings page's categories, one shown at a time.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum SettingsCategory {
+    /// Account, Playback (with Spotify Soloist) and Sound.
+    #[default]
+    Listening,
+    /// Library, Home and map, and Funnel.
+    LibraryHome,
+    Search,
+    /// Appearance, Visualizers and the mini player.
+    Look,
+    /// Vacuum, and what Sirensong keeps of what you did.
+    Privacy,
+    /// The window and system, the network, storage and About.
+    System,
+}
+
+impl SettingsCategory {
+    pub const ALL: [Self; 6] = [
+        Self::Listening,
+        Self::LibraryHome,
+        Self::Search,
+        Self::Look,
+        Self::Privacy,
+        Self::System,
+    ];
+
+    pub fn label(self, locale: crate::i18n::Locale) -> std::borrow::Cow<'static, str> {
+        use crate::i18n::gettext;
+        match self {
+            // Translators: A Settings category: the account, playback and the equalizer.
+            Self::Listening => gettext(locale, "Listening"),
+            // Translators: A Settings category: the Library, the Home map and Funnel.
+            Self::LibraryHome => gettext(locale, "Library & Home"),
+            Self::Search => gettext(locale, "Search"),
+            // Translators: A Settings category: themes, the visualizers and the mini player's skins.
+            Self::Look => gettext(locale, "Look & feel"),
+            // Translators: A Settings category: Vacuum, and what Sirensong keeps of what you did.
+            Self::Privacy => gettext(locale, "Privacy"),
+            // Translators: A Settings category: the window, the network, storage and About.
+            Self::System => gettext(locale, "System"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Dialog {
     /// A page's header cover, enlarged. Clicking anywhere or Esc closes it.
@@ -1533,6 +1578,8 @@ pub enum Action {
     ClearPlayHistory,
     /// Forget every search the search log keeps.
     ClearSearchLog,
+    /// Show this category of the Settings page, from its top.
+    SetSettingsCategory(SettingsCategory),
     /// Open or close the Winamp window.
     ToggleWinampWindow,
     /// The pointer or a key on a view of a Windows Media Player skin.
