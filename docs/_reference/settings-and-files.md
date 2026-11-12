@@ -53,9 +53,10 @@ where each system keeps it, not in `settings.json`:
 Deleting the entry turns it off. Uninstalling Sirensong does not remove the
 Linux or Windows entry; choose **Off** first.
 
-Settings > Storage shows the current file sizes of the artwork cache, audio
-cache and local play history beside their names, in decimal units (1 MB is
-1,000,000 bytes). Sizes are checked in the background while this section is
+Settings > Storage shows the current file sizes of the artwork cache and
+audio cache beside their names, and Settings > Privacy > Your history those of
+the play history and the search log, in decimal units (1 MB is 1,000,000
+bytes). Sizes are checked in the background while this section is
 visible and refreshed about every five seconds, including after clearing.
 Missing files show 0 B; metadata or directory-traversal errors show Unavailable.
 File contents are not read to measure usage, so a file without read permission
@@ -681,7 +682,7 @@ artwork cache.
 Each play is kept once it counts (see Play history in the guide), with the
 song, when it started, how long you listened, paused time left out, and
 where it was played from. `history.json` keeps the newest 500. With **Keep
-every play**, in Settings → Storage, older plays move to the `plays` folder
+every play**, in Settings → Privacy → Your history, older plays move to the `plays` folder
 beside it instead of being deleted: once 1,000 are kept, the oldest 500 go
 there as a file of their own, and they leave `history.json` only once that
 file is written. Turning it off moves any plays kept past the newest 500

@@ -296,7 +296,8 @@ it in a narrow window), which stays in view as the page scrolls:
 - **Library & Home**: Library, Home and map, and Funnel
 - **Search**: how searching works, and the search log
 - **Look & feel**: Appearance, Visualizers and the Mini player
-- **Privacy**: Vacuum
+- **Privacy**: Your history (the play history, Keep every play and the search
+  log, each with its size and a way to clear it), and Vacuum
 - **System**: Window and system, Network, Storage and About
 
 A search looks through every category, and shows each match under its
@@ -790,9 +791,10 @@ The same play reported both locally and by Spotify appears once.
 
 The local list is stored in `history.json` and is never uploaded. Each play
 keeps how long you listened and where it was played from. Sirensong keeps
-the newest 500; turn on **Keep every play** in Settings → Storage to keep
-them all, the older ones in a `plays` folder beside it. Settings → Storage
-shows where they are and has a **Clear history** button, which asks first.
+the newest 500; turn on **Keep every play** in Settings → Privacy → Your
+history to keep them all, the older ones in a `plays` folder beside it. Your
+history shows where they are and has a **Clear history** button, which asks
+first.
 The Home map's **Time listened** sizes each playlist, album and folder
 by this listening time.
 
@@ -945,10 +947,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 36 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 37 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 36` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 37` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

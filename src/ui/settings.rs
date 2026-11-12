@@ -1775,6 +1775,22 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         take(&mut appearance_rows, 9),
         take(&mut appearance_rows, 10),
     ];
+    // What Sirensong keeps of what you did, with Vacuum under Privacy.
+    // Translators: A settings section under Privacy: the play history and the search log Sirensong keeps on this computer.
+    let history_title = gettext(locale, "Your history");
+    let history_rows = [
+        take(&mut storage_rows, 2),
+        take(&mut storage_rows, 3),
+        RowText::new(
+            gettext(locale, "Search log"),
+            gettext(
+                locale,
+                // Translators: {file} is the path of the search log file.
+                "The searches kept while Keep a search log is on, in {file}. This file is never uploaded.",
+            )
+            .replace("{file}", &app.dirs.search_log_file().display().to_string()),
+        ),
+    ];
     let system_rows = [
         take(&mut playback_rows, 6),
         take(&mut playback_rows, 15),
@@ -3229,6 +3245,68 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         });
     }
 
+    if shows(SettingsCategory::Privacy) && section_matches(&needle, &history_title, &history_rows) {
+        any_visible = true;
+        heading.show(ui, &palette, locale, SettingsCategory::Privacy);
+        app.storage_usage.update(&app.dirs, ui.ctx());
+        let size = |size: crate::storage::Size| match size {
+            crate::storage::Size::Checking => gettext(locale, "Checking…").into_owned(),
+            crate::storage::Size::Bytes(bytes) => crate::storage::format_bytes(bytes),
+            crate::storage::Size::Unavailable => gettext(locale, "Unavailable").into_owned(),
+        };
+        let mut history_rows = history_rows;
+        history_rows[0].title = format!("{} · {}", history_rows[0].title, size(app.storage_usage.sizes[2])).into();
+        // The search log is one small file, read where it is.
+        let log_size = std::fs::metadata(app.dirs.search_log_file()).map_or(0, |file| file.len());
+        history_rows[2].title = format!(
+            "{} · {}",
+            history_rows[2].title,
+            crate::storage::format_bytes(log_size)
+        )
+        .into();
+        section(ui, &palette, &history_title, |ui| {
+            filtered_row(ui, &palette, &needle, &history_title, &history_rows[0], |ui| {
+                if theme::soft_button(
+                    ui,
+                    &palette,
+                    Some(Icon::Trash),
+                    &gettext(locale, "Clear history"),
+                    false,
+                )
+                .clicked()
+                {
+                    app.actions.push(Action::ShowDialog(
+                        crate::model::Dialog::ConfirmClearHistory,
+                    ));
+                }
+            });
+            filtered_row(ui, &palette, &needle, &history_title, &history_rows[1], |ui| {
+                let keep = gettext(locale, "Keep every play");
+                if widgets::switch(ui, &palette, &keep, &mut app.settings.keep_every_play).changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &history_title, &history_rows[2], |ui| {
+                // Asks first, in the search log's own window.
+                if theme::soft_button(
+                    ui,
+                    &palette,
+                    Some(Icon::Trash),
+                    &gettext(locale, "Clear search log"),
+                    false,
+                )
+                .clicked()
+                {
+                    app.actions.push(Action::ShowDialog(crate::model::Dialog::SearchLog {
+                        open: None,
+                        clearing: true,
+                    }));
+                }
+            });
+        });
+    }
+
     if shows(SettingsCategory::Privacy) && (section_matches(&needle, &vacuum, &vacuum_rows)) {
         any_visible = true;
         heading.show(ui, &palette, locale, SettingsCategory::Privacy);
@@ -3683,28 +3761,6 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     .clicked()
                 {
                     app.actions.push(Action::ClearAudioCache);
-                }
-            });
-            filtered_row(ui, &palette, &needle, &storage, &storage_rows[2], |ui| {
-                if theme::soft_button(
-                    ui,
-                    &palette,
-                    Some(Icon::Trash),
-                    &gettext(locale, "Clear history"),
-                    false,
-                )
-                .clicked()
-                {
-                    app.actions.push(Action::ShowDialog(
-                        crate::model::Dialog::ConfirmClearHistory,
-                    ));
-                }
-            });
-            filtered_row(ui, &palette, &needle, &storage, &storage_rows[3], |ui| {
-                let keep = storage_rows[3].title.clone();
-                if widgets::switch(ui, &palette, &keep, &mut app.settings.keep_every_play).changed()
-                {
-                    changed = true;
                 }
             });
             filtered_row(ui, &palette, &needle, &storage, &storage_rows[4], |_| {});

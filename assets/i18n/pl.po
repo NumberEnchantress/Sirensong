@@ -5409,3 +5409,13 @@ msgstr "Wygląd"
 #: src/model.rs:1120
 msgid "Privacy"
 msgstr "Prywatność"
+
+#. Translators: A settings section under Privacy: the play history and the search log Sirensong keeps on this computer.
+#: src/ui/settings.rs:1780
+msgid "Your history"
+msgstr "Twoja historia"
+
+#. Translators: {file} is the path of the search log file.
+#: src/ui/settings.rs:1789
+msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
+msgstr "Wyszukiwania zachowane, gdy włączone jest „Prowadź dziennik wyszukiwań”, w {file}. Ten plik nigdy nie jest wysyłany."

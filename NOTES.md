@@ -395,6 +395,10 @@ record its own decisions and three rounds of adversarial grading.
   naming the category above its first match. Vacuum moved before System's
   sections. Opening the Client ID setup chooses Listening; the mini
   player's Choose a skin chooses Look & feel.
+- **Privacy's Your history (mod 37):** the play history and Keep every play
+  moved there from Storage (`take`), with the search log beside them: its
+  size, read from the file, and **Clear search log**, which asks in the
+  search log's window. It comes before Vacuum.
 
 ### Still open
 

@@ -5307,3 +5307,13 @@ msgstr "모양과 느낌"
 #: src/model.rs:1120
 msgid "Privacy"
 msgstr "개인정보"
+
+#. Translators: A settings section under Privacy: the play history and the search log Sirensong keeps on this computer.
+#: src/ui/settings.rs:1780
+msgid "Your history"
+msgstr "내 기록"
+
+#. Translators: {file} is the path of the search log file.
+#: src/ui/settings.rs:1789
+msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
+msgstr "‘검색 기록 남기기’가 켜져 있는 동안 남긴 검색으로, {file}에 저장됩니다. 이 파일은 업로드되지 않습니다."

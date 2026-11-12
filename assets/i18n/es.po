@@ -5390,3 +5390,13 @@ msgstr "Aspecto"
 #: src/model.rs:1120
 msgid "Privacy"
 msgstr "Privacidad"
+
+#. Translators: A settings section under Privacy: the play history and the search log Sirensong keeps on this computer.
+#: src/ui/settings.rs:1780
+msgid "Your history"
+msgstr "Tu historial"
+
+#. Translators: {file} is the path of the search log file.
+#: src/ui/settings.rs:1789
+msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
+msgstr "Las búsquedas guardadas mientras «Guardar un registro de búsquedas» está activado, en {file}. Este archivo nunca se sube."
