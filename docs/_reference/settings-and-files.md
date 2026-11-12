@@ -685,7 +685,12 @@ file is written. Turning it off moves any plays kept past the newest 500
 there too, and from then on the oldest are let go again. **Clear history**
 asks first, then deletes both. Neither is ever uploaded.
 
-**Only what I ask for**, in Settings → Home and map, hides everything
+The Funnel section is named for the Funnel projects, which show only what
+you ask for. Under its row, small links lead to the others: Funnel for
+Firefox, the browser extension, and Funnel for Android, the app, which has
+no page yet.
+
+**Only what I ask for**, in Settings → Funnel, hides everything
 Spotify suggests rather than what you looked for, clicked or opened: Home's
 Made for you, Your top mixes, New releases and Recommended for you, and an
 artist's Fans also like. Sirensong stops asking Spotify for them, which also

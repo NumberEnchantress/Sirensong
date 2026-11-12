@@ -5326,3 +5326,18 @@ msgstr "Braucht {setting} auf {choice}."
 #: src/app.rs:13496
 msgid "That playlist has no songs to add"
 msgstr "Diese Playlist enthält keine Songs zum Hinzufügen"
+
+#. Translators: A settings section named for the Funnel projects (one thing at a time, nothing suggested), of which Sirensong's "Only what I ask for" is a part. Funnel is a name: keep it as it is.
+#: src/ui/settings.rs:1548
+msgid "Funnel"
+msgstr "Funnel"
+
+#. Translators: A small link under the Funnel settings: the Funnel browser extension. Funnel is a name.
+#: src/ui/settings.rs:2262
+msgid "Funnel for Firefox"
+msgstr "Funnel für Firefox"
+
+#. Translators: A small label under the Funnel settings: the Funnel Android app, which has no page to link to yet. Funnel is a name.
+#: src/ui/settings.rs:2278
+msgid "Funnel for Android"
+msgstr "Funnel für Android"

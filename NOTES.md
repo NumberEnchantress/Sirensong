@@ -339,6 +339,14 @@ record its own decisions and three rounds of adversarial grading.
   show it (five seconds at most). A wheel, drag or key from the listener
   ends the return.
 
+### Funnel section, 12 November 2026 (mod 32)
+
+- **Asked by the user.** "Only what I ask for" left Home and map for a
+  section of its own, **Funnel**, named for the Funnel projects, with a
+  small link to the browser extension (`FUNNEL_EXTENSION_URL`) and a plain
+  label for the Android app, which has no page yet. The jump bar lists it
+  after Home and map.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

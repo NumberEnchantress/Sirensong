@@ -83,6 +83,8 @@ impl<'a> RowText<'a> {
 }
 
 /// The guide to writing a palette file for the themes folder.
+/// The Funnel browser extension's page, linked under the Funnel settings.
+const FUNNEL_EXTENSION_URL: &str = "https://github.com/NumberEnchantress/Funnel-ext";
 const THEMES_GUIDE_URL: &str = "https://spotifast.rocks/settings-and-files/#custom-themes";
 /// A chip of the equalizer's presets, by its group and place there.
 #[derive(Clone, Copy, PartialEq)]
@@ -1542,6 +1544,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let sound = gettext(locale, "Sound");
     // Translators: A settings section: the playlist map on Home and in the Library, and what Home suggests.
     let home_map = gettext(locale, "Home and map");
+    // Translators: A settings section named for the Funnel projects (one thing at a time, nothing suggested), of which Sirensong's "Only what I ask for" is a part. Funnel is a name: keep it as it is.
+    let funnel = gettext(locale, "Funnel");
     // Translators: A settings section: how searching works.
     let search_title = gettext(locale, "Search");
     // Translators: A settings section: the player bar visualizer and MilkDrop.
@@ -1585,8 +1589,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         take(&mut appearance_rows, 18),
         take(&mut appearance_rows, 20),
         take(&mut appearance_rows, 21),
-        take(&mut suggestion_rows, 0),
     ];
+    let funnel_rows = [take(&mut suggestion_rows, 0)];
     let search_rows = [
         take(&mut appearance_rows, 19),
         take(&mut appearance_rows, 14),
@@ -1612,7 +1616,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         if audio_processing {
             jumps.push(&sound);
         }
-        jumps.extend([library.as_ref(), &home_map, &search_title, &appearance]);
+        jumps.extend([
+            library.as_ref(),
+            &home_map,
+            &funnel,
+            &search_title,
+            &appearance,
+        ]);
         if visualizers {
             jumps.push(&visualizers_title);
         }
@@ -2217,7 +2227,15 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     changed = true;
                 }
             });
-            filtered_row(ui, &palette, &needle, &home_map, &home_rows[5], |ui| {
+        });
+    }
+
+    // Funnel: only what you ask for, as in the Funnel browser extension and
+    // app, with a small way to each of them.
+    if section_matches(&needle, &funnel, &funnel_rows) {
+        any_visible = true;
+        section(ui, &palette, &funnel, |ui| {
+            filtered_row(ui, &palette, &needle, &funnel, &funnel_rows[0], |ui| {
                 if widgets::switch(
                     ui,
                     &palette,
@@ -2237,6 +2255,33 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     }
                 }
             });
+            if funnel_rows[0].matches(&needle, &funnel) {
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = 6.0;
+                    // Translators: A small link under the Funnel settings: the Funnel browser extension. Funnel is a name.
+                    let extension = gettext(locale, "Funnel for Firefox");
+                    let response = ui
+                        .add(egui::Link::new(
+                            egui::RichText::new(extension.as_ref())
+                                .font(theme::regular(12.0))
+                                .color(palette.secondary),
+                        ))
+                        .on_hover_text(FUNNEL_EXTENSION_URL);
+                    if response.clicked() {
+                        app.actions
+                            .push(Action::OpenUrl(FUNNEL_EXTENSION_URL.to_owned()));
+                    }
+                    theme::text(ui, "\u{00b7}", theme::regular(12.0), palette.dim);
+                    // Translators: A small label under the Funnel settings: the Funnel Android app, which has no page to link to yet. Funnel is a name.
+                    theme::text(
+                        ui,
+                        gettext(locale, "Funnel for Android"),
+                        theme::regular(12.0),
+                        palette.dim,
+                    );
+                });
+                ui.add_space(6.0);
+            }
         });
     }
 

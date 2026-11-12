@@ -8159,6 +8159,7 @@ mod tests {
             "Playback",
             "Library",
             "Home and map",
+            "Funnel",
             "Search",
             "Appearance",
             "Mini player",
@@ -8182,7 +8183,7 @@ mod tests {
         for (query, heading) in [
             ("Tray icon", "Window and system"),
             ("Playlist map on Home", "Home and map"),
-            ("Only what I ask for", "Home and map"),
+            ("Only what I ask for", "Funnel"),
             ("Search opens on", "Search"),
             ("Compact library sidebar", "Library"),
             ("Local files", "Library"),
