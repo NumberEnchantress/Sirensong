@@ -550,6 +550,12 @@ pub struct App {
     pub page_scroll: Option<(String, f32)>,
     /// What a new window takes up from `page_scroll` on its first frame.
     pub restore_scroll: Option<(String, f32)>,
+    /// How far down each playlist was last seen this session, by page, so
+    /// one left and come back to opens where it was.
+    pub(crate) page_offsets: std::collections::HashMap<String, f32>,
+    /// A place being returned to: the page, its offset, and the frames
+    /// spent, until the page is long enough to hold it again.
+    pub(crate) scroll_return: Option<(String, f32, u16)>,
     pub devices: Vec<Device>,
     /// Receivers seen on the local network. Spotify lists a receiver only
     /// once it has an account, so these are the ones it cannot see yet.
@@ -1408,6 +1414,8 @@ impl App {
             winamp_level_reassert: 0,
             page_scroll: None,
             restore_scroll: None,
+            page_offsets: Default::default(),
+            scroll_return: None,
             devices: Vec::new(),
             receivers: Vec::new(),
             device_history: session.device_history.clone(),
@@ -17320,7 +17328,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 30";
+pub const FORK_VERSION: &str = "mod 31";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

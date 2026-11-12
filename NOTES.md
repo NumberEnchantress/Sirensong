@@ -329,6 +329,16 @@ record its own decisions and three rounds of adversarial grading.
   `widgets::Adding`, leaves the source playlist out, and offers New
   playlist only for songs in hand.
 
+### Playlists keep their place, 12 November 2026 (mod 31)
+
+- **Asked by the user.** A long playlist left and come back to opened near
+  the top: while its rows were read again it was briefly short, and egui
+  clamped the page's offset to fit. `App::page_offsets` keeps each
+  playlist's and Liked Songs' offset for the session; on arrival
+  `scroll_return` sets it again each frame until the page is long enough to
+  show it (five seconds at most). A wheel, drag or key from the listener
+  ends the return.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

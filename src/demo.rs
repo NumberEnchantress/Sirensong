@@ -10138,6 +10138,70 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// A playlist left and come back to opens where it was scrolled to,
+    /// each playlist its own place, as in Spotify.
+    #[test]
+    fn a_playlist_comes_back_where_it_was_scrolled_to() {
+        let (ctx, mut app) = accessible_app("playlist-scroll-return");
+        app.backend.shutdown();
+        let size = egui::vec2(1280.0, 700.0);
+        let frame = |ctx: &egui::Context, app: &mut App, events: Vec<egui::Event>| {
+            view_frame_sized(ctx, app, events, App::frame_ui, size);
+        };
+        let offset = |app: &App| app.page_scroll.as_ref().map_or(0.0, |(_, at)| *at);
+        // Long, and read only as far as its first page, as a big playlist
+        // is: the rows further down arrive in windows as they come into view.
+        let page = app.playlist_pages.get_mut("pl1").unwrap();
+        page.items.total = Some(1300);
+        page.items.next_offset = Some(page.items.items.len() as u32);
+        app.open(Page::Playlist("pl1".into()));
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        let wheel = vec![
+            egui::Event::PointerMoved(egui::pos2(800.0, 450.0)),
+            egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(0.0, -30000.0),
+                modifiers: egui::Modifiers::NONE,
+                phase: egui::TouchPhase::Move,
+            },
+        ];
+        frame(&ctx, &mut app, wheel);
+        for _ in 0..30 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        let scrolled = offset(&app);
+        assert!(scrolled > 5000.0, "scrolled down to {scrolled}");
+        app.open(Page::Home);
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        // Come back while its rows are read again: for a few frames the
+        // page is short, and the place waits for it to grow back.
+        let rows = std::mem::take(&mut app.playlist_pages.get_mut("pl1").unwrap().items);
+        app.open(Page::Playlist("pl1".into()));
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        assert!(offset(&app) < scrolled, "short while it reloads");
+        app.playlist_pages.get_mut("pl1").unwrap().items = rows;
+        for _ in 0..5 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        let back = offset(&app);
+        assert!(
+            (back - scrolled).abs() < 2.0,
+            "back at {back}, was {scrolled}"
+        );
+        // Another playlist keeps its own place: this one opens at its top.
+        app.open(Page::Playlist("pl2".into()));
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        assert!(offset(&app) < 1.0, "another playlist opens at its top");
+    }
+
     /// A toast is wide enough to avoid wrapping every word.
     #[test]
     fn a_toast_is_wide_enough_to_read() {

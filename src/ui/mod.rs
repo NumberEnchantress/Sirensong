@@ -349,11 +349,46 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
                 }
             }
             let page_key = page.encode();
+            // A playlist come back to opens where it was, as in Spotify,
+            // even while its rows are read again and it is briefly shorter.
+            let remembers = matches!(page, Page::Playlist(_) | Page::LikedSongs);
+            let arrived = app
+                .page_scroll
+                .as_ref()
+                .is_none_or(|(at, _)| *at != page_key);
+            if arrived {
+                app.scroll_return = remembers
+                    .then(|| app.page_offsets.get(&page_key).copied())
+                    .flatten()
+                    .filter(|offset| *offset > 0.0)
+                    .map(|offset| (page_key.clone(), offset, 0));
+            }
+            // A wheel, a drag or a key while returning is the listener's own
+            // scroll, which wins.
+            let scrolled_by_hand = ui.input(|input| {
+                input.pointer.primary_down()
+                    || input.events.iter().any(|event| {
+                        matches!(
+                            event,
+                            egui::Event::MouseWheel { .. } | egui::Event::Key { pressed: true, .. }
+                        )
+                    })
+            });
+            if scrolled_by_hand && !arrived {
+                app.scroll_return = None;
+            }
             let mut area = egui::ScrollArea::vertical()
                 .id_salt(("page", &page_key))
                 .auto_shrink([false, false]);
             if let Some((_, offset)) = app.restore_scroll.take().filter(|(at, _)| *at == page_key) {
                 area = area.vertical_scroll_offset(offset);
+                app.scroll_return = None;
+            } else if let Some((_, offset, _)) = app
+                .scroll_return
+                .as_ref()
+                .filter(|(at, _, _)| *at == page_key)
+            {
+                area = area.vertical_scroll_offset(*offset);
             }
             let scroll = crate::autoscroll::show(ui, area, egui::Vec2b::new(false, true), |ui| {
                 Frame::new()
@@ -392,7 +427,23 @@ fn central(app: &mut App, ui: &mut egui::Ui) {
                     keys::scroll_page(ui);
                 }
             });
-            app.page_scroll = Some((page_key, scroll.state.offset.y));
+            let now = scroll.state.offset.y;
+            match &mut app.scroll_return {
+                // Held until the page is long enough to show the place, for
+                // a few seconds at most.
+                Some((at, offset, frames)) if *at == page_key => {
+                    *frames += 1;
+                    if (now - *offset).abs() < 1.0 || *frames > 300 {
+                        app.scroll_return = None;
+                    }
+                }
+                _ => {
+                    if remembers {
+                        app.page_offsets.insert(page_key.clone(), now);
+                    }
+                }
+            }
+            app.page_scroll = Some((page_key, now));
             ui.ctx()
                 .data_mut(|data| data.insert_temp(scrolled_id, scroll.state.offset.y));
             header_shadow(ui, scroll.inner_rect, scroll.state.offset.y, palette.dark);

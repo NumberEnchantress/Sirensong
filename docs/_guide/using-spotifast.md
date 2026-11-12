@@ -112,6 +112,10 @@ that playlist in the sidebar, they ask before being added again.
 
 ## Copying and pasting songs
 
+Leave a playlist or Liked Songs and come back, and it opens where you had
+scrolled to, even near the end of a long one, as in Spotify. Each keeps its
+own place until Sirensong quits.
+
 A playlist's **…** menu, and its row's menu in the Library, has **Add to
 playlist**, as in Spotify: it adds every song of that playlist to the one
 you choose, reading a long playlist to its end first. Songs already there
@@ -918,10 +922,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 30 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 31 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 30` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 31` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 
