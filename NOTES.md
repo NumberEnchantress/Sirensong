@@ -372,6 +372,14 @@ record its own decisions and three rounds of adversarial grading.
   setting row greys out without Keep a search log. `--demo-show search-log`
   and `search-log-open` show it.
 
+### Settings' section buttons stay put, 12 November 2026 (mod 35)
+
+- **Asked by the user.** Once the page scrolls past them, the section
+  buttons are drawn again in an `egui::Area` at the top of the page's view
+  (`settings::jump_bar`), over the sections, with a line under them. The
+  bar's height is kept (`SETTINGS_JUMP_HEIGHT_ID`) so `section` lands a
+  section jumped to just below it.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

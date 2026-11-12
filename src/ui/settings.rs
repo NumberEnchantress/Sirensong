@@ -18,6 +18,23 @@ const SETTINGS_FILTER_ID: &str = "settings-filter";
 const SEED_FIELD_WIDTH: f32 = 240.0;
 /// The section a click above the sections asked to see, by its title.
 const SETTINGS_JUMP_ID: &str = "settings-jump";
+/// How tall the section buttons are while they stay at the top of the view,
+/// for a section jumped to to land below them.
+const SETTINGS_JUMP_HEIGHT_ID: &str = "settings-jump-height";
+/// The space above and below the buttons while they stay at the top.
+const STUCK_PADDING: f32 = 8.0;
+
+/// The section buttons: a click asks for that section.
+fn jump_bar(ui: &mut egui::Ui, palette: &Palette, jumps: &[&str]) {
+    ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
+    for title in jumps {
+        if theme::soft_button(ui, palette, None, title, false).clicked() {
+            ui.data_mut(|data| {
+                data.insert_temp(egui::Id::new(SETTINGS_JUMP_ID), title.to_string())
+            });
+        }
+    }
+}
 
 /// Takes the row at `index` for another section, leaving one that never
 /// shows or matches in its place.
@@ -473,7 +490,14 @@ fn section(
         .is_some_and(|wanted| wanted == title)
     {
         ui.data_mut(|data| data.remove::<String>(jump));
-        heading.scroll_to_me(Some(Align::TOP));
+        // Below the bar, which stays at the top once the page scrolls.
+        let stuck = ui
+            .data(|data| data.get_temp::<f32>(egui::Id::new(SETTINGS_JUMP_HEIGHT_ID)))
+            .unwrap_or(0.0);
+        ui.scroll_to_rect(
+            heading.rect.with_min_y(heading.rect.top() - stuck - 6.0),
+            Some(Align::TOP),
+        );
     }
     ui.add_space(8.0);
     Frame::new()
@@ -1655,17 +1679,47 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             &storage,
             &about,
         ]);
-        ui.horizontal_wrapped(|ui| {
-            ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
-            for title in jumps {
-                if theme::soft_button(ui, &palette, None, title, false).clicked() {
-                    ui.data_mut(|data| {
-                        data.insert_temp(egui::Id::new(SETTINGS_JUMP_ID), title.to_owned())
-                    });
-                }
-            }
-        });
+        let bar = ui
+            .horizontal_wrapped(|ui| jump_bar(ui, &palette, &jumps))
+            .response
+            .rect;
         ui.add_space(4.0);
+        // Once the page scrolls past it, the bar stays at the top of the
+        // page's view, over the sections, so every section stays a click away.
+        let view = ui.clip_rect();
+        let stuck = bar.top() < view.top();
+        // A jump scrolls the page, and the bar is then at the top: the
+        // section jumped to lands below it either way.
+        let height = bar.height() + 2.0 * STUCK_PADDING;
+        ui.data_mut(|data| data.insert_temp(egui::Id::new(SETTINGS_JUMP_HEIGHT_ID), height));
+        if stuck {
+            let ctx = ui.ctx().clone();
+            egui::Area::new(egui::Id::new("settings-jump-bar-stuck"))
+                .fixed_pos(egui::pos2(view.left(), view.top()))
+                .order(egui::Order::Middle)
+                .constrain(false)
+                .show(&ctx, |ui| {
+                    Frame::new()
+                        .fill(palette.window)
+                        .inner_margin(Margin::symmetric(
+                            (bar.left() - view.left()).max(0.0) as i8,
+                            STUCK_PADDING as i8,
+                        ))
+                        .show(ui, |ui| {
+                            // The page's whole width, so nothing shows beside it.
+                            ui.set_width(view.width() - 2.0 * (bar.left() - view.left()).max(0.0));
+                            ui.horizontal_wrapped(|ui| jump_bar(ui, &palette, &jumps));
+                        });
+                    let rect = ui.min_rect();
+                    ui.painter().hline(
+                        rect.x_range(),
+                        rect.bottom(),
+                        Stroke::new(1.0, palette.outline),
+                    );
+                });
+        }
+    } else {
+        ui.data_mut(|data| data.insert_temp(egui::Id::new(SETTINGS_JUMP_HEIGHT_ID), 0.0_f32));
     }
 
     if section_matches(&needle, &account, &account_rows) {

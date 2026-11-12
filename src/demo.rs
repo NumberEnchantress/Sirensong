@@ -10238,6 +10238,51 @@ mod tests {
         assert!(app.search_log.entries(&path).is_empty());
     }
 
+    /// Settings' section buttons stay at the top of the view once the page
+    /// scrolls, and a section jumped to lands below them.
+    #[test]
+    fn settings_section_buttons_stay_at_the_top() {
+        let (ctx, mut app) = accessible_app("settings-sticky-jumps");
+        app.backend.shutdown();
+        let size = egui::vec2(1280.0, 800.0);
+        app.open(Page::Settings);
+        for _ in 0..3 {
+            view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
+        }
+        ctx.data_mut(|data| data.insert_temp(egui::Id::new("settings-jump"), "Vacuum".to_string()));
+        let mut painted = Vec::new();
+        for _ in 0..60 {
+            painted = view_frame_sized(&ctx, &mut app, vec![], App::frame_ui, size);
+        }
+        assert!(
+            app.page_scroll.as_ref().is_some_and(|(_, at)| *at > 500.0),
+            "the page scrolled to the section"
+        );
+        let account: Vec<_> = painted
+            .iter()
+            .filter(|(text, _)| text == "Account")
+            .collect();
+        assert!(
+            account.iter().any(|(_, rect)| rect.top() < 160.0),
+            "the buttons are still at the top: {account:?}"
+        );
+        let buttons_bottom = painted
+            .iter()
+            .filter(|(text, _)| text == "About")
+            .map(|(_, rect)| rect.bottom())
+            .fold(f32::MIN, f32::max);
+        let headings: Vec<_> = painted
+            .iter()
+            .filter(|(text, _)| text == "Vacuum")
+            .collect();
+        assert!(
+            headings
+                .iter()
+                .any(|(_, rect)| rect.top() > buttons_bottom && rect.top() < buttons_bottom + 80.0),
+            "the heading shows just below the buttons: {headings:?}, buttons end at {buttons_bottom}"
+        );
+    }
+
     /// A playlist left and come back to opens where it was scrolled to,
     /// each playlist its own place, as in Spotify.
     #[test]

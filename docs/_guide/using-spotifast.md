@@ -290,7 +290,8 @@ the page to matching rows; sections without matches disappear. Clear the
 field to see everything again.
 
 While nothing is searched, a row of buttons at the top of the page names each
-section, from Account to About. Click one to scroll straight to it.
+section, from Account to About. Click one to scroll straight to it. Once the
+page scrolls, the buttons stay at the top, so any section is a click away.
 
 A setting that another one leaves with nothing to do is greyed out, with a
 line saying which: **When both changed** needs **Keep in step with Spotify**,
@@ -935,10 +936,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 34 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 35 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 34` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 35` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 
