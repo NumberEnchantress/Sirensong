@@ -197,10 +197,11 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let palette = app.palette;
     let locale = app.locale;
     let width = ui.available_width();
+    // A panel at the window's right edge sits under its controls instead.
     let mut window_controls = super::window_controls_reservation(
         ui.ctx(),
-        app.show_queue_panel || app.show_friends_panel,
-        app.show_lyrics_panel,
+        app.outer_right_panel().is_some(),
+        false,
         width,
     );
     if !app.settings.sidebar_visible {

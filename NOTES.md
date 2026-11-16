@@ -433,6 +433,25 @@ record its own decisions and three rounds of adversarial grading.
   (`both_colours`). With one colour, or none from the art, the bars keep
   mod 28's `under_line`.
 
+### Side panels side by side, 16 November 2026 (mod 41)
+
+- **Requested by the user, on by default:** `Settings::stack_side_panels`
+  lets the Queue, Lyrics and Listening activity panels stay open together;
+  off, a toggle closes the others as before. `Settings::side_panels` keeps
+  each panel's edge and order (`side_panel_places` fills in any missing,
+  at the right). `ui::show` draws the open ones in that order, the first
+  nearest the window's edge, through `side_panel_at`.
+- The window's controls sit over the outermost right panel
+  (`App::outer_right_panel`); the top bar reserves room for them only with
+  no right panel open. The window's least width counts every open panel.
+- **Moving:** `side_panel_grips` draws a grip in each panel's top margin;
+  dragging it carries `MovingPanel`, `panel_landing` picks the edge by the
+  window's half and the place by the other panels' middles, a line marks
+  it, and the release sends `Action::PlaceSidePanel`. Not verified by
+  hand in a running window yet; the tests cover the logic.
+- Turning the setting off leaves the panels already open until one is
+  toggled.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

@@ -1458,6 +1458,13 @@ pub enum Action {
     ToggleLyricsPanel,
     /// Show or hide what friends are listening to, in the right panel.
     ToggleFriendsPanel,
+    /// Move a side panel to an edge of the window, before the `index`th
+    /// panel already there counted from the edge, or after them all.
+    PlaceSidePanel {
+        panel: crate::settings::SidePanel,
+        edge: crate::settings::PanelEdge,
+        index: usize,
+    },
     SetLyricsFullscreen(bool),
     LyricsLineShown(Option<usize>),
     FollowLyrics,

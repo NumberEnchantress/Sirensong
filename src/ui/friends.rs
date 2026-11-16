@@ -28,7 +28,7 @@ pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         app.settings.queue_width,
         ui.available_width() - super::topbar::least_width(ui.ctx()),
     );
-    let panel = egui::Panel::right("friends-panel")
+    let panel = super::side_panel_at(app, crate::settings::SidePanel::Friends)
         .resizable(true)
         .default_size(app.settings.queue_width)
         .size_range(fit.range.clone())
@@ -39,9 +39,13 @@ pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                 .inner_margin(Margin::symmetric(12, 12)),
         );
     let response = panel.show(ui, |ui| {
-        // The panel sits where the Queue would, under the same controls.
-        let window_controls =
-            super::window_controls_reservation(ui.ctx(), true, false, ui.available_width());
+        // At the window's right edge, the panel sits under the controls.
+        let window_controls = super::window_controls_reservation(
+            ui.ctx(),
+            app.outer_right_panel() == Some(crate::settings::SidePanel::Friends),
+            false,
+            ui.available_width(),
+        );
         ui.add_space(window_controls.queue_top);
         let mut close = false;
         egui::Sides::new().shrink_left().show(

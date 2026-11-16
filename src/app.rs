@@ -2871,6 +2871,34 @@ impl App {
         self.accents.get(&url).copied()
     }
 
+    /// Whether `panel` is open beside the page.
+    pub fn side_panel_open(&self, panel: crate::settings::SidePanel) -> bool {
+        use crate::settings::SidePanel;
+        match panel {
+            SidePanel::Queue => self.show_queue_panel,
+            SidePanel::Lyrics => self.show_lyrics_panel,
+            SidePanel::Friends => self.show_friends_panel,
+        }
+    }
+
+    /// The open side panels where they stand, each edge's first nearest
+    /// the window's edge.
+    pub fn open_side_panels(&self) -> Vec<crate::settings::PanelPlace> {
+        crate::settings::side_panel_places(&self.settings.side_panels)
+            .into_iter()
+            .filter(|place| self.side_panel_open(place.panel))
+            .collect()
+    }
+
+    /// The open side panel at the window's right edge, under the window's
+    /// controls.
+    pub fn outer_right_panel(&self) -> Option<crate::settings::SidePanel> {
+        self.open_side_panels()
+            .into_iter()
+            .find(|place| place.edge == crate::settings::PanelEdge::Right)
+            .map(|place| place.panel)
+    }
+
     /// The playing art's colours, the accent first, for the visualizer.
     pub fn now_playing_palette(&self) -> Option<&[[u8; 3]]> {
         if !self.settings.accent_from_art || crate::vacuum::gate::on() {
@@ -14773,8 +14801,10 @@ impl App {
             Action::ToggleQueuePanel => {
                 self.show_queue_panel = !self.show_queue_panel;
                 if self.show_queue_panel {
-                    self.show_lyrics_panel = false;
-                    self.show_friends_panel = false;
+                    if !self.settings.stack_side_panels {
+                        self.show_lyrics_panel = false;
+                        self.show_friends_panel = false;
+                    }
                     self.refresh_queue(true);
                 }
             }
@@ -14782,8 +14812,10 @@ impl App {
                 self.leave_lyrics_fullscreen(ctx);
                 self.show_lyrics_panel = !self.show_lyrics_panel;
                 if self.show_lyrics_panel {
-                    self.show_queue_panel = false;
-                    self.show_friends_panel = false;
+                    if !self.settings.stack_side_panels {
+                        self.show_queue_panel = false;
+                        self.show_friends_panel = false;
+                    }
                     self.lyrics_following = true;
                     self.request_lyrics();
                 }
@@ -14791,10 +14823,21 @@ impl App {
             Action::ToggleFriendsPanel => {
                 self.show_friends_panel = !self.show_friends_panel;
                 if self.show_friends_panel {
-                    self.show_queue_panel = false;
-                    self.show_lyrics_panel = false;
+                    if !self.settings.stack_side_panels {
+                        self.show_queue_panel = false;
+                        self.show_lyrics_panel = false;
+                    }
                     self.refresh_friends();
                 }
+            }
+            Action::PlaceSidePanel { panel, edge, index } => {
+                self.settings.side_panels = crate::settings::place_side_panel(
+                    &self.settings.side_panels,
+                    panel,
+                    edge,
+                    index,
+                );
+                self.settings_dirty = true;
             }
             Action::SetLyricsFullscreen(fullscreen) => {
                 if fullscreen && self.lyrics_fullscreen.is_none() {
@@ -17378,7 +17421,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 40";
+pub const FORK_VERSION: &str = "mod 41";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -26104,12 +26147,14 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// Friend activity takes the right panel's place: opening it closes the
-    /// Queue and Lyrics, and opening either of them closes it.
+    /// With side panels side by side off, friend activity takes the right
+    /// panel's place: opening it closes the Queue and Lyrics, and opening
+    /// either of them closes it.
     #[test]
     fn friend_activity_swaps_places_with_the_queue_and_lyrics() {
         let ctx = egui::Context::default();
         let mut app = test_app("friends-panel-swap");
+        app.settings.stack_side_panels = false;
         app.show_queue_panel = true;
         app.apply(Action::ToggleFriendsPanel, &ctx);
         assert!(app.show_friends_panel && !app.show_queue_panel);
@@ -26122,6 +26167,40 @@ mod tests {
         assert!(app.show_friends_panel && !app.show_lyrics_panel);
         app.apply(Action::ToggleFriendsPanel, &ctx);
         assert!(!app.show_friends_panel && !app.show_queue_panel && !app.show_lyrics_panel);
+        app.backend.shutdown();
+    }
+
+    /// Side by side, the default, opening a panel leaves the others open,
+    /// and each closes on its own.
+    #[test]
+    fn side_panels_stay_open_together_side_by_side() {
+        let ctx = egui::Context::default();
+        let mut app = test_app("side-panels-stacked");
+        assert!(app.settings.stack_side_panels);
+        app.apply(Action::ToggleQueuePanel, &ctx);
+        app.apply(Action::ToggleLyricsPanel, &ctx);
+        app.apply(Action::ToggleFriendsPanel, &ctx);
+        assert!(app.show_queue_panel && app.show_lyrics_panel && app.show_friends_panel);
+        assert_eq!(app.open_side_panels().len(), 3);
+        assert_eq!(
+            app.outer_right_panel(),
+            Some(crate::settings::SidePanel::Queue)
+        );
+        app.apply(
+            Action::PlaceSidePanel {
+                panel: crate::settings::SidePanel::Queue,
+                edge: crate::settings::PanelEdge::Left,
+                index: 0,
+            },
+            &ctx,
+        );
+        assert_eq!(
+            app.outer_right_panel(),
+            Some(crate::settings::SidePanel::Lyrics),
+            "the Queue moved left; Lyrics is under the window's controls"
+        );
+        app.apply(Action::ToggleLyricsPanel, &ctx);
+        assert!(app.show_queue_panel && !app.show_lyrics_panel && app.show_friends_panel);
         app.backend.shutdown();
     }
 

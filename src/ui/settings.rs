@@ -1091,6 +1091,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let custom_titlebar = gettext(locale, "Custom title bar");
     // Translators: A setting: with Spotifast's own title bar, show the app's version in the top bar.
     let show_version = gettext(locale, "Show version");
+    // Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+    let stack_panels = gettext(locale, "Side panels side by side");
     let show_custom_titlebar = cfg!(target_os = "linux") || app.windows_controls_visible();
     let player_bar_vis = gettext(locale, "Player bar visualizer");
     // Translators: A setting: choosing Tree or Circles for the playlist map chooses it on Home and in the Library both.
@@ -1286,6 +1288,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             gettext(
                 locale,
                 "Searching rings what matches and leaves the rest in place. Off, the search is a filter, as Zoom in and Only selected treat the others.",
+            ),
+        ),
+        RowText::new(
+            stack_panels.clone(),
+            gettext(
+                locale,
+                "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others.",
             ),
         ),
     ];
@@ -2795,6 +2804,25 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                             app.mark_settings_dirty();
                         }
                     });
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
+                &appearance_rows[20],
+                |ui| {
+                    if widgets::switch(
+                        ui,
+                        &palette,
+                        &stack_panels,
+                        &mut app.settings.stack_side_panels,
+                    )
+                    .changed()
+                    {
+                        changed = true;
+                    }
                 },
             );
             if cfg!(target_os = "linux") {

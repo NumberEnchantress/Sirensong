@@ -5203,3 +5203,17 @@ msgstr ""
 #: src/ui/settings.rs:1789
 msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
 msgstr ""
+
+#. Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+#: src/ui/settings.rs
+msgid "Side panels side by side"
+msgstr ""
+
+#: src/ui/settings.rs
+msgid "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others."
+msgstr ""
+
+#. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+#: src/ui/mod.rs
+msgid "Move panel"
+msgstr ""

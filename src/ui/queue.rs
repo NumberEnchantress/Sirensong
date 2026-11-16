@@ -43,7 +43,7 @@ pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         app.settings.queue_width,
         ui.available_width() - super::topbar::least_width(ui.ctx()),
     );
-    let panel = egui::Panel::right("queue-panel")
+    let panel = super::side_panel_at(app, crate::settings::SidePanel::Queue)
         .resizable(true)
         .default_size(app.settings.queue_width)
         .size_range(fit.range.clone())
@@ -56,8 +56,8 @@ pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     let response = panel.show(ui, |ui| {
         let window_controls = super::window_controls_reservation(
             ui.ctx(),
-            app.show_queue_panel,
-            app.show_lyrics_panel,
+            app.outer_right_panel() == Some(crate::settings::SidePanel::Queue),
+            false,
             ui.available_width(),
         );
         ui.add_space(window_controls.queue_top);

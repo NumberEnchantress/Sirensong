@@ -842,9 +842,18 @@ volume for Sirensong alone.
 ## Listening activity
 
 The people button in the player bar, beside Queue and Lyrics, opens what the
-people you follow on Spotify are listening to. It takes the place of the
-Queue or Lyrics panel on the right, and they take its place in turn. While
-it is open it refreshes every 15 seconds.
+people you follow on Spotify are listening to. It opens beside the Queue
+and Lyrics panels, which can stay open with it. While it is open it
+refreshes every 15 seconds.
+
+### Side panels side by side
+
+**Side panels side by side**, in **Settings > Look & feel > Appearance** and
+on by default, lets the Queue, Lyrics and Listening activity stay open
+together. Each panel has a grip of six dots at its top left: drag it to the
+other half of the window to move the panel to that side, or along its own
+side to change the order. A line shows where it will go. Each panel keeps its
+place and width. Off, opening one panel closes the others.
 
 A blue dot on the avatar and bars in place of the time mean the person is
 listening right now. Pointing at an avatar shows a play button: click it to
@@ -954,10 +963,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 40 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 41 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 40` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 41` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

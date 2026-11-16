@@ -5234,3 +5234,17 @@ msgstr "你的历史记录"
 #: src/ui/settings.rs:1789
 msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
 msgstr "“保留搜索日志”开启时保存的搜索，位于 {file}。此文件从不上传。"
+
+#. Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+#: src/ui/settings.rs
+msgid "Side panels side by side"
+msgstr "侧边面板并排显示"
+
+#: src/ui/settings.rs
+msgid "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others."
+msgstr "播放队列、歌词和收听动态可以同时打开。拖动面板的把手，可将其移到窗口另一侧或另一个面板旁边。关闭时，打开一个会关闭其他面板。"
+
+#. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+#: src/ui/mod.rs
+msgid "Move panel"
+msgstr "移动面板"

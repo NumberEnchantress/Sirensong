@@ -404,6 +404,8 @@ main fields are:
 | `theme_pair` | absent | The themes Follow system uses in light and dark mode: `{"light": {"filename": "Catppuccin Latte.json", "palette": {...}}, "dark": {...}}`. Each `palette` is the last accepted copy of that file's colours. A missing side, or the whole field, is Sirensong's own Light or Dark; it is written only once you choose one |
 | `accent_from_art` | `true` | Tint pages with album art, and colour the player bar visualizer with the cover's colours |
 | `player_bar_vis` | `off` | Since 0.11.0: what moves behind the player bar while a song plays on this computer: `off`, `spectrum`, `waveform` or `both` (the waveform over the spectrum) |
+| `stack_side_panels` | `true` | **Side panels side by side**: the Queue, Lyrics and Listening activity panels can stay open together |
+| `side_panels` | Queue, Lyrics, Listening activity, all `right` | Each side panel's `panel` (`queue`, `lyrics`, `friends`) and `edge` (`left` or `right`), in order from the window's edge, set by dragging a panel's grip |
 | `search_log_button` | `false` | A **Search log** button on Home, beside the map's choices or under the greeting, that opens the searches kept |
 | `search_log` | `false` | **Keep a search log**: what each search showed, the last 1,000 searches, kept in `search-log.json` on this computer only |
 | `search_default` | `"all"` | The results a new search opens on: `all`, `songs`, `artists`, `albums`, `playlists`, `podcasts` or `episodes` |

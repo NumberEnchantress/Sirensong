@@ -192,6 +192,89 @@ impl VacuumSettings {
     }
 }
 
+/// A panel that can stand beside the page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SidePanel {
+    Queue,
+    Lyrics,
+    Friends,
+}
+
+impl SidePanel {
+    pub const ALL: [Self; 3] = [Self::Queue, Self::Lyrics, Self::Friends];
+
+    /// The id its egui panel is drawn under.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Queue => "queue-panel",
+            Self::Lyrics => "lyrics-panel",
+            Self::Friends => "friends-panel",
+        }
+    }
+}
+
+/// The edge of the window a side panel stands at.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PanelEdge {
+    Left,
+    #[default]
+    Right,
+}
+
+/// Where a side panel stands: its edge, and, by its place in
+/// [`Settings::side_panels`], its order along it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PanelPlace {
+    pub panel: SidePanel,
+    #[serde(default)]
+    pub edge: PanelEdge,
+}
+
+/// Every side panel once, in the order kept, the first nearest its edge of
+/// the window; one missing, from an older file, stands at the right after
+/// the rest.
+pub fn side_panel_places(kept: &[PanelPlace]) -> Vec<PanelPlace> {
+    let mut places: Vec<PanelPlace> = Vec::with_capacity(SidePanel::ALL.len());
+    for place in kept {
+        if !places.iter().any(|held| held.panel == place.panel) {
+            places.push(*place);
+        }
+    }
+    for panel in SidePanel::ALL {
+        if !places.iter().any(|held| held.panel == panel) {
+            places.push(PanelPlace {
+                panel,
+                edge: PanelEdge::Right,
+            });
+        }
+    }
+    places
+}
+
+/// `places` with `panel` moved to `edge`, before the `index`th of the other
+/// panels already there, counted from the window's edge, or after them all.
+pub fn place_side_panel(
+    places: &[PanelPlace],
+    panel: SidePanel,
+    edge: PanelEdge,
+    index: usize,
+) -> Vec<PanelPlace> {
+    let mut places: Vec<PanelPlace> = side_panel_places(places)
+        .into_iter()
+        .filter(|place| place.panel != panel)
+        .collect();
+    let at = places
+        .iter()
+        .enumerate()
+        .filter(|(_, place)| place.edge == edge)
+        .nth(index)
+        .map_or(places.len(), |(at, _)| at);
+    places.insert(at, PanelPlace { panel, edge });
+    places
+}
+
 /// How the Home map draws the Library's folders.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -556,6 +639,11 @@ pub struct Settings {
     pub search_log: bool,
     /// Home has a button that opens the search log.
     pub search_log_button: bool,
+    /// The Queue, Lyrics and Friends panels may stand open side by side;
+    /// off, opening one closes the others.
+    pub stack_side_panels: bool,
+    /// Where each side panel stands ([`side_panel_places`] reads it).
+    pub side_panels: Vec<PanelPlace>,
     /// Explicit order per Library shelf. Missing shelves keep their previous
     /// behaviour; selecting another order never deletes the local arrangement.
     pub library_sort: std::collections::BTreeMap<LibraryShelf, LibrarySort>,
@@ -761,6 +849,8 @@ impl Default for Settings {
             search_default: crate::model::SearchFilter::All,
             search_log: false,
             search_log_button: false,
+            stack_side_panels: true,
+            side_panels: side_panel_places(&[]),
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,
             settings_search_in_topbar: true,
@@ -2390,5 +2480,66 @@ mod session_tests {
         );
         assert!(crate::util::temporary_files(path.parent().unwrap()).is_empty());
         let _ = std::fs::remove_dir_all(root);
+    }
+}
+
+#[cfg(test)]
+mod side_panel_tests {
+    use super::*;
+
+    fn at(panel: SidePanel, edge: PanelEdge) -> PanelPlace {
+        PanelPlace { panel, edge }
+    }
+
+    /// Every panel stands somewhere once; an older file's missing ones
+    /// stand at the right, and side by side is on by default.
+    #[test]
+    fn every_side_panel_has_one_place() {
+        use PanelEdge::{Left, Right};
+        use SidePanel::{Friends, Lyrics, Queue};
+        assert_eq!(
+            side_panel_places(&[]),
+            [at(Queue, Right), at(Lyrics, Right), at(Friends, Right)]
+        );
+        assert_eq!(
+            side_panel_places(&[at(Lyrics, Left), at(Lyrics, Right)]),
+            [at(Lyrics, Left), at(Queue, Right), at(Friends, Right)]
+        );
+        let older: Settings = serde_json::from_str("{}").unwrap();
+        assert!(older.stack_side_panels);
+        assert_eq!(side_panel_places(&older.side_panels).len(), 3);
+    }
+
+    /// A panel moved goes to its edge before the panel counted, or after
+    /// them all, and leaves where it was.
+    #[test]
+    fn a_side_panel_moves_to_its_edge_and_place() {
+        use PanelEdge::{Left, Right};
+        use SidePanel::{Friends, Lyrics, Queue};
+        let places = side_panel_places(&[]);
+        let moved = place_side_panel(&places, Lyrics, Left, 0);
+        assert_eq!(
+            moved,
+            [at(Queue, Right), at(Friends, Right), at(Lyrics, Left)]
+        );
+        let moved = place_side_panel(&moved, Friends, Right, 0);
+        assert_eq!(
+            moved,
+            [at(Friends, Right), at(Queue, Right), at(Lyrics, Left)]
+        );
+        let moved = place_side_panel(&moved, Queue, Left, 5);
+        assert_eq!(
+            moved,
+            [at(Friends, Right), at(Lyrics, Left), at(Queue, Left)]
+        );
+        let kept: Settings = serde_json::from_str(
+            &serde_json::to_string(&Settings {
+                side_panels: moved.clone(),
+                ..Settings::default()
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(kept.side_panels, moved);
     }
 }

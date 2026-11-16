@@ -5317,3 +5317,17 @@ msgstr "내 기록"
 #: src/ui/settings.rs:1789
 msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
 msgstr "‘검색 기록 남기기’가 켜져 있는 동안 남긴 검색으로, {file}에 저장됩니다. 이 파일은 업로드되지 않습니다."
+
+#. Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+#: src/ui/settings.rs
+msgid "Side panels side by side"
+msgstr "사이드 패널 나란히 보기"
+
+#: src/ui/settings.rs
+msgid "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others."
+msgstr "재생목록, 가사, 청취 활동을(를) 함께 열어 둘 수 있습니다. 패널의 손잡이를 드래그해 창의 반대편이나 다른 패널 옆으로 옮기세요. 끄면 하나를 열 때 나머지는 닫힙니다."
+
+#. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+#: src/ui/mod.rs
+msgid "Move panel"
+msgstr "패널 이동"

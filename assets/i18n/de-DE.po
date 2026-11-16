@@ -5418,3 +5418,17 @@ msgstr "Dein Verlauf"
 #: src/ui/settings.rs:1789
 msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
 msgstr "Die Suchen, die gespeichert werden, solange „Suchprotokoll führen“ an ist, in {file}. Diese Datei wird nie hochgeladen."
+
+#. Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+#: src/ui/settings.rs
+msgid "Side panels side by side"
+msgstr "Seitenleisten nebeneinander"
+
+#: src/ui/settings.rs
+msgid "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others."
+msgstr "Warteschlange, Songtext und Höraktivität können zusammen geöffnet bleiben. Zieh den Griff einer Leiste, um sie auf die andere Seite des Fensters oder neben eine andere zu verschieben. Ist sie aus, schließt das Öffnen einer Leiste die anderen."
+
+#. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+#: src/ui/mod.rs
+msgid "Move panel"
+msgstr "Leiste verschieben"

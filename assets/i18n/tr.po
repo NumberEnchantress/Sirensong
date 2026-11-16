@@ -5388,3 +5388,17 @@ msgstr "Geçmişiniz"
 #: src/ui/settings.rs:1789
 msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
 msgstr "“Arama günlüğü tut” açıkken saklanan aramalar, {file} içinde. Bu dosya hiçbir zaman yüklenmez."
+
+#. Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+#: src/ui/settings.rs
+msgid "Side panels side by side"
+msgstr "Yan paneller yan yana"
+
+#: src/ui/settings.rs
+msgid "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others."
+msgstr "Sıra, Şarkı Sözleri ve Dinleme etkinliği birlikte açık kalabilir. Bir paneli pencerenin diğer tarafına ya da başka bir panelin yanına taşımak için tutamacını sürükleyin. Kapalıyken birini açmak diğerlerini kapatır."
+
+#. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+#: src/ui/mod.rs
+msgid "Move panel"
+msgstr "Paneli taşı"

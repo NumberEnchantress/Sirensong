@@ -37,6 +37,7 @@ use crate::api::models::pick_image;
 use crate::app::App;
 use crate::backend::AuthStatus;
 use crate::model::{Action, Loadable, Page, ToastKind};
+use crate::settings::{PanelEdge, PanelPlace, SidePanel, side_panel_places};
 use crate::theme::{self, Icon};
 
 pub fn show(app: &mut App, ui: &mut egui::Ui) {
@@ -101,15 +102,16 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         if app.settings.sidebar_visible {
             sidebar::show(app, ui);
         }
-        if app.show_queue_panel {
-            queue::side_panel(app, ui);
+        // Each edge's panels in their order, the first nearest the window's
+        // edge; stacked, several stand side by side.
+        for place in app.open_side_panels() {
+            match place.panel {
+                SidePanel::Queue => queue::side_panel(app, ui),
+                SidePanel::Lyrics => lyrics::side_panel(app, ui),
+                SidePanel::Friends => friends::side_panel(app, ui),
+            }
         }
-        if app.show_lyrics_panel {
-            lyrics::side_panel(app, ui);
-        }
-        if app.show_friends_panel {
-            friends::side_panel(app, ui);
-        }
+        side_panel_grips(app, ui);
         central(app, ui);
     }
     keep_room_for_panels(app, ctx);
@@ -124,15 +126,155 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
 
 /// The main window's narrowest width with these panels open: their least
 /// widths and the page's.
-fn main_min_width(page: f32, sidebar: bool, right_panel: bool) -> f32 {
+fn main_min_width(page: f32, sidebar: bool, side_panels: usize) -> f32 {
     let sidebar = if sidebar { SIDEBAR_MIN_WIDTH } else { 0.0 };
-    let right = if right_panel {
-        theme::SIDE_PANEL_MIN_WIDTH
-    } else {
-        0.0
-    };
-    (sidebar + right + page).max(crate::window::MAIN_MIN_SIZE[0])
+    let panels = side_panels as f32 * theme::SIDE_PANEL_MIN_WIDTH;
+    (sidebar + panels + page).max(crate::window::MAIN_MIN_SIZE[0])
 }
+
+/// A side panel being dragged by its grip.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct MovingPanel(SidePanel);
+
+/// The egui panel for `panel`, at the edge of the window it stands at.
+pub(crate) fn side_panel_at(app: &App, panel: SidePanel) -> egui::Panel {
+    let edge = side_panel_places(&app.settings.side_panels)
+        .into_iter()
+        .find(|place| place.panel == panel)
+        .map_or(PanelEdge::Right, |place| place.edge);
+    match edge {
+        PanelEdge::Left => egui::Panel::left(panel.id()),
+        PanelEdge::Right => egui::Panel::right(panel.id()),
+    }
+}
+
+/// Where a dragged side panel would land with the pointer at `x`: the edge
+/// on the pointer's half of the window, its place among the `others` there
+/// (counted from the window's edge), and the line where it would stand,
+/// between `page`, the page's span, and the window's edge.
+fn panel_landing(
+    x: f32,
+    window: Rect,
+    page: Rect,
+    others: &[(PanelPlace, Rect)],
+) -> (PanelEdge, usize, f32) {
+    let edge = if x < window.center().x {
+        PanelEdge::Left
+    } else {
+        PanelEdge::Right
+    };
+    let there: Vec<Rect> = others
+        .iter()
+        .filter(|(place, _)| place.edge == edge)
+        .map(|(_, rect)| *rect)
+        .collect();
+    let index = there
+        .iter()
+        .filter(|rect| match edge {
+            PanelEdge::Left => rect.center().x < x,
+            PanelEdge::Right => rect.center().x > x,
+        })
+        .count();
+    let line = match (edge, there.get(index)) {
+        (PanelEdge::Left, Some(rect)) => rect.left(),
+        (PanelEdge::Right, Some(rect)) => rect.right(),
+        (PanelEdge::Left, None) => page.left(),
+        (PanelEdge::Right, None) => page.right(),
+    };
+    (edge, index, line)
+}
+
+/// A grip at the top of each open side panel. Drag it to the other half of
+/// the window to move the panel to that edge, or along its own edge to
+/// change the order; while it moves, a line marks where it would stand.
+fn side_panel_grips(app: &mut App, ui: &mut egui::Ui) {
+    use crate::i18n::gettext;
+    let ctx = ui.ctx().clone();
+    let window = ui.max_rect();
+    let page = ui.available_rect_before_wrap();
+    let open: Vec<(PanelPlace, Rect)> = app
+        .open_side_panels()
+        .into_iter()
+        .filter_map(|place| {
+            let rect = egui::PanelState::load(&ctx, Id::new(place.panel.id()))?.outer_rect;
+            Some((place, rect))
+        })
+        .collect();
+    let palette = app.palette;
+    // Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+    let label = gettext(app.locale, "Move panel");
+    for (place, rect) in &open {
+        let grip = Rect::from_min_size(
+            egui::pos2(rect.left() + 12.0, rect.top() + 1.0),
+            vec2(GRIP_SIZE.x, GRIP_SIZE.y),
+        );
+        let id = Id::new(("side-panel-grip", place.panel.id()));
+        let mut child = ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(grip)
+                .layer_id(egui::LayerId::new(egui::Order::Foreground, id)),
+        );
+        let response = child
+            .dnd_drag_source(id, MovingPanel(place.panel), |ui| {
+                let (rect, response) = ui.allocate_exact_size(GRIP_SIZE, egui::Sense::hover());
+                let colour = if response.hovered() {
+                    palette.text
+                } else {
+                    palette.dim
+                };
+                for row in [-2.0, 2.0] {
+                    for column in [-6.0, 0.0, 6.0] {
+                        ui.painter()
+                            .circle_filled(rect.center() + vec2(column, row), 1.2, colour);
+                    }
+                }
+                response
+            })
+            .response;
+        let label = label.clone();
+        response.widget_info(move || {
+            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label.clone())
+        });
+        if response.hovered() {
+            ctx.set_cursor_icon(egui::CursorIcon::Grab);
+        }
+    }
+    let Some(moving) = egui::DragAndDrop::payload::<MovingPanel>(&ctx) else {
+        return;
+    };
+    let Some(pointer) = ctx.pointer_latest_pos() else {
+        return;
+    };
+    let others: Vec<(PanelPlace, Rect)> = open
+        .iter()
+        .filter(|(place, _)| place.panel != moving.0)
+        .copied()
+        .collect();
+    let (edge, index, line) = panel_landing(pointer.x, window, page, &others);
+    ctx.set_cursor_icon(egui::CursorIcon::Grabbing);
+    ctx.layer_painter(egui::LayerId::new(
+        egui::Order::Foreground,
+        Id::new("side-panel-landing"),
+    ))
+    .line_segment(
+        [
+            egui::pos2(line, window.top()),
+            egui::pos2(line, window.bottom()),
+        ],
+        Stroke::new(3.0, palette.accent),
+    );
+    if ctx.input(|input| input.pointer.any_released()) {
+        egui::DragAndDrop::clear_payload(&ctx);
+        app.actions.push(Action::PlaceSidePanel {
+            panel: moving.0,
+            edge,
+            index,
+        });
+    }
+}
+
+/// The grip's size: two rows of three dots, in the panel's top margin.
+const GRIP_SIZE: egui::Vec2 = vec2(24.0, 10.0);
 
 /// The sidebar's narrowest width.
 pub(crate) const SIDEBAR_MIN_WIDTH: f32 = 210.0;
@@ -154,7 +296,11 @@ fn keep_room_for_panels(app: &App, ctx: &Context) {
     let width = main_min_width(
         topbar::least_width(ctx),
         panels && app.settings.sidebar_visible,
-        panels && (app.show_queue_panel || app.show_lyrics_panel || app.show_friends_panel),
+        if panels {
+            app.open_side_panels().len()
+        } else {
+            0
+        },
     )
     .round();
     let id = Id::new("main-min-width");
@@ -1011,5 +1157,50 @@ mod tests {
             assert!(top.color.a() > 0);
             assert_eq!((top.color.r(), top.color.g(), top.color.b()), (0, 0, 0));
         }
+    }
+}
+
+#[cfg(test)]
+mod side_panel_landing_tests {
+    use super::*;
+
+    /// A dragged panel lands at the edge on the pointer's half, before the
+    /// panels there that are nearer the window's edge than the pointer is
+    /// counted, and the line stands where it would.
+    #[test]
+    fn a_dragged_panel_lands_on_the_pointers_side_and_place() {
+        let window = Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1200.0, 800.0));
+        let page = Rect::from_min_max(egui::pos2(300.0, 0.0), egui::pos2(700.0, 800.0));
+        let queue = PanelPlace {
+            panel: SidePanel::Queue,
+            edge: PanelEdge::Right,
+        };
+        let friends = PanelPlace {
+            panel: SidePanel::Friends,
+            edge: PanelEdge::Right,
+        };
+        let outer = Rect::from_min_max(egui::pos2(950.0, 0.0), egui::pos2(1200.0, 800.0));
+        let inner = Rect::from_min_max(egui::pos2(700.0, 0.0), egui::pos2(950.0, 800.0));
+        let others = [(queue, outer), (friends, inner)];
+        assert_eq!(
+            panel_landing(1100.0, window, page, &others),
+            (PanelEdge::Right, 0, 1200.0),
+            "over the outer panel's middle: nearest the edge"
+        );
+        assert_eq!(
+            panel_landing(900.0, window, page, &others),
+            (PanelEdge::Right, 1, 950.0),
+            "between the two"
+        );
+        assert_eq!(
+            panel_landing(650.0, window, page, &others),
+            (PanelEdge::Right, 2, 700.0),
+            "inside them both, beside the page"
+        );
+        assert_eq!(
+            panel_landing(100.0, window, page, &others),
+            (PanelEdge::Left, 0, 300.0),
+            "the left half, beside the page, with none there"
+        );
     }
 }

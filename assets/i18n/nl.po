@@ -5391,3 +5391,17 @@ msgstr "Je geschiedenis"
 #: src/ui/settings.rs:1789
 msgid "The searches kept while Keep a search log is on, in {file}. This file is never uploaded."
 msgstr "De zoekopdrachten die bewaard worden zolang ‘Zoeklogboek bijhouden’ aan staat, in {file}. Dit bestand wordt nooit geüpload."
+
+#. Translators: A setting: the Queue, Lyrics and Listening activity panels may stay open side by side instead of one closing the others.
+#: src/ui/settings.rs
+msgid "Side panels side by side"
+msgstr "Zijpanelen naast elkaar"
+
+#: src/ui/settings.rs
+msgid "The Queue, Lyrics and Listening activity can stay open together. Drag a panel's grip to move it to the other side of the window or beside another. Off, opening one closes the others."
+msgstr "Wachtrij, Songtekst en Luisteractiviteit kunnen samen open blijven. Sleep de greep van een paneel om het naar de andere kant van het venster of naast een ander te verplaatsen. Staat dit uit, dan sluit het openen van één paneel de andere."
+
+#. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
+#: src/ui/mod.rs
+msgid "Move panel"
+msgstr "Paneel verplaatsen"
