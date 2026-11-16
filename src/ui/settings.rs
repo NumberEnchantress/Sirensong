@@ -2811,7 +2811,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 &palette,
                 &needle,
                 &appearance,
-                &appearance_rows[20],
+                &appearance_rows[22],
                 |ui| {
                     if widgets::switch(
                         ui,

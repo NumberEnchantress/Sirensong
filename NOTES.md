@@ -451,6 +451,9 @@ record its own decisions and three rounds of adversarial grading.
   hand in a running window yet; the tests cover the logic.
 - Turning the setting off leaves the panels already open until one is
   toggled.
+- **Fixed after mod 42:** the switch drew from `appearance_rows[20]`, a row
+  already moved to Home and map, so it never showed; its own row is 22.
+  `side_panels_side_by_side_is_in_look_and_feel` checks it shows.
 
 ### Compact when small, 16 November 2026 (mod 42)
 

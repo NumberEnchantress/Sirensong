@@ -6251,6 +6251,29 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// Look & feel shows Side panels side by side, on by default, and
+    /// turning it off is kept.
+    #[test]
+    fn side_panels_side_by_side_is_in_look_and_feel() {
+        use egui::accesskit::{Action as Do, Role, Toggled};
+        let (ctx, mut app) = accessible_app("stack-side-panels-setting");
+        app.settings_category = crate::model::SettingsCategory::Look;
+        app.open(Page::Settings);
+        accessible_frame(&ctx, &mut app, vec![]);
+        let tree = accessible_frame(&ctx, &mut app, vec![]);
+        let id = accessible_node(&tree, "Side panels side by side", Role::CheckBox);
+        let node = &tree
+            .nodes
+            .iter()
+            .find(|(node_id, _)| *node_id == id)
+            .unwrap()
+            .1;
+        assert_eq!(node.toggled(), Some(Toggled::True));
+        accessible_frame(&ctx, &mut app, vec![accessible_action(id, Do::Click, None)]);
+        assert!(!app.settings.stack_side_panels);
+        app.backend.shutdown();
+    }
+
     #[test]
     fn wayland_on_top_setting_is_disabled_and_does_not_look_active() {
         use egui::accesskit::{Role, Toggled};
