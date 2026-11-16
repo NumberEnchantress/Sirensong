@@ -92,12 +92,29 @@ struct Camera {
     /// The wheel last moved with Shift or Ctrl held: egui spreads a wheel's
     /// scroll over the next frames, and that tail turned, so must not zoom.
     turning: bool,
+    /// The wheel's turn still to come, in radians: each notch eases in
+    /// over a few frames rather than jumping.
+    owed: f32,
+    /// What the owed turn turns about, from the middle of the map.
+    pivot: Vec2,
     auto: bool,
 }
 
 /// How far a point of wheel scrolling turns the map, in radians: a notch
 /// of a mouse wheel turns it about ten degrees.
 const TURN_PER_POINT: f32 = 0.0035;
+
+/// How quickly an owed turn eases in, per second.
+const TURN_EASE: f32 = 16.0;
+
+/// Turn the view by `angle` radians about `pivot`, a point from the middle
+/// of the map, keeping that point where it is on screen.
+fn turn_about(camera: &mut Camera, pivot: Vec2, angle: f32) {
+    let spin = egui::emath::Rot2::from_angle(angle);
+    camera.pan = pivot + spin * (camera.pan - pivot);
+    camera.turn = (camera.turn + angle).rem_euclid(TAU);
+    camera.auto = false;
+}
 
 /// Whether the wheel turns the map with these keys held: Shift, or Ctrl
 /// (Command on a Mac). Alt alone leaves the wheel zooming.
@@ -1532,16 +1549,19 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         }
         let held = held || state.camera.turning;
         let from_centre = pointer - rect.center();
-        let turn = twist + turning * TURN_PER_POINT;
-        if turn.abs() > f32::EPSILON {
-            let spin = egui::emath::Rot2::from_angle(turn);
-            let pivot = if alt != home.map_turn_at_pointer {
-                from_centre
-            } else {
-                Vec2::ZERO
-            };
-            state.camera.pan = pivot + spin * (state.camera.pan - pivot);
-            state.camera.turn = (state.camera.turn + turn).rem_euclid(TAU);
+        let pivot = if alt != home.map_turn_at_pointer {
+            from_centre
+        } else {
+            Vec2::ZERO
+        };
+        // A twist follows the fingers as they move; the wheel's turn is
+        // owed and eased in below.
+        if twist.abs() > f32::EPSILON {
+            turn_about(&mut state.camera, pivot, twist);
+        }
+        if turning.abs() > f32::EPSILON {
+            state.camera.owed += turning * TURN_PER_POINT;
+            state.camera.pivot = pivot;
             state.camera.auto = false;
         }
         // A wheel that turns only turns: its smoothed tail must not zoom
@@ -1561,6 +1581,20 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         if held || (factor - 1.0).abs() > f32::EPSILON {
             ui.input_mut(|input| input.smooth_scroll_delta = Vec2::ZERO);
         }
+    }
+    // The wheel's owed turn, eased in: most of it in the first tenth of a
+    // second, all of it soon after, so a notch glides at about the speed
+    // it jumped before.
+    if state.camera.owed != 0.0 {
+        let step = if state.camera.owed.abs() < 0.0005 {
+            state.camera.owed
+        } else {
+            state.camera.owed * (1.0 - (-dt * TURN_EASE).exp())
+        };
+        let pivot = state.camera.pivot;
+        turn_about(&mut state.camera, pivot, step);
+        state.camera.owed -= step;
+        moving = true;
     }
     if background.dragged() {
         state.camera.pan += background.drag_delta();

@@ -478,6 +478,11 @@ record its own decisions and three rounds of adversarial grading.
 - Ctrl and the wheel, or a pinch, over the lyrics (panel or full screen)
   scale their words: `Settings::lyrics_scale`, kept within
   `LYRICS_SCALE` (0.6 to 2.5) through `Action::SetLyricsScale`.
+- **Smoother (mod 44, requested by the user):** the wheel's turn is owed
+  (`Camera::owed`, about `Camera::pivot`) and eased in at `TURN_EASE` per
+  second, so a notch glides over about a fifth of a second instead of
+  jumping; the total per notch is unchanged. A trackpad twist still
+  follows the fingers directly.
 
 ### Still open
 

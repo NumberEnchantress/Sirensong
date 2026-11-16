@@ -9640,6 +9640,48 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// A notch of the wheel turns the map over a few frames, not at once,
+    /// and comes to the same turn in the end.
+    #[test]
+    fn a_wheel_notch_turns_the_map_smoothly() {
+        let pi = std::f32::consts::PI;
+        let (ctx, mut app) = accessible_app("map-turn-smooth");
+        apply_flags(&mut app, None, Some("playlist-map,folders"));
+        let angle = |tree: &egui::accesskit::TreeUpdate| {
+            let a = map_node(tree, "Late night focus").unwrap().center();
+            let b = map_node(tree, "Sunday morning").unwrap().center();
+            (b - a).angle()
+        };
+        let tree = settled_map(&ctx, &mut app, vec![]);
+        let start = angle(&tree);
+        let notch = vec![
+            egui::Event::PointerMoved(map_node(&tree, "Late night focus").unwrap().center()),
+            egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Line,
+                delta: egui::vec2(0.0, 1.0),
+                modifiers: egui::Modifiers::SHIFT,
+                phase: egui::TouchPhase::Move,
+            },
+        ];
+        let turned = |tree: &egui::accesskit::TreeUpdate| {
+            (angle(tree) - start + pi).rem_euclid(2.0 * pi) - pi
+        };
+        accessible_frame(&ctx, &mut app, notch);
+        let first = turned(&accessible_frame(
+            &ctx,
+            &mut app,
+            vec![egui::Event::PointerGone],
+        ));
+        let tree = settled_map(&ctx, &mut app, vec![]);
+        let last = turned(&tree);
+        assert!(last > 0.05, "it turned: {last}");
+        assert!(
+            first < last * 0.8,
+            "the first frames turn part of it: {first} of {last}"
+        );
+        app.backend.shutdown();
+    }
+
     /// Clicking a folder on the map opens it as the root: what it holds in
     /// view and the rest further out, or, with Only, the rest shrinking
     /// away. Clicking the root goes back out.
