@@ -403,6 +403,19 @@ record its own decisions and three rounds of adversarial grading.
   Apply and restart playback sits at the foot of the view (an
   `egui::Area`, pivoted at its bottom) whenever its own row is out of view.
 
+### Turning the map, 16 November 2026 (mod 39)
+
+- **Requested by the user:** a modifier and the wheel turn the map. Any of
+  Ctrl, Alt, Shift or Command held turns it about the pointer instead of
+  zooming; a trackpad's two-finger twist turns it too. `Camera::turn`
+  holds the angle; `screen` turns every map point, so branches, drops and
+  hovering follow, and names are laid out upright beside the turned point,
+  reading outward along the turned branch. `fit` frames the turned map.
+- The wheel's own events are read (`turning_scroll`), since egui turns
+  Ctrl's wheel into a zoom and Shift's or Alt's into a sideways scroll
+  before `smooth_scroll_delta`; `pinch_only` keeps a trackpad pinch's zoom
+  apart from Ctrl's wheel. A wheel turned up turns the map clockwise.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

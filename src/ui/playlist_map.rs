@@ -81,13 +81,65 @@ struct Drawn {
     parent: Option<String>,
 }
 
-/// The view: where the map's origin is from the middle of the map, and how
-/// large a unit is. `auto` follows the fit until the view is moved by hand.
+/// The view: where the map's origin is from the middle of the map, how
+/// large a unit is, and how far the map is turned, in radians clockwise on
+/// screen. `auto` follows the fit until the view is moved by hand.
 #[derive(Default)]
 struct Camera {
     pan: Vec2,
     zoom: f32,
+    turn: f32,
+    /// The wheel last moved with a modifier held: egui spreads a wheel's
+    /// scroll over the next frames, and that tail turned, so must not zoom.
+    turning: bool,
     auto: bool,
+}
+
+/// How far a point of wheel scrolling turns the map, in radians: a notch
+/// of a mouse wheel turns it about ten degrees.
+const TURN_PER_POINT: f32 = 0.0035;
+
+/// The wheel scrolled this frame with a modifier held, in points: Ctrl,
+/// Alt, Shift or the platform's command key and the wheel turn the map
+/// instead of zooming it. Shift and Alt move a wheel sideways in egui, so
+/// both directions count, read from the wheel's own events before egui
+/// makes them a zoom or a sideways scroll.
+fn turning_scroll(input: &egui::InputState, line: f32, page: f32) -> f32 {
+    input
+        .events
+        .iter()
+        .filter_map(|event| match event {
+            egui::Event::MouseWheel {
+                unit,
+                delta,
+                modifiers,
+                ..
+            } if modifiers.any() => {
+                let scale = match unit {
+                    egui::MouseWheelUnit::Point => 1.0,
+                    egui::MouseWheelUnit::Line => line,
+                    egui::MouseWheelUnit::Page => page,
+                };
+                // A wheel turned up turns the map clockwise, and so does
+                // one the system has already made sideways.
+                Some((delta.y + delta.x) * scale)
+            }
+            _ => None,
+        })
+        .sum()
+}
+
+/// A trackpad's pinch this frame, without the wheel zoom egui adds to it
+/// while Ctrl is held: that wheel turns the map.
+fn pinch_only(input: &egui::InputState) -> f32 {
+    input
+        .events
+        .iter()
+        .filter_map(|event| match event {
+            egui::Event::Zoom(factor) => Some(*factor),
+            _ => None,
+        })
+        .product()
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1000,10 +1052,18 @@ fn focus_of(app: &App, side: bool) -> u64 {
 }
 
 /// The pan and zoom that show everything in focus in `size`, or with
-/// `whole` everything there is, with room for names. In circles the
-/// Library around it all is framed by what is in focus inside it, not by
-/// its whole circle.
-fn fit(nodes: &[Node], places: &[Place], size: Vec2, circles: bool, whole: bool) -> (Vec2, f32) {
+/// `whole` everything there is, with room for names, with the map turned
+/// by `turn`. In circles the Library around it all is framed by what is in
+/// focus inside it, not by its whole circle.
+fn fit(
+    nodes: &[Node],
+    places: &[Place],
+    size: Vec2,
+    circles: bool,
+    whole: bool,
+    turn: f32,
+) -> (Vec2, f32) {
+    let spin = egui::emath::Rot2::from_angle(turn);
     let mut bounds = Rect::NOTHING;
     for (index, (node, place)) in nodes.iter().zip(places).enumerate() {
         let framed_inside = circles
@@ -1012,7 +1072,7 @@ fn fit(nodes: &[Node], places: &[Place], size: Vec2, circles: bool, whole: bool)
             && node.children.iter().any(|child| nodes[*child].focus);
         if whole || (node.focus && !framed_inside) {
             bounds = bounds.union(Rect::from_center_size(
-                place.at.to_pos2(),
+                (spin * place.at).to_pos2(),
                 Vec2::splat(place.radius * 2.0),
             ));
         }
@@ -1021,7 +1081,7 @@ fn fit(nodes: &[Node], places: &[Place], size: Vec2, circles: bool, whole: bool)
         return if whole || nodes.is_empty() {
             (Vec2::ZERO, 1.0)
         } else {
-            fit(nodes, places, size, circles, true)
+            fit(nodes, places, size, circles, true, turn)
         };
     }
     let room = (size - Vec2::splat(56.0)).max(Vec2::splat(40.0));
@@ -1329,7 +1389,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
             ui,
             gettext(
                 locale,
-                "Scroll to zoom, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go.",
+                "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go.",
             ),
             theme::regular(12.5),
             palette.dim,
@@ -1397,7 +1457,14 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     let ease = 1.0 - (-dt * 11.0).exp();
     let mut moving = false;
     if state.camera.auto {
-        let (pan, zoom) = fit(&nodes, &base, rect.size(), circles, state.whole);
+        let (pan, zoom) = fit(
+            &nodes,
+            &base,
+            rect.size(),
+            circles,
+            state.whole,
+            state.camera.turn,
+        );
         if first {
             state.camera.pan = pan;
             state.camera.zoom = zoom;
@@ -1410,21 +1477,58 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         }
     }
 
-    // Zoom about the pointer with the wheel or a pinch, here and not the page.
+    // Zoom about the pointer with the wheel or a pinch, here and not the
+    // page; with a modifier held, or a trackpad's two-finger twist, turn the
+    // map about the pointer instead.
     if let Some(pointer) = ui
         .ctx()
         .pointer_hover_pos()
         .filter(|_| ui.rect_contains_pointer(rect))
     {
-        let (scroll, pinch) = ui.input(|input| (input.smooth_scroll_delta.y, input.zoom_delta()));
-        let factor = pinch * (scroll * 0.0025).exp();
+        let line = ui
+            .ctx()
+            .options(|options| options.input_options.line_scroll_speed);
+        let (scroll, pinch, held, twist, turning, plain_wheel) = ui.input(|input| {
+            (
+                input.smooth_scroll_delta.y,
+                pinch_only(input),
+                input.modifiers.any(),
+                input.rotation_delta(),
+                turning_scroll(input, line, rect.height()),
+                input.events.iter().any(|event| {
+                    matches!(event, egui::Event::MouseWheel { modifiers, .. } if !modifiers.any())
+                }),
+            )
+        });
+        if turning.abs() > f32::EPSILON {
+            state.camera.turning = true;
+        } else if plain_wheel {
+            state.camera.turning = false;
+        }
+        let held = held || state.camera.turning;
+        let from_centre = pointer - rect.center();
+        let turn = twist + turning * TURN_PER_POINT;
+        if turn.abs() > f32::EPSILON {
+            let spin = egui::emath::Rot2::from_angle(turn);
+            state.camera.pan = from_centre + spin * (state.camera.pan - from_centre);
+            state.camera.turn = (state.camera.turn + turn).rem_euclid(TAU);
+            state.camera.auto = false;
+        }
+        // A wheel with a modifier only turns: its smoothed tail must not
+        // zoom or scroll the page after the turn.
+        let factor = if held {
+            pinch
+        } else {
+            pinch * (scroll * 0.0025).exp()
+        };
         if (factor - 1.0).abs() > f32::EPSILON {
             let zoom = (state.camera.zoom * factor).clamp(0.03, 12.0);
-            let from_centre = pointer - rect.center();
             state.camera.pan =
                 from_centre - (from_centre - state.camera.pan) * (zoom / state.camera.zoom);
             state.camera.zoom = zoom;
             state.camera.auto = false;
+        }
+        if held || (factor - 1.0).abs() > f32::EPSILON {
             ui.input_mut(|input| input.smooth_scroll_delta = Vec2::ZERO);
         }
     }
@@ -1434,6 +1538,10 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     }
     let zoom = state.camera.zoom;
     let pan = state.camera.pan;
+    // The turn moves where things are, never how they read: every map
+    // point goes through `screen`, and names are laid out upright beside
+    // the turned point.
+    let spin = egui::emath::Rot2::from_angle(state.camera.turn);
 
     // Where each node is headed: its place, or, beside the one the pointer
     // is on, out of its way.
@@ -1515,7 +1623,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         }
     }
 
-    let screen = |at: Vec2| rect.center() + pan + at * zoom;
+    let screen = |at: Vec2| rect.center() + pan + spin * (at * zoom);
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect));
     child.set_clip_rect(rect.intersect(ui.clip_rect()));
     let deepest = nodes
@@ -1787,7 +1895,9 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
                     .as_ref()
                     .and_then(|key| state.drawn.get(key))
                     .map_or(root_at, |parent| parent.at);
-                let outward = (drawn.at - from).normalized();
+                // Outward on screen, so a name reads away from its branch
+                // whichever way the map is turned.
+                let outward = (spin * (drawn.at - from)).normalized();
                 let (at, align) = if circles || node.holds() || !outward.is_finite() {
                     (centre + vec2(0.0, radius + 4.0), egui::Align2::CENTER_TOP)
                 } else if outward.x >= 0.0 {

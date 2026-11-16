@@ -4636,8 +4636,8 @@ msgid "Show as tree"
 msgstr "Als Baum anzeigen"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "Scrollen zum Zoomen, Hintergrund ziehen zum Verschieben, Doppelklick zeigt alles. Klicken zum Öffnen, Rechtsklick für mehr, Playlists, Ordner oder Songs dorthin ziehen, wo sie hingehören."
+msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "Scrollen zum Zoomen, mit gedrückter Strg-, Alt- oder Umschalttaste scrollen zum Drehen, Hintergrund ziehen zum Verschieben, Doppelklick zeigt alles. Klicken zum Öffnen, Rechtsklick für mehr, Playlists, Ordner oder Songs dorthin ziehen, wo sie hingehören."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068

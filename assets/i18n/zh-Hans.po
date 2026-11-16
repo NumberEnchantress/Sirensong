@@ -4452,8 +4452,8 @@ msgid "Show as tree"
 msgstr "以树状显示"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "滚动缩放，拖动背景平移，双击查看全部。单击打开，右键查看更多，把歌单、文件夹或歌曲拖到要去的地方。"
+msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "滚动缩放，按住 Ctrl、Alt 或 Shift 滚动旋转，拖动背景平移，双击查看全部。单击打开，右键查看更多，把歌单、文件夹或歌曲拖到要去的地方。"
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068

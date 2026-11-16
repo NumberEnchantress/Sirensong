@@ -4535,8 +4535,8 @@ msgid "Show as tree"
 msgstr "트리로 보기"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "스크롤로 확대/축소, 배경을 드래그해 이동, 더블클릭으로 전체 보기. 클릭해서 열기, 우클릭으로 더 보기, 플레이리스트·폴더·곡은 갈 곳으로 드래그."
+msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "스크롤로 확대/축소, Ctrl·Alt·Shift를 누른 채 스크롤해 회전, 배경을 드래그해 이동, 더블클릭으로 전체 보기. 클릭해서 열기, 우클릭으로 더 보기, 플레이리스트·폴더·곡은 갈 곳으로 드래그."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068

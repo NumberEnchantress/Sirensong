@@ -607,7 +607,9 @@ their icons alone: Tree and Circles their views, Time listened headphones,
 Zoom in a magnifying glass and Only selected a focus frame. Pointing at one
 names it.
 
-Scroll or pinch to zoom and drag the background to move. Double-click the
+Scroll or pinch to zoom and drag the background to move. Scroll with Ctrl,
+Alt or Shift held, or twist two fingers on a trackpad, to turn the map
+about the pointer; names stay upright as it turns. Double-click the
 background to see everything at once, and again to go back to the focus;
 the view also fits itself to the focus whenever it changes, until you move
 it. Click a node to open it (in Circles, a folder by its name, so the space

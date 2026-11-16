@@ -951,10 +951,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 38 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 39 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 38` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 39` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

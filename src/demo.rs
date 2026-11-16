@@ -9458,6 +9458,55 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// The wheel with Ctrl, Alt or Shift held turns the map about the
+    /// pointer instead of zooming it or scrolling the page: what is on it
+    /// keeps its distances and its upright names, and turns.
+    #[test]
+    fn a_modifier_and_the_wheel_turn_the_map() {
+        for modifiers in [
+            egui::Modifiers::CTRL,
+            egui::Modifiers::ALT,
+            egui::Modifiers::SHIFT,
+        ] {
+            let (ctx, mut app) = accessible_app(&format!("map-turn-{modifiers:?}"));
+            apply_flags(&mut app, None, Some("playlist-map,folders"));
+            let tree = settled_map(&ctx, &mut app, vec![]);
+            let a = map_node(&tree, "Late night focus").expect("one playlist on the map");
+            let b = map_node(&tree, "Sunday morning").expect("another");
+            let before = b.center() - a.center();
+            let turn = vec![
+                egui::Event::PointerMoved(a.center()),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Line,
+                    delta: egui::vec2(0.0, 2.0),
+                    modifiers,
+                    phase: egui::TouchPhase::Move,
+                },
+            ];
+            settled_map(&ctx, &mut app, turn);
+            let tree = settled_map(&ctx, &mut app, vec![egui::Event::PointerGone]);
+            let a2 = map_node(&tree, "Late night focus").expect("still on the map");
+            let b2 = map_node(&tree, "Sunday morning").expect("still on the map");
+            let after = b2.center() - a2.center();
+            assert!(
+                (after.length() - before.length()).abs() < 1.5,
+                "{modifiers:?} turns the map without zooming it: {before:?} became {after:?}"
+            );
+            let turned = after.angle() - before.angle();
+            let turned = (turned + std::f32::consts::PI).rem_euclid(std::f32::consts::TAU)
+                - std::f32::consts::PI;
+            assert!(
+                turned > 0.1,
+                "{modifiers:?} and the wheel turned up turn the map clockwise, by {turned}"
+            );
+            assert!(
+                (a2.center() - a.center()).length() < 1.5,
+                "it turns about the pointer, which was on the first"
+            );
+            app.backend.shutdown();
+        }
+    }
+
     /// Clicking a folder on the map opens it as the root: what it holds in
     /// view and the rest further out, or, with Only, the rest shrinking
     /// away. Clicking the root goes back out.
