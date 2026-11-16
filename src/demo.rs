@@ -6251,6 +6251,47 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// Ctrl and the wheel over the lyrics panel make the words larger, kept
+    /// with the settings and within their bounds.
+    #[test]
+    fn ctrl_and_the_wheel_size_the_lyrics() {
+        let (ctx, mut app) = accessible_app("lyrics-zoom");
+        app.show_lyrics_panel = true;
+        accessible_frame(&ctx, &mut app, vec![]);
+        accessible_frame(&ctx, &mut app, vec![]);
+        let at = egui::pos2(1200.0, 420.0);
+        let wheel = |up: f32| {
+            vec![
+                egui::Event::PointerMoved(at),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Line,
+                    delta: egui::vec2(0.0, up),
+                    modifiers: egui::Modifiers::CTRL,
+                    phase: egui::TouchPhase::Move,
+                },
+            ]
+        };
+        accessible_frame(&ctx, &mut app, wheel(3.0));
+        for _ in 0..30 {
+            accessible_frame(&ctx, &mut app, vec![]);
+        }
+        assert!(
+            app.settings.lyrics_scale > 1.05,
+            "larger: {}",
+            app.settings.lyrics_scale
+        );
+        for _ in 0..40 {
+            accessible_frame(&ctx, &mut app, wheel(-20.0));
+        }
+        assert_eq!(
+            app.settings.lyrics_scale,
+            *crate::settings::LYRICS_SCALE.start()
+        );
+        let older: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(older.lyrics_scale, 1.0);
+        app.backend.shutdown();
+    }
+
     /// Look & feel shows Side panels side by side, on by default, and
     /// turning it off is kept.
     #[test]
@@ -9490,18 +9531,45 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// The wheel with Ctrl, Alt or Shift held turns the map about the
-    /// pointer instead of zooming it or scrolling the page: what is on it
-    /// keeps its distances and its upright names, and turns.
+    /// Shift and the wheel turn the map clockwise and Ctrl counter-
+    /// clockwise, either way the wheel moves, keeping its distances; about
+    /// its middle, or about the pointer with Alt held. The two settings
+    /// swap each. Alt alone leaves the wheel zooming.
     #[test]
-    fn a_modifier_and_the_wheel_turn_the_map() {
-        for modifiers in [
-            egui::Modifiers::CTRL,
-            egui::Modifiers::ALT,
-            egui::Modifiers::SHIFT,
-        ] {
-            let (ctx, mut app) = accessible_app(&format!("map-turn-{modifiers:?}"));
+    fn shift_and_ctrl_turn_the_map_and_alt_turns_it_about_the_pointer() {
+        use egui::Modifiers;
+        let pi = std::f32::consts::PI;
+        // (keys, wheel up, turn about the pointer, reversed): which way it
+        // turns, 1 clockwise, -1 counter-clockwise, and whether the node
+        // under the pointer stays put.
+        let cases = [
+            (Modifiers::SHIFT, 2.0, false, false, 1.0, false),
+            (Modifiers::SHIFT, -2.0, false, false, 1.0, false),
+            (Modifiers::CTRL, 2.0, false, false, -1.0, false),
+            (
+                Modifiers::SHIFT | Modifiers::ALT,
+                2.0,
+                false,
+                false,
+                1.0,
+                true,
+            ),
+            (Modifiers::SHIFT, 2.0, false, true, -1.0, false),
+            (Modifiers::CTRL, 2.0, true, false, -1.0, true),
+            (
+                Modifiers::CTRL | Modifiers::ALT,
+                2.0,
+                true,
+                false,
+                -1.0,
+                false,
+            ),
+        ];
+        for (index, (keys, up, at_pointer, reversed, way, stays)) in cases.into_iter().enumerate() {
+            let (ctx, mut app) = accessible_app(&format!("map-turn-{index}"));
             apply_flags(&mut app, None, Some("playlist-map,folders"));
+            app.settings.home.map_turn_at_pointer = at_pointer;
+            app.settings.home.map_turn_reversed = reversed;
             let tree = settled_map(&ctx, &mut app, vec![]);
             let a = map_node(&tree, "Late night focus").expect("one playlist on the map");
             let b = map_node(&tree, "Sunday morning").expect("another");
@@ -9510,8 +9578,8 @@ mod tests {
                 egui::Event::PointerMoved(a.center()),
                 egui::Event::MouseWheel {
                     unit: egui::MouseWheelUnit::Line,
-                    delta: egui::vec2(0.0, 2.0),
-                    modifiers,
+                    delta: egui::vec2(0.0, up),
+                    modifiers: keys,
                     phase: egui::TouchPhase::Move,
                 },
             ];
@@ -9522,21 +9590,54 @@ mod tests {
             let after = b2.center() - a2.center();
             assert!(
                 (after.length() - before.length()).abs() < 1.5,
-                "{modifiers:?} turns the map without zooming it: {before:?} became {after:?}"
+                "case {index}: turned without zooming: {before:?} became {after:?}"
             );
-            let turned = after.angle() - before.angle();
-            let turned = (turned + std::f32::consts::PI).rem_euclid(std::f32::consts::TAU)
-                - std::f32::consts::PI;
+            let turned = (after.angle() - before.angle() + pi).rem_euclid(2.0 * pi) - pi;
             assert!(
-                turned > 0.1,
-                "{modifiers:?} and the wheel turned up turn the map clockwise, by {turned}"
+                turned * way > 0.1,
+                "case {index}: turned {turned}, expected the sign of {way}"
             );
-            assert!(
-                (a2.center() - a.center()).length() < 1.5,
-                "it turns about the pointer, which was on the first"
+            let moved = (a2.center() - a.center()).length();
+            assert_eq!(
+                moved < 1.5,
+                stays,
+                "case {index}: the node under the pointer moved {moved}"
             );
             app.backend.shutdown();
         }
+
+        // Alt alone zooms.
+        let (ctx, mut app) = accessible_app("map-turn-alt-zooms");
+        apply_flags(&mut app, None, Some("playlist-map,folders"));
+        let tree = settled_map(&ctx, &mut app, vec![]);
+        let a = map_node(&tree, "Late night focus").unwrap();
+        let b = map_node(&tree, "Sunday morning").unwrap();
+        let before = b.center() - a.center();
+        settled_map(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(a.center()),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Line,
+                    delta: egui::vec2(0.0, 2.0),
+                    modifiers: Modifiers::ALT,
+                    phase: egui::TouchPhase::Move,
+                },
+            ],
+        );
+        let tree = settled_map(&ctx, &mut app, vec![egui::Event::PointerGone]);
+        let after = map_node(&tree, "Sunday morning").unwrap().center()
+            - map_node(&tree, "Late night focus").unwrap().center();
+        assert!(
+            (after.angle() - before.angle()).abs() < 0.01,
+            "Alt alone does not turn"
+        );
+        assert!(
+            (after.length() - before.length()).abs() > 1.5,
+            "Alt alone zooms: {before:?} {after:?}"
+        );
+        app.backend.shutdown();
     }
 
     /// Clicking a folder on the map opens it as the root: what it holds in

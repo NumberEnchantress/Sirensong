@@ -4578,8 +4578,8 @@ msgid "Show as tree"
 msgstr "Visa som träd"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "Skrolla för att zooma, skrolla med Ctrl, Alt eller Skift nedtryckt för att vrida, dra i bakgrunden för att flytta, dubbelklicka för att se allt. Klicka för att öppna, högerklicka för mer, dra spellistor, mappar eller låtar dit de ska."
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "Skrolla för att zooma, skrolla med Skift eller Ctrl nedtryckt för att vrida (med Alt runt pekaren), dra i bakgrunden för att flytta, dubbelklicka för att se allt. Klicka för att öppna, högerklicka för mer, dra spellistor, mappar eller låtar dit de ska."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068
@@ -5374,3 +5374,21 @@ msgstr "Kö, Låttext och Lyssningsaktivitet kan vara öppna samtidigt. Dra i en
 #: src/ui/mod.rs
 msgid "Move panel"
 msgstr "Flytta panel"
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr "Vrid kartan runt pekaren"
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr "Kartan vrids runt pekaren, och runt sin mitt med Alt nedtryckt. När den är av är det tvärtom."
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr "Ctrl vrider kartan medurs"
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
+msgstr "Ctrl och hjulet vrider kartan medurs, och Skift moturs. När den är av vrider Skift den medurs."

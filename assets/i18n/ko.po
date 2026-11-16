@@ -4535,8 +4535,8 @@ msgid "Show as tree"
 msgstr "트리로 보기"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "스크롤로 확대/축소, Ctrl·Alt·Shift를 누른 채 스크롤해 회전, 배경을 드래그해 이동, 더블클릭으로 전체 보기. 클릭해서 열기, 우클릭으로 더 보기, 플레이리스트·폴더·곡은 갈 곳으로 드래그."
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "스크롤로 확대/축소, Shift·Ctrl을 누른 채 스크롤해 회전(Alt를 누르면 포인터 중심), 배경을 드래그해 이동, 더블클릭으로 전체 보기. 클릭해서 열기, 우클릭으로 더 보기, 플레이리스트·폴더·곡은 갈 곳으로 드래그."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068
@@ -5331,3 +5331,21 @@ msgstr "재생목록, 가사, 청취 활동을(를) 함께 열어 둘 수 있습
 #: src/ui/mod.rs
 msgid "Move panel"
 msgstr "패널 이동"
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr "포인터를 중심으로 지도 회전"
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr "지도가 포인터를 중심으로 회전하고, Alt를 누르면 가운데를 중심으로 회전합니다. 끄면 반대입니다."
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr "Ctrl로 지도를 시계 방향으로 회전"
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
+msgstr "Ctrl과 휠로 지도를 시계 방향으로, Shift로 반시계 방향으로 회전합니다. 끄면 Shift가 시계 방향으로 회전합니다."

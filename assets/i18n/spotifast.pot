@@ -4421,7 +4421,7 @@ msgid "Show as tree"
 msgstr ""
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
 msgstr ""
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
@@ -5216,4 +5216,22 @@ msgstr ""
 #. Translators: The handle at the top of the Queue, Lyrics or Listening activity panel, dragged to move the panel to the other side of the window or beside another panel.
 #: src/ui/mod.rs
 msgid "Move panel"
+msgstr ""
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr ""
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr ""
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr ""
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr ""

@@ -4635,8 +4635,8 @@ msgid "Show as tree"
 msgstr "Показать деревом"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "Прокрутка меняет масштаб, прокрутка с зажатым Ctrl, Alt или Shift поворачивает, перетаскивание фона сдвигает, двойной щелчок показывает всё. Щелчок открывает, правый щелчок даёт больше, плейлисты, папки и треки перетаскивайте туда, где им место."
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "Прокрутка меняет масштаб, прокрутка с зажатым Shift или Ctrl поворачивает (с Alt — вокруг указателя), перетаскивание фона сдвигает, двойной щелчок показывает всё. Щелчок открывает, правый щелчок даёт больше, плейлисты, папки и треки перетаскивайте туда, где им место."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068
@@ -5431,3 +5431,21 @@ msgstr "Очередь, Текст песни и Что слушают могу�
 #: src/ui/mod.rs
 msgid "Move panel"
 msgstr "Переместить панель"
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr "Поворачивать карту вокруг указателя"
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr "Карта поворачивается вокруг указателя, а с зажатым Alt — вокруг центра. Если выключено, наоборот."
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr "Ctrl поворачивает карту по часовой стрелке"
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
+msgstr "Ctrl и колесо поворачивают карту по часовой стрелке, а Shift — против. Если выключено, Shift поворачивает её по часовой стрелке."

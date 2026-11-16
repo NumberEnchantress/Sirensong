@@ -966,10 +966,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 42 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 43 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 42` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 43` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 
@@ -1092,6 +1092,8 @@ beside it, or in its own tags, and the cover in its tags; otherwise lyrics come
 from LRCLIB by its artist, title, album and length.
 Synced lyrics follow the playing line automatically. Scroll to pause following,
 choose **Follow** to resume it, or choose a line to jump to that part of the song.
+Scroll with Ctrl held over the lyrics, or pinch, to make the words larger or
+smaller, in the panel and in full screen alike; the size is kept.
 
 The expand button in the lyrics panel or at the right of the player bar, or
 **F** when no text field has focus, opens lyrics in full screen. A narrow

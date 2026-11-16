@@ -1109,6 +1109,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let map_search = gettext(locale, "Search box above the map");
     // Translators: A setting: searching marks what matches on the playlist map instead of filtering it.
     let map_highlight = gettext(locale, "Search marks matches on the map");
+    // Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+    let turn_at_pointer = gettext(locale, "Turn the map about the pointer");
+    // Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+    let turn_reversed = gettext(locale, "Ctrl turns the map clockwise");
     let player_bar_vis_click = gettext(locale, "Click player bar to change visualizer");
     // Follow system's own light and dark palettes. Omarchy's palette already
     // follows the desktop, so they are offered only without it.
@@ -1756,6 +1760,20 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         take(&mut appearance_rows, 18),
         take(&mut appearance_rows, 20),
         take(&mut appearance_rows, 21),
+        RowText::new(
+            turn_at_pointer.clone(),
+            gettext(
+                locale,
+                "The map turns about the pointer, and about its middle with Alt held. Off, the other way round.",
+            ),
+        ),
+        RowText::new(
+            turn_reversed.clone(),
+            gettext(
+                locale,
+                "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise.",
+            ),
+        ),
     ];
     let funnel_rows = [take(&mut suggestion_rows, 0)];
     let mut search_rows = [
@@ -2445,6 +2463,30 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     &palette,
                     &map_highlight,
                     &mut app.settings.home.map_highlight,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &home_map, &home_rows[5], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &turn_at_pointer,
+                    &mut app.settings.home.map_turn_at_pointer,
+                )
+                .changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &home_map, &home_rows[6], |ui| {
+                if widgets::switch(
+                    ui,
+                    &palette,
+                    &turn_reversed,
+                    &mut app.settings.home.map_turn_reversed,
                 )
                 .changed()
                 {

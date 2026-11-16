@@ -139,7 +139,22 @@ fn hidden_for_game(app: &App, ui: &mut egui::Ui) -> bool {
     true
 }
 
+/// Ctrl and the wheel, or a pinch, over the lyrics make their words larger
+/// or smaller, kept with the settings.
+fn zoom_lyrics(app: &mut App, ui: &egui::Ui) {
+    if !ui.rect_contains_pointer(ui.max_rect()) {
+        return;
+    }
+    let factor = ui.input(|input| input.zoom_delta());
+    if (factor - 1.0).abs() > f32::EPSILON {
+        app.actions
+            .push(Action::SetLyricsScale(app.settings.lyrics_scale * factor));
+    }
+}
+
 fn contents(app: &mut App, ui: &mut egui::Ui) {
+    zoom_lyrics(app, ui);
+    let line_size = LINE_SIZE * crate::settings::lyrics_scale(app.settings.lyrics_scale);
     if hidden_for_game(app, ui) {
         return;
     }
@@ -256,9 +271,9 @@ fn contents(app: &mut App, ui: &mut egui::Ui) {
                 );
                 let color = blend(quiet, palette.accent, lit);
                 let font = if lit > 0.5 {
-                    theme::bold(LINE_SIZE)
+                    theme::bold(line_size)
                 } else {
-                    theme::regular(LINE_SIZE)
+                    theme::regular(line_size)
                 };
                 // A timed line with no words is the band playing on.
                 // Vacuum: names in the words are swapped for their stand-ins.
@@ -819,6 +834,7 @@ fn track_heading(app: &mut App, ui: &mut egui::Ui) {
 }
 
 fn fullscreen_contents(app: &mut App, ui: &mut egui::Ui) {
+    zoom_lyrics(app, ui);
     if hidden_for_game(app, ui) {
         return;
     }
@@ -896,7 +912,8 @@ fn fullscreen_contents(app: &mut App, ui: &mut egui::Ui) {
     let following = app.lyrics_following && !manual_scroll;
     let follow = following && app.lyrics_line_shown != Some(active);
     let animation = crate::motion::scroll(ui.ctx(), 0.45);
-    let size = (ui.available_width() * 0.046).clamp(28.0, 42.0);
+    let size = (ui.available_width() * 0.046).clamp(28.0, 42.0)
+        * crate::settings::lyrics_scale(app.settings.lyrics_scale);
     // The line being sung takes the theme's accent, though the view is
     // always dark, and grows; each line wraps
     // for its full size all along, so growing can't rewrap its words.

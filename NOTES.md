@@ -466,6 +466,19 @@ record its own decisions and three rounds of adversarial grading.
 - A song row with a cover narrower than `COVERS_ONLY_BELOW` (150) shows
   the cover alone, which still carries play on hover (`columns`).
 
+### Turning keys and lyrics size, 16 November 2026 (mod 43)
+
+- **Requested by the user, replacing mod 39's any-modifier turning:**
+  Shift and the wheel turn the map clockwise and Ctrl (Command on a Mac)
+  counter-clockwise, by how far the wheel moved either way
+  (`turning_scroll`); Alt alone leaves the wheel zooming. The map turns
+  about its middle, and about the pointer with Alt held.
+  `HomeSettings::map_turn_at_pointer` swaps the pivot and
+  `map_turn_reversed` the directions, both off by default.
+- Ctrl and the wheel, or a pinch, over the lyrics (panel or full screen)
+  scale their words: `Settings::lyrics_scale`, kept within
+  `LYRICS_SCALE` (0.6 to 2.5) through `Action::SetLyricsScale`.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

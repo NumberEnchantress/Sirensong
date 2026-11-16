@@ -4606,8 +4606,8 @@ msgid "Show as tree"
 msgstr "Ağaç olarak göster"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "Yakınlaştırmak için kaydırın, döndürmek için Ctrl, Alt veya Shift basılıyken kaydırın, kaydırmak için arka planı sürükleyin, her şeyi görmek için çift tıklayın. Açmak için tıklayın, daha fazlası için sağ tıklayın, çalma listelerini, klasörleri veya şarkıları gidecekleri yere sürükleyin."
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "Yakınlaştırmak için kaydırın, döndürmek için Shift veya Ctrl basılıyken kaydırın (Alt ile işaretçinin çevresinde), kaydırmak için arka planı sürükleyin, her şeyi görmek için çift tıklayın. Açmak için tıklayın, daha fazlası için sağ tıklayın, çalma listelerini, klasörleri veya şarkıları gidecekleri yere sürükleyin."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068
@@ -5402,3 +5402,21 @@ msgstr "Sıra, Şarkı Sözleri ve Dinleme etkinliği birlikte açık kalabilir.
 #: src/ui/mod.rs
 msgid "Move panel"
 msgstr "Paneli taşı"
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr "Haritayı işaretçinin çevresinde döndür"
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr "Harita işaretçinin çevresinde, Alt basılıyken ortasının çevresinde döner. Kapalıyken tersi."
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr "Ctrl haritayı saat yönünde döndürür"
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
+msgstr "Ctrl ve tekerlek haritayı saat yönünde, Shift saat yönünün tersine döndürür. Kapalıyken Shift saat yönünde döndürür."

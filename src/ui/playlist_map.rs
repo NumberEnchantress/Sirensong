@@ -89,7 +89,7 @@ struct Camera {
     pan: Vec2,
     zoom: f32,
     turn: f32,
-    /// The wheel last moved with a modifier held: egui spreads a wheel's
+    /// The wheel last moved with Shift or Ctrl held: egui spreads a wheel's
     /// scroll over the next frames, and that tail turned, so must not zoom.
     turning: bool,
     auto: bool,
@@ -99,12 +99,18 @@ struct Camera {
 /// of a mouse wheel turns it about ten degrees.
 const TURN_PER_POINT: f32 = 0.0035;
 
-/// The wheel scrolled this frame with a modifier held, in points: Ctrl,
-/// Alt, Shift or the platform's command key and the wheel turn the map
-/// instead of zooming it. Shift and Alt move a wheel sideways in egui, so
-/// both directions count, read from the wheel's own events before egui
-/// makes them a zoom or a sideways scroll.
-fn turning_scroll(input: &egui::InputState, line: f32, page: f32) -> f32 {
+/// Whether the wheel turns the map with these keys held: Shift, or Ctrl
+/// (Command on a Mac). Alt alone leaves the wheel zooming.
+fn turns_with(modifiers: egui::Modifiers) -> bool {
+    modifiers.shift || modifiers.ctrl || modifiers.command
+}
+
+/// How far the wheel turned the map this frame, in points, clockwise on
+/// screen: with Shift held clockwise and with Ctrl counter-clockwise, or
+/// the other way round with `reversed`, however far the wheel moved either
+/// way. Read from the wheel's own events, before egui makes Ctrl's wheel a
+/// zoom and Shift's a sideways scroll.
+fn turning_scroll(input: &egui::InputState, line: f32, page: f32, reversed: bool) -> f32 {
     input
         .events
         .iter()
@@ -114,15 +120,16 @@ fn turning_scroll(input: &egui::InputState, line: f32, page: f32) -> f32 {
                 delta,
                 modifiers,
                 ..
-            } if modifiers.any() => {
+            } if turns_with(*modifiers) => {
                 let scale = match unit {
                     egui::MouseWheelUnit::Point => 1.0,
                     egui::MouseWheelUnit::Line => line,
                     egui::MouseWheelUnit::Page => page,
                 };
-                // A wheel turned up turns the map clockwise, and so does
-                // one the system has already made sideways.
-                Some((delta.y + delta.x) * scale)
+                let clockwise = f32::from(u8::from(modifiers.shift))
+                    - f32::from(u8::from(modifiers.ctrl || modifiers.command));
+                let way = if reversed { -clockwise } else { clockwise };
+                Some(delta.x.abs().max(delta.y.abs()) * scale * way)
             }
             _ => None,
         })
@@ -1395,7 +1402,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
             ui,
             gettext(
                 locale,
-                "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go.",
+                "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go.",
             ),
             theme::regular(12.5),
             palette.dim,
@@ -1490,8 +1497,9 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     }
 
     // Zoom about the pointer with the wheel or a pinch, here and not the
-    // page; with a modifier held, or a trackpad's two-finger twist, turn the
-    // map about the pointer instead.
+    // page. With Shift or Ctrl held the wheel turns the map instead, as a
+    // trackpad's two-finger twist does: about the map's middle, or about
+    // the pointer with Alt held (the other way round by the setting).
     if let Some(pointer) = ui
         .ctx()
         .pointer_hover_pos()
@@ -1500,15 +1508,20 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         let line = ui
             .ctx()
             .options(|options| options.input_options.line_scroll_speed);
-        let (scroll, pinch, held, twist, turning, plain_wheel) = ui.input(|input| {
+        let home = app.settings.home;
+        let (scroll, pinch, held, alt, twist, turning, plain_wheel) = ui.input(|input| {
             (
                 input.smooth_scroll_delta.y,
                 pinch_only(input),
-                input.modifiers.any(),
+                turns_with(input.modifiers),
+                input.modifiers.alt
+                    || input.events.iter().any(|event| {
+                        matches!(event, egui::Event::MouseWheel { modifiers, .. } if modifiers.alt)
+                    }),
                 input.rotation_delta(),
-                turning_scroll(input, line, rect.height()),
+                turning_scroll(input, line, rect.height(), home.map_turn_reversed),
                 input.events.iter().any(|event| {
-                    matches!(event, egui::Event::MouseWheel { modifiers, .. } if !modifiers.any())
+                    matches!(event, egui::Event::MouseWheel { modifiers, .. } if !turns_with(*modifiers))
                 }),
             )
         });
@@ -1522,12 +1535,17 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         let turn = twist + turning * TURN_PER_POINT;
         if turn.abs() > f32::EPSILON {
             let spin = egui::emath::Rot2::from_angle(turn);
-            state.camera.pan = from_centre + spin * (state.camera.pan - from_centre);
+            let pivot = if alt != home.map_turn_at_pointer {
+                from_centre
+            } else {
+                Vec2::ZERO
+            };
+            state.camera.pan = pivot + spin * (state.camera.pan - pivot);
             state.camera.turn = (state.camera.turn + turn).rem_euclid(TAU);
             state.camera.auto = false;
         }
-        // A wheel with a modifier only turns: its smoothed tail must not
-        // zoom or scroll the page after the turn.
+        // A wheel that turns only turns: its smoothed tail must not zoom
+        // or scroll the page after the turn.
         let factor = if held {
             pinch
         } else {

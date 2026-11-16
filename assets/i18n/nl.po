@@ -4609,8 +4609,8 @@ msgid "Show as tree"
 msgstr "Als boom tonen"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "Scroll om te zoomen, scroll met Ctrl, Alt of Shift ingedrukt om te draaien, sleep de achtergrond om te verschuiven, dubbelklik om alles te zien. Klik om te openen, rechtsklik voor meer, sleep playlists, mappen of nummers naar hun plek."
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "Scroll om te zoomen, scroll met Shift of Ctrl ingedrukt om te draaien (met Alt rond de aanwijzer), sleep de achtergrond om te verschuiven, dubbelklik om alles te zien. Klik om te openen, rechtsklik voor meer, sleep playlists, mappen of nummers naar hun plek."
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068
@@ -5405,3 +5405,21 @@ msgstr "Wachtrij, Songtekst en Luisteractiviteit kunnen samen open blijven. Slee
 #: src/ui/mod.rs
 msgid "Move panel"
 msgstr "Paneel verplaatsen"
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr "Kaart rond de aanwijzer draaien"
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr "De kaart draait rond de aanwijzer, en met Alt ingedrukt rond het midden. Staat dit uit, dan andersom."
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr "Ctrl draait de kaart met de klok mee"
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
+msgstr "Ctrl en het wieltje draaien de kaart met de klok mee, Shift tegen de klok in. Staat dit uit, dan draait Shift hem met de klok mee."

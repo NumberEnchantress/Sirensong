@@ -404,6 +404,7 @@ main fields are:
 | `theme_pair` | absent | The themes Follow system uses in light and dark mode: `{"light": {"filename": "Catppuccin Latte.json", "palette": {...}}, "dark": {...}}`. Each `palette` is the last accepted copy of that file's colours. A missing side, or the whole field, is Sirensong's own Light or Dark; it is written only once you choose one |
 | `accent_from_art` | `true` | Tint pages with album art, and colour the player bar visualizer with the cover's colours |
 | `player_bar_vis` | `off` | Since 0.11.0: what moves behind the player bar while a song plays on this computer: `off`, `spectrum`, `waveform` or `both` (the waveform over the spectrum) |
+| `lyrics_scale` | `1.0` | The lyrics' words as a share of their usual size, from 0.6 to 2.5; Ctrl and the wheel over the lyrics change it |
 | `stack_side_panels` | `true` | **Side panels side by side**: the Queue, Lyrics and Listening activity panels can stay open together |
 | `side_panels` | Queue, Lyrics, Listening activity, all `right` | Each side panel's `panel` (`queue`, `lyrics`, `friends`) and `edge` (`left` or `right`), in order from the window's edge, set by dragging a panel's grip |
 | `search_log_button` | `false` | A **Search log** button on Home, beside the map's choices or under the greeting, that opens the searches kept |
@@ -609,9 +610,13 @@ their icons alone: Tree and Circles their views, Time listened headphones,
 Zoom in a magnifying glass and Only selected a focus frame. Pointing at one
 names it.
 
-Scroll or pinch to zoom and drag the background to move. Scroll with Ctrl,
-Alt or Shift held, or twist two fingers on a trackpad, to turn the map
-about the pointer; names stay upright as it turns. Double-click the
+Scroll or pinch to zoom and drag the background to move. Scroll with Shift
+held to turn the map clockwise and with Ctrl held to turn it
+counter-clockwise, whichever way the wheel moves, or twist two fingers on a
+trackpad. It turns about its middle, and about the pointer with Alt held as
+well; names stay upright as it turns. In Settings, **Turn the map about the
+pointer** swaps the middle and the pointer, and **Ctrl turns the map
+clockwise** swaps the two directions. Double-click the
 background to see everything at once, and again to go back to the focus;
 the view also fits itself to the focus whenever it changes, until you move
 it. Click a node to open it (in Circles, a folder by its name, so the space
@@ -650,7 +655,8 @@ choices are kept as `"home": {"map_layout": "tree"}` (or `"circles"`, Home's,
 and the Library's too while it has none of its own), `"sidebar_map_layout"`
 (the Library's), `"same_map_layout"`, `"both_maps"` (One map at a time off),
 `"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`, and
-`"map_search"` and `"map_highlight"`.
+`"map_search"`, `"map_highlight"`, `"map_turn_at_pointer"` and
+`"map_turn_reversed"` (both `false`).
 
 **Time listened**, beside the layouts, makes each node's area grow with
 the time you listened to what it plays: the songs played from that

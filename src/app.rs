@@ -14830,6 +14830,10 @@ impl App {
                     self.refresh_friends();
                 }
             }
+            Action::SetLyricsScale(scale) => {
+                self.settings.lyrics_scale = crate::settings::lyrics_scale(scale);
+                self.settings_dirty = true;
+            }
             Action::PlaceSidePanel { panel, edge, index } => {
                 self.settings.side_panels = crate::settings::place_side_panel(
                     &self.settings.side_panels,
@@ -17421,7 +17425,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 42";
+pub const FORK_VERSION: &str = "mod 43";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

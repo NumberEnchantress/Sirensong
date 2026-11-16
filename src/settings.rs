@@ -116,6 +116,12 @@ pub struct HomeSettings {
     /// The search marks what matches on the map, leaving the rest in
     /// place; off, it is one of the filters Zoom in and Only selected act on.
     pub map_highlight: bool,
+    /// The map turns about the pointer, and about its middle with Alt
+    /// held; off, the other way round.
+    pub map_turn_at_pointer: bool,
+    /// Ctrl and the wheel turn the map clockwise and Shift counter-
+    /// clockwise; off, the other way round.
+    pub map_turn_reversed: bool,
 }
 
 impl Default for HomeSettings {
@@ -133,6 +139,8 @@ impl Default for HomeSettings {
             map_listening: false,
             map_search: true,
             map_highlight: true,
+            map_turn_at_pointer: false,
+            map_turn_reversed: false,
         }
     }
 }
@@ -273,6 +281,19 @@ pub fn place_side_panel(
         .map_or(places.len(), |(at, _)| at);
     places.insert(at, PanelPlace { panel, edge });
     places
+}
+
+/// The smallest and largest [`Settings::lyrics_scale`].
+pub const LYRICS_SCALE: std::ops::RangeInclusive<f32> = 0.6..=2.5;
+
+/// `kept` as a lyrics scale: inside [`LYRICS_SCALE`], and the usual size
+/// for anything unreadable.
+pub fn lyrics_scale(kept: f32) -> f32 {
+    if kept.is_finite() {
+        kept.clamp(*LYRICS_SCALE.start(), *LYRICS_SCALE.end())
+    } else {
+        1.0
+    }
 }
 
 /// How the Home map draws the Library's folders.
@@ -644,6 +665,9 @@ pub struct Settings {
     pub stack_side_panels: bool,
     /// Where each side panel stands ([`side_panel_places`] reads it).
     pub side_panels: Vec<PanelPlace>,
+    /// How large the lyrics' words are, as a share of their usual size:
+    /// Ctrl and the wheel over them change it ([`lyrics_scale`]).
+    pub lyrics_scale: f32,
     /// Explicit order per Library shelf. Missing shelves keep their previous
     /// behaviour; selecting another order never deletes the local arrangement.
     pub library_sort: std::collections::BTreeMap<LibraryShelf, LibrarySort>,
@@ -850,6 +874,7 @@ impl Default for Settings {
             search_log: false,
             search_log_button: false,
             stack_side_panels: true,
+            lyrics_scale: 1.0,
             side_panels: side_panel_places(&[]),
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,

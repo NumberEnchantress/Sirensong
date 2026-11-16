@@ -4452,8 +4452,8 @@ msgid "Show as tree"
 msgstr "以树状显示"
 
 #: src/ui/playlist_map.rs:1138
-msgid "Scroll to zoom, scroll with Ctrl, Alt or Shift held to turn, drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
-msgstr "滚动缩放，按住 Ctrl、Alt 或 Shift 滚动旋转，拖动背景平移，双击查看全部。单击打开，右键查看更多，把歌单、文件夹或歌曲拖到要去的地方。"
+msgid "Scroll to zoom, scroll with Shift or Ctrl held to turn (with Alt, about the pointer), drag the background to pan, double-click for everything. Click to open, right-click for more, drag playlists, folders or songs to where they go."
+msgstr "滚动缩放，按住 Shift 或 Ctrl 滚动旋转（按住 Alt 时绕指针旋转），拖动背景平移，双击查看全部。单击打开，右键查看更多，把歌单、文件夹或歌曲拖到要去的地方。"
 
 #. Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
 #: src/ui/playlist_map.rs:1068
@@ -5248,3 +5248,21 @@ msgstr "播放队列、歌词和收听动态可以同时打开。拖动面板的
 #: src/ui/mod.rs
 msgid "Move panel"
 msgstr "移动面板"
+
+#. Translators: A setting: the playlist map turns about the pointer, and about its middle with Alt held.
+#: src/ui/settings.rs
+msgid "Turn the map about the pointer"
+msgstr "绕指针旋转地图"
+
+#: src/ui/settings.rs
+msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
+msgstr "地图绕指针旋转，按住 Alt 时绕中心旋转。关闭时相反。"
+
+#. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
+#: src/ui/settings.rs
+msgid "Ctrl turns the map clockwise"
+msgstr "Ctrl 顺时针旋转地图"
+
+#: src/ui/settings.rs
+msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
+msgstr "Ctrl 加滚轮顺时针旋转地图，Shift 逆时针。关闭时，Shift 顺时针旋转。"
