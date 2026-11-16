@@ -491,7 +491,10 @@ added** a clock with a plus, **Name** the letter A, **Sirensong custom order**
 a paintbrush, **Spotify custom order** a wireless signal and **By You** a
 person. In a sidebar narrower than 300 points they show the icon alone;
 pointing at one names it, and screen readers say the name.
-In a short window, Home and Search share one row as icons.
+In a smaller window, Home and Search share one row with their names, and in
+a short or narrow one, as icons. In the sidebar's map, the map's choices sit
+under the map. Squeezed very narrow, a list of songs, such as the queue or a
+playlist, shows each song's cover alone.
 
 Select **By You** under Playlists to show only playlists owned by your signed-in
 account, alongside Liked Songs. Followed playlists and collaborative playlists
@@ -963,10 +966,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 41 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 42 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 41` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 42` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

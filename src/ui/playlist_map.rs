@@ -1096,11 +1096,12 @@ fn fit(
 /// The choices above the map: its layout, and what to do with what lies
 /// outside an open folder or the Library's filters. In the sidebar the
 /// layout is chosen with the Library's other views, in its header.
-fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
+/// The map's search box, with `search`, and its choices, with `choices`.
+fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool, search: bool, choices: bool) {
     let palette = app.palette;
     let locale = app.locale;
     let home = app.settings.home;
-    if home.map_search {
+    if search && home.map_search {
         let width = if side {
             ui.available_width() - 4.0
         } else {
@@ -1116,6 +1117,9 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool) {
             width,
         );
         ui.add_space(6.0);
+    }
+    if !choices {
+        return;
     }
     // Translators: Home map layout: a round tree, each level of folders a ring further out.
     let tree = gettext(locale, "Tree");
@@ -1382,7 +1386,9 @@ pub(super) fn landing(
 fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     let palette = app.palette;
     let locale = app.locale;
-    toolbar(app, ui, side);
+    // In the sidebar the map's choices sit under it, out of the way of the
+    // Library's own controls above; on Home, above it with the search box.
+    toolbar(app, ui, side, true, !side);
     ui.add_space(4.0);
     if !side {
         theme::text(
@@ -1398,8 +1404,14 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     ui.add_space(6.0);
     // The page's view less what stands above the map, which scrolling
     // does not change; in the sidebar, the rest of it.
+    let choices_id = egui::Id::new("sidebar-map-choices-height");
     let height = if side {
-        (ui.available_height() - 4.0).max(160.0)
+        // Room under the map for its choices, as tall as they last drew.
+        let below = ui
+            .data(|data| data.get_temp::<f32>(choices_id))
+            .unwrap_or(36.0)
+            + 6.0;
+        (ui.available_height() - 4.0 - below).max(160.0)
     } else {
         let above = ui.cursor().top() - ui.max_rect().top();
         (ui.clip_rect().height() - above - 24.0).max(360.0)
@@ -2084,6 +2096,11 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     }
     if side {
         app.sidebar_map = state;
+        ui.add_space(6.0);
+        let top = ui.cursor().top();
+        toolbar(app, ui, side, false, true);
+        let drawn = ui.min_rect().bottom() - top;
+        ui.data_mut(|data| data.insert_temp(choices_id, drawn.max(0.0)));
     } else {
         app.playlist_map = state;
     }

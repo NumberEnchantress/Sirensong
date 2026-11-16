@@ -452,6 +452,17 @@ record its own decisions and three rounds of adversarial grading.
 - Turning the setting off leaves the panels already open until one is
   toggled.
 
+### Compact when small, 16 November 2026 (mod 42)
+
+- **Requested by the user:** Home and Search take one row with their names
+  below `COMPACT_SIDEBAR` (760 points of sidebar), as icons below
+  `SHORT_SIDEBAR` or where both names do not fit (`nav_names_fit`).
+- The sidebar map's choices draw under the map (`toolbar` in two parts);
+  the map leaves room for them by their height last frame. Home's map keeps
+  them above, with its search box.
+- A song row with a cover narrower than `COVERS_ONLY_BELOW` (150) shows
+  the cover alone, which still carries play on hover (`columns`).
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

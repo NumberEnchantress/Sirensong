@@ -2319,8 +2319,9 @@ fn nav_row(
     response
 }
 
-/// Home or Search as an icon, half a row wide, for a sidebar too short for
-/// a row each. The name stays its tooltip and the name screen readers say.
+/// Home or Search half a row wide, for a sidebar too short for a row each:
+/// its icon and, while `named`, its name beside it. The name stays its
+/// tooltip and the name screen readers say.
 fn nav_icon(
     ui: &mut egui::Ui,
     palette: &Palette,
@@ -2328,6 +2329,7 @@ fn nav_icon(
     label: &str,
     active: bool,
     width: f32,
+    named: bool,
 ) -> egui::Response {
     let (rect, response) = ui.allocate_exact_size(vec2(width, 40.0), Sense::click());
     if ui.is_rect_visible(rect) {
@@ -2336,7 +2338,26 @@ fn nav_icon(
         } else {
             palette.secondary
         };
-        theme::paint_icon(ui, icon, rect, 22.0, color);
+        if named {
+            let galley = ui
+                .painter()
+                .layout_no_wrap(label.to_owned(), theme::bold(15.0), color);
+            let span = 22.0 + NAV_GAP + galley.size().x;
+            let left = rect.center().x - span / 2.0;
+            let icon_rect =
+                Rect::from_center_size(pos2(left + 11.0, rect.center().y), Vec2::splat(22.0));
+            icon.image(color, 22.0).paint_at(ui, icon_rect);
+            ui.painter().galley(
+                pos2(
+                    left + 22.0 + NAV_GAP,
+                    rect.center().y - galley.size().y / 2.0,
+                ),
+                galley,
+                color,
+            );
+        } else {
+            theme::paint_icon(ui, icon, rect, 22.0, color);
+        }
     }
     response.widget_info(|| {
         egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), active, label)
@@ -2351,8 +2372,26 @@ const ICONS_ONLY_BELOW: f32 = 300.0;
 /// The sidebar's inner margins, left and right together.
 const SIDEBAR_MARGIN_X: f32 = 20.0;
 
-/// Below this height the sidebar puts Home and Search on one row.
+/// Below this height the sidebar puts Home and Search on one row, with
+/// their names where both fit.
+const COMPACT_SIDEBAR: f32 = 760.0;
+/// Below this height Home and Search show their icons alone.
 const SHORT_SIDEBAR: f32 = 480.0;
+/// The room between a nav item's icon and its name.
+const NAV_GAP: f32 = 8.0;
+
+/// Whether Home and Search, side by side in halves of `width`, both fit
+/// with their names.
+fn nav_names_fit(ui: &egui::Ui, width: f32, names: [&str; 2]) -> bool {
+    names.iter().all(|name| {
+        let text = ui
+            .painter()
+            .layout_no_wrap((*name).to_owned(), theme::bold(15.0), egui::Color32::WHITE)
+            .size()
+            .x;
+        22.0 + NAV_GAP + text + 12.0 <= width / 2.0
+    })
+}
 
 /// The four ways the sidebar can show the Library.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2515,13 +2554,26 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     ui.add_space(4.0);
     let home = gettext(locale, "Home");
     let search = gettext(locale, "Search");
-    if ui.available_height() < SHORT_SIDEBAR {
-        // A short sidebar keeps its room for the Library: Home and Search
-        // share one row, as icons.
+    if ui.available_height() < COMPACT_SIDEBAR {
+        // A smaller sidebar keeps its room for the Library: Home and Search
+        // share one row, with their names while both fit, and as icons
+        // when it is short or narrow.
+        let named = ui.available_height() >= SHORT_SIDEBAR
+            && nav_names_fit(ui, ui.available_width(), [&home, &search]);
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
             let width = ui.available_width() / 2.0;
-            if nav_icon(ui, &palette, Icon::House, &home, page == Page::Home, width).clicked() {
+            if nav_icon(
+                ui,
+                &palette,
+                Icon::House,
+                &home,
+                page == Page::Home,
+                width,
+                named,
+            )
+            .clicked()
+            {
                 app.actions.push(Action::Open(Page::Home));
             }
             if nav_icon(
@@ -2531,6 +2583,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                 &search,
                 page == Page::Search,
                 width,
+                named,
             )
             .clicked()
             {

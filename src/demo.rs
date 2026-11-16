@@ -4387,8 +4387,9 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// In a short window Home and Search share one row, as icons, and keep
-    /// their names for screen readers; in a tall one each has its row.
+    /// In a tall window Home and Search each have a row; in a smaller one
+    /// they share one row with their names; in a short one, as icons, still
+    /// named for screen readers.
     #[test]
     fn a_short_sidebar_puts_home_and_search_on_one_row() {
         use egui::accesskit::Role;
@@ -4403,11 +4404,19 @@ mod tests {
             let named = painted.iter().any(|text| text == "Home");
             (at("Home"), at("Search"), named)
         };
-        let (home, search, named) = rows(&mut app, 800.0);
+        let (home, search, named) = rows(&mut app, 1100.0);
         assert!(named, "a tall sidebar names Home");
         assert!(
             search.y0 >= home.y1,
             "Search below Home: {home:?} {search:?}"
+        );
+
+        let (home, search, named) = rows(&mut app, 800.0);
+        assert!(named, "a smaller sidebar still names Home");
+        assert_eq!(home.y0, search.y0, "one row");
+        assert!(
+            search.x0 >= home.x1,
+            "Search beside Home: {home:?} {search:?}"
         );
 
         let (home, search, named) = rows(&mut app, 540.0);

@@ -1505,7 +1505,24 @@ fn plays_fit(width: f32) -> bool {
     width > 560.0
 }
 
+/// Below this width a row with a cover shows the cover alone: squeezed
+/// that far, a title and its artists would only be cut to a letter or two.
+pub(crate) const COVERS_ONLY_BELOW: f32 = 150.0;
+
 fn columns(width: f32, row: &TrackRow<'_>) -> Columns {
+    if row.show_cover && width < COVERS_ONLY_BELOW {
+        return Columns {
+            number: 0.0,
+            cover: if row.compact { 44.0 } else { 52.0 },
+            album: 0.0,
+            added_by: 0.0,
+            added: 0.0,
+            plays: 0.0,
+            heart: 0.0,
+            duration: 0.0,
+            more: 0.0,
+        };
+    }
     let extra_wide = width > 920.0;
     let wide = width > 760.0;
     let medium = width > 560.0;
@@ -2103,14 +2120,17 @@ fn track_row_contents(
     }
 
     // Duration.
-    let duration_rect = Rect::from_min_size(pos2(x, rect.top()), vec2(cols.duration, row_height));
-    painter.text(
-        pos2(duration_rect.right() - 6.0, duration_rect.center().y),
-        egui::Align2::RIGHT_CENTER,
-        util::format_duration_ms(row.item.duration_ms()),
-        theme::regular(13.0),
-        palette.secondary,
-    );
+    if cols.duration > 0.0 {
+        let duration_rect =
+            Rect::from_min_size(pos2(x, rect.top()), vec2(cols.duration, row_height));
+        painter.text(
+            pos2(duration_rect.right() - 6.0, duration_rect.center().y),
+            egui::Align2::RIGHT_CENTER,
+            util::format_duration_ms(row.item.duration_ms()),
+            theme::regular(13.0),
+            palette.secondary,
+        );
+    }
     x += cols.duration;
 
     // More.
@@ -4493,6 +4513,44 @@ mod tests {
             uri: uri.to_string(),
             ..Default::default()
         })
+    }
+
+    /// Squeezed narrower than [`COVERS_ONLY_BELOW`], a row with a cover
+    /// shows the cover alone; wider, its other columns come back.
+    #[test]
+    fn a_squeezed_row_shows_its_cover_alone() {
+        let item = song("spotify:track:narrow");
+        let context = RowContext::Queue;
+        for compact in [false, true] {
+            let row = TrackRow {
+                index: 0,
+                number: Some(1),
+                item: &item,
+                context: &context,
+                show_cover: true,
+                show_album: true,
+                added_at: None,
+                added_by: None,
+                show_added_by: false,
+                show_plays: false,
+                compact,
+                thin: false,
+                shift: 0.0,
+                picked: false,
+                picked_songs: &[],
+                picked_positions: &[],
+                position: None,
+            };
+            let narrow = columns(COVERS_ONLY_BELOW - 1.0, &row);
+            assert!(narrow.cover > 0.0);
+            assert_eq!(
+                narrow.number + narrow.heart + narrow.duration + narrow.more + narrow.album,
+                0.0,
+                "only the cover"
+            );
+            let wide = columns(COVERS_ONLY_BELOW + 200.0, &row);
+            assert!(wide.duration > 0.0, "the duration comes back");
+        }
     }
 
     #[test]
