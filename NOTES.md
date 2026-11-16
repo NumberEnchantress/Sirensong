@@ -416,6 +416,23 @@ record its own decisions and three rounds of adversarial grading.
   before `smooth_scroll_delta`; `pinch_only` keeps a trackpad pinch's zoom
   apart from Ctrl's wheel. A wheel turned up turns the map clockwise.
 
+### Both's second colour, 16 November 2026 (mod 40)
+
+- **How the colours are picked:** `images::art_palette` shrinks the cover
+  to 48 by 48, buckets its pixels by colour, weighs each toward vivid
+  mid-tones (so black borders and white text lose), and merges buckets
+  that cannot be told apart (hues within a twelfth of a turn, or two
+  greys). The heaviest group is the accent: `theme::tint_from_art` brings
+  its lightness to a background's and the player bar's fill blends it in.
+  The next groups holding at least 6% join it, heaviest first, up to four.
+  `player_bar::vis_colours` makes each vivid, hues before greys, inside the
+  band of brightness the bar's words read against, and sweeps them from
+  bass to treble.
+- **Requested by the user:** Both's bars take the second colour found that
+  way (`palette[1]`), and the line sweeps across the rest
+  (`both_colours`). With one colour, or none from the art, the bars keep
+  mod 28's `under_line`.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

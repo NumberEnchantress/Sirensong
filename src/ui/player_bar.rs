@@ -129,19 +129,21 @@ fn visualizer(app: &mut App, ui: &egui::Ui, rect: Rect, now: Option<&NowPlaying>
     let mode = app.settings.player_bar_vis;
     let sounding = app.visualizer_sounding(now);
     let dark = ui.visuals().dark_mode;
-    let colours = vis_colours(app.now_playing_palette(), app.palette.accent, dark);
+    let art = app.now_playing_palette();
+    let accent = app.palette.accent;
+    // Both: the bars take the cover's second colour and the line the rest,
+    // so the two read apart.
+    let (colours, bars) = if mode.spectrum() && mode.waveform() {
+        both_colours(art, accent, dark)
+    } else {
+        let colours = vis_colours(art, accent, dark);
+        (colours.clone(), colours)
+    };
     // Over a light bar the same colour paints more strongly, or white
     // would wash it out.
     let strength = if dark { 1.0 } else { LIGHT_STRENGTH };
     let painter = ui.painter().with_clip_rect(rect);
     let mut moving = false;
-    // Both: the line keeps the cover's colours, and the bars under it turn
-    // across the colour wheel, so the two read apart.
-    let bars = if mode.waveform() {
-        under_line(&colours, app.palette.accent, dark)
-    } else {
-        colours.clone()
-    };
     if mode.spectrum() && (sounding || !app.player_bar_analyser.settled()) {
         let samples = if sounding {
             app.winamp
@@ -207,6 +209,36 @@ fn vis_colours(art: Option<&[[u8; 3]]>, accent: Color32, dark: bool) -> Vec<Colo
     let mut high = low;
     high.h = (high.h + 1.0 / 6.0).fract();
     vec![keep(low, true), keep(high, true)]
+}
+
+/// The line's colours and the bars', with both drawn. The bars take the
+/// cover's second colour, found as its first is (the colour the bar is
+/// tinted with): the heaviest of the cover's other colours by the same
+/// weighing, far enough from the first to tell apart
+/// ([`crate::images::art_palette`]). The line sweeps across the cover's
+/// colours without it, so the two read apart in the cover's own colours.
+/// A cover with one colour, or no colour from album art, leaves the line
+/// its usual colours and turns the bars' across the wheel ([`under_line`]).
+fn both_colours(
+    art: Option<&[[u8; 3]]>,
+    accent: Color32,
+    dark: bool,
+) -> (Vec<Color32>, Vec<Color32>) {
+    if let Some(art) = art.filter(|art| art.len() >= 2) {
+        let rest: Vec<[u8; 3]> = art
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| *index != 1)
+            .map(|(_, colour)| *colour)
+            .collect();
+        return (
+            vis_colours(Some(&rest), accent, dark),
+            vis_colours(Some(&art[1..2]), accent, dark),
+        );
+    }
+    let line = vis_colours(art, accent, dark);
+    let bars = under_line(&line, accent, dark);
+    (line, bars)
 }
 
 /// The bars' colours under the waveform, with both drawn: each of the
@@ -1308,8 +1340,36 @@ mod player_bar_tint_tests {
         assert_eq!(vis_colours(None, accent, true).len(), 2);
     }
 
-    /// With both drawn, the bars take the hues across the wheel from the
-    /// cover's, which the line keeps; grey turns into the accent.
+    /// With both drawn, the bars take the cover's second colour and the
+    /// line the cover's others; a cover of one colour turns the bars across
+    /// the wheel instead, and no art leaves the accent's.
+    #[test]
+    fn both_draws_the_bars_in_the_covers_second_colour() {
+        let accent = Color32::from_rgb(30, 215, 96);
+        let red = [230, 40, 40];
+        let blue = [40, 60, 230];
+        let gold = [220, 170, 30];
+        for dark in [true, false] {
+            let (line, bars) = both_colours(Some(&[red, blue, gold]), accent, dark);
+            assert_eq!(bars, vis_colours(Some(&[blue]), accent, dark));
+            assert_eq!(line, vis_colours(Some(&[red, gold]), accent, dark));
+            assert!(
+                line.iter().all(|colour| !bars.contains(colour)),
+                "the line keeps clear of the bars' colour"
+            );
+
+            let (line, bars) = both_colours(Some(&[red]), accent, dark);
+            assert_eq!(line, vis_colours(Some(&[red]), accent, dark));
+            assert_eq!(bars, under_line(&line, accent, dark));
+
+            let (line, bars) = both_colours(None, accent, dark);
+            assert_eq!(line, vis_colours(None, accent, dark));
+            assert_eq!(bars, under_line(&line, accent, dark));
+        }
+    }
+
+    /// Where the cover gives one colour, the bars take the hues across the
+    /// wheel from the line's; grey turns into the accent.
     #[test]
     fn the_bars_under_the_waveform_take_other_colours() {
         use egui::ecolor::Hsva;
