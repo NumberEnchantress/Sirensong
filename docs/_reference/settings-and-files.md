@@ -615,8 +615,9 @@ held to turn the map: down turns it clockwise, up counter-clockwise. With
 Ctrl held it is the other way round. A trackpad's two-finger twist turns it
 too, and names stay upright as it turns. It turns about the centre node,
 which stays where it is; press Alt over the map to turn it about the pointer
-instead, and press it again to go back. A note in the map's corner says
-which. In Settings, **Hold Alt to turn about the pointer** makes Alt work
+instead, and press it again to go back. A small icon in the map's
+bottom-right corner shows which: a dot in a circle for the centre, a pointer
+for the pointer. In Settings, **Hold Alt to turn about the pointer** makes Alt work
 only while held, **Turn the map about the pointer** swaps the centre and
 the pointer, and **Ctrl turns the map clockwise** swaps the directions.
 Double-click the

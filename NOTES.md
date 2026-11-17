@@ -500,6 +500,10 @@ record its own decisions and three rounds of adversarial grading.
   never showed there. It now narrows to `QUEUE_NARROWEST` (88); below
   `COVERS_ONLY_BELOW` it shows only its close button and faint rules in
   place of its headings.
+- **Icon (mod 46, requested by the user):** the corner note became a small
+  icon at the map's bottom right (`paint_pivot_icon`): a dot in a circle
+  for the centre node, an outlined arrow pointer for the pointer. Its old
+  words are its tooltip and its name for screen readers.
 
 ### Still open
 

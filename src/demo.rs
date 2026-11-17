@@ -9793,6 +9793,41 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// The map's corner shows what it turns about, named for screen
+    /// readers and in its tooltip: the centre, then, after Alt is pressed
+    /// over the map, the pointer.
+    #[test]
+    fn the_maps_corner_shows_what_it_turns_about() {
+        let (ctx, mut app) = accessible_app("map-turn-icon");
+        apply_flags(&mut app, None, Some("playlist-map,folders"));
+        let named = |tree: &egui::accesskit::TreeUpdate, label: &str| {
+            tree.nodes.iter().any(|(_, node)| {
+                node.label().is_some_and(|text| text == label)
+                    || node.value().is_some_and(|text| text == label)
+            })
+        };
+        let tree = settled_map(&ctx, &mut app, vec![]);
+        assert!(named(&tree, "Turns about the centre"));
+        assert!(!named(&tree, "Turns about the pointer"));
+        let over = map_node(&tree, "Late night focus").unwrap().center();
+        accessible_frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(over),
+                egui::Event::ModifiersChanged(egui::Modifiers::ALT),
+            ],
+        );
+        let tree = settled_map(
+            &ctx,
+            &mut app,
+            vec![egui::Event::ModifiersChanged(egui::Modifiers::NONE)],
+        );
+        assert!(named(&tree, "Turns about the pointer"));
+        assert!(!named(&tree, "Turns about the centre"));
+        app.backend.shutdown();
+    }
+
     /// A notch of the wheel turns the map over a few frames, not at once,
     /// and comes to the same turn in the end.
     #[test]

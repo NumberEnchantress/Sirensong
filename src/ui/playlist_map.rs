@@ -104,6 +104,36 @@ struct Camera {
 /// of a mouse wheel turns it about ten degrees.
 const TURN_PER_POINT: f32 = 0.0035;
 
+/// How far the turn icon's middle sits from the map's bottom-right corner.
+const TURN_ICON_INSET: f32 = 16.0;
+
+/// The turn icon in `rect`: a dot in a circle while the map turns about
+/// its centre node, an arrow pointer while it turns about the pointer.
+fn paint_pivot_icon(painter: &egui::Painter, rect: Rect, about_pointer: bool, colour: Color32) {
+    let stroke = Stroke::new(1.2, colour);
+    if about_pointer {
+        // An arrow pointer, its tip at the top left, in outline.
+        let scale = rect.height() / 14.0;
+        let origin = rect.center() - vec2(4.5, 7.0) * scale;
+        let points = [
+            (0.0, 0.0),
+            (0.0, 11.0),
+            (3.0, 8.4),
+            (5.4, 13.2),
+            (7.2, 12.4),
+            (4.8, 7.6),
+            (8.6, 7.6),
+        ]
+        .into_iter()
+        .map(|(x, y)| origin + vec2(x, y) * scale)
+        .collect();
+        painter.add(egui::Shape::closed_line(points, stroke));
+    } else {
+        painter.circle_stroke(rect.center(), rect.height() * 0.36, stroke);
+        painter.circle_filled(rect.center(), rect.height() * 0.12, colour);
+    }
+}
+
 /// How quickly an owed turn eases in, per second.
 const TURN_EASE: f32 = 16.0;
 
@@ -2176,8 +2206,10 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     } else if escaped || released || ui.input(|input| !input.pointer.primary_down()) {
         state.moving = None;
     }
-    // A quiet note in the map's corner of what it turns about now, so the
-    // Alt choice shows without trying it.
+    // A quiet icon in the map's bottom-right corner of what it turns about
+    // now, so the Alt choice shows without trying it: a dot in a circle for
+    // the centre node, a pointer for the pointer. Its name is its tooltip
+    // and what screen readers say.
     let note = if about_pointer {
         // Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
         gettext(locale, "Turns about the pointer")
@@ -2185,13 +2217,33 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         // Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
         gettext(locale, "Turns about the centre")
     };
-    ui.painter().with_clip_rect(rect).text(
-        rect.left_bottom() + vec2(10.0, -8.0),
-        egui::Align2::LEFT_BOTTOM,
-        note,
-        theme::regular(11.5),
-        palette.dim.gamma_multiply(0.8),
+    let corner = Rect::from_center_size(
+        rect.right_bottom() - vec2(TURN_ICON_INSET, TURN_ICON_INSET),
+        Vec2::splat(16.0),
     );
+    let pivot_icon = ui.interact(
+        corner,
+        ui.id().with(("map-turn-icon", side)),
+        Sense::hover(),
+    );
+    let colour = if pivot_icon.hovered() {
+        palette.secondary
+    } else {
+        palette.dim.gamma_multiply(0.8)
+    };
+    paint_pivot_icon(
+        &ui.painter().with_clip_rect(rect),
+        corner,
+        about_pointer,
+        colour,
+    );
+    {
+        let note = note.clone();
+        pivot_icon.widget_info(move || {
+            egui::WidgetInfo::labeled(egui::WidgetType::Label, true, note.clone())
+        });
+    }
+    pivot_icon.on_hover_text(note);
     if moving {
         ui.ctx().request_repaint();
     }
