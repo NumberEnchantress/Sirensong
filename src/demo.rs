@@ -6251,6 +6251,39 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// The Queue panel drags down to a column of covers: its headings and
+    /// titles give way, its close button stays; wider, they come back.
+    #[test]
+    fn the_queue_panel_narrows_to_its_covers() {
+        let (ctx, mut app) = accessible_app("queue-covers-only");
+        app.backend.shutdown();
+        app.show_queue_panel = true;
+        let size = egui::vec2(1280.0, 800.0);
+        let painted = |app: &mut App, width: f32| {
+            app.settings.queue_width = width;
+            for _ in 0..3 {
+                view_frame_sized(&ctx, app, vec![], App::frame_ui, size);
+            }
+            view_frame_sized(&ctx, app, vec![], App::frame_ui, size)
+                .into_iter()
+                .map(|(text, _)| text)
+                .collect::<Vec<_>>()
+        };
+        let wide = painted(&mut app, 360.0);
+        assert!(
+            wide.iter()
+                .any(|text| text == "Next up" || text == "Now playing"),
+            "a wide queue names its sections: {wide:?}"
+        );
+        let narrow = painted(&mut app, 88.0);
+        assert!(
+            !narrow
+                .iter()
+                .any(|text| text == "Next up" || text == "Now playing" || text == "Queue"),
+            "a column of covers has no headings: {narrow:?}"
+        );
+    }
+
     /// Ctrl and the wheel over the lyrics panel make the words larger, kept
     /// with the settings and within their bounds.
     #[test]
@@ -9531,62 +9564,176 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// Shift and the wheel turn the map clockwise and Ctrl counter-
-    /// clockwise, either way the wheel moves, keeping its distances; about
-    /// its middle, or about the pointer with Alt held. The two settings
-    /// swap each. Alt alone leaves the wheel zooming.
+    /// With Shift, scrolling down turns the map clockwise and up counter-
+    /// clockwise; Ctrl the other way; Ctrl turns the map clockwise swaps
+    /// them. It turns about the centre node, which stays put, or about the
+    /// pointer once Alt is pressed over the map (or while it is held, with
+    /// Hold Alt). Alt alone leaves the wheel zooming.
     #[test]
     fn shift_and_ctrl_turn_the_map_and_alt_turns_it_about_the_pointer() {
         use egui::Modifiers;
         let pi = std::f32::consts::PI;
-        // (keys, wheel up, turn about the pointer, reversed): which way it
-        // turns, 1 clockwise, -1 counter-clockwise, and whether the node
-        // under the pointer stays put.
+        // (keys on the wheel, wheel (positive is up), Turn the map about
+        // the pointer, reversed, Hold Alt, press Alt first): which way it
+        // turns (1 clockwise) and what stays put, the pointer's node or
+        // the centre node.
+        #[derive(Clone, Copy, PartialEq, Debug)]
+        enum Stays {
+            Pointer,
+            Centre,
+        }
         let cases = [
-            (Modifiers::SHIFT, 2.0, false, false, 1.0, false),
-            (Modifiers::SHIFT, -2.0, false, false, 1.0, false),
-            (Modifiers::CTRL, 2.0, false, false, -1.0, false),
             (
-                Modifiers::SHIFT | Modifiers::ALT,
-                2.0,
+                Modifiers::SHIFT,
+                -2.0,
+                false,
+                false,
                 false,
                 false,
                 1.0,
-                true,
+                Stays::Centre,
             ),
-            (Modifiers::SHIFT, 2.0, false, true, -1.0, false),
-            (Modifiers::CTRL, 2.0, true, false, -1.0, true),
             (
-                Modifiers::CTRL | Modifiers::ALT,
+                Modifiers::SHIFT,
                 2.0,
-                true,
+                false,
+                false,
+                false,
                 false,
                 -1.0,
+                Stays::Centre,
+            ),
+            (
+                Modifiers::CTRL,
+                -2.0,
                 false,
+                false,
+                false,
+                false,
+                -1.0,
+                Stays::Centre,
+            ),
+            (
+                Modifiers::CTRL,
+                2.0,
+                false,
+                false,
+                false,
+                false,
+                1.0,
+                Stays::Centre,
+            ),
+            (
+                Modifiers::SHIFT,
+                -2.0,
+                false,
+                true,
+                false,
+                false,
+                -1.0,
+                Stays::Centre,
+            ),
+            (
+                Modifiers::SHIFT,
+                -2.0,
+                true,
+                false,
+                false,
+                false,
+                1.0,
+                Stays::Pointer,
+            ),
+            (
+                Modifiers::SHIFT,
+                -2.0,
+                false,
+                false,
+                false,
+                true,
+                1.0,
+                Stays::Pointer,
+            ),
+            (
+                Modifiers::SHIFT,
+                -2.0,
+                true,
+                false,
+                false,
+                true,
+                1.0,
+                Stays::Centre,
+            ),
+            (
+                Modifiers::SHIFT | Modifiers::ALT,
+                -2.0,
+                false,
+                false,
+                true,
+                false,
+                1.0,
+                Stays::Pointer,
+            ),
+            (
+                Modifiers::SHIFT,
+                -2.0,
+                false,
+                false,
+                true,
+                true,
+                1.0,
+                Stays::Centre,
             ),
         ];
-        for (index, (keys, up, at_pointer, reversed, way, stays)) in cases.into_iter().enumerate() {
+        for (index, (keys, wheel, at_pointer, reversed, hold, press_alt, way, stays)) in
+            cases.into_iter().enumerate()
+        {
             let (ctx, mut app) = accessible_app(&format!("map-turn-{index}"));
             apply_flags(&mut app, None, Some("playlist-map,folders"));
             app.settings.home.map_turn_at_pointer = at_pointer;
             app.settings.home.map_turn_reversed = reversed;
+            app.settings.home.map_alt_hold = hold;
             let tree = settled_map(&ctx, &mut app, vec![]);
             let a = map_node(&tree, "Late night focus").expect("one playlist on the map");
             let b = map_node(&tree, "Sunday morning").expect("another");
+            let root = map_node(&tree, "Library").expect("the centre node");
             let before = b.center() - a.center();
+            if press_alt {
+                accessible_frame(
+                    &ctx,
+                    &mut app,
+                    vec![
+                        egui::Event::PointerMoved(a.center()),
+                        egui::Event::ModifiersChanged(Modifiers::ALT),
+                    ],
+                );
+                accessible_frame(
+                    &ctx,
+                    &mut app,
+                    vec![egui::Event::ModifiersChanged(Modifiers::NONE)],
+                );
+            }
             let turn = vec![
                 egui::Event::PointerMoved(a.center()),
+                egui::Event::ModifiersChanged(keys),
                 egui::Event::MouseWheel {
                     unit: egui::MouseWheelUnit::Line,
-                    delta: egui::vec2(0.0, up),
+                    delta: egui::vec2(0.0, wheel),
                     modifiers: keys,
                     phase: egui::TouchPhase::Move,
                 },
             ];
             settled_map(&ctx, &mut app, turn);
-            let tree = settled_map(&ctx, &mut app, vec![egui::Event::PointerGone]);
+            let tree = settled_map(
+                &ctx,
+                &mut app,
+                vec![
+                    egui::Event::ModifiersChanged(Modifiers::NONE),
+                    egui::Event::PointerGone,
+                ],
+            );
             let a2 = map_node(&tree, "Late night focus").expect("still on the map");
             let b2 = map_node(&tree, "Sunday morning").expect("still on the map");
+            let root2 = map_node(&tree, "Library").expect("still on the map");
             let after = b2.center() - a2.center();
             assert!(
                 (after.length() - before.length()).abs() < 1.5,
@@ -9597,11 +9744,17 @@ mod tests {
                 turned * way > 0.1,
                 "case {index}: turned {turned}, expected the sign of {way}"
             );
-            let moved = (a2.center() - a.center()).length();
-            assert_eq!(
-                moved < 1.5,
-                stays,
-                "case {index}: the node under the pointer moved {moved}"
+            let (kept, other) = match stays {
+                Stays::Pointer => (a2.center() - a.center(), root2.center() - root.center()),
+                Stays::Centre => (root2.center() - root.center(), a2.center() - a.center()),
+            };
+            assert!(
+                kept.length() < 1.5,
+                "case {index}: {stays:?} stays put, moved {kept:?}"
+            );
+            assert!(
+                other.length() > 1.5,
+                "case {index}: the other point moves, by {other:?}"
             );
             app.backend.shutdown();
         }
@@ -9658,7 +9811,7 @@ mod tests {
             egui::Event::PointerMoved(map_node(&tree, "Late night focus").unwrap().center()),
             egui::Event::MouseWheel {
                 unit: egui::MouseWheelUnit::Line,
-                delta: egui::vec2(0.0, 1.0),
+                delta: egui::vec2(0.0, -1.0),
                 modifiers: egui::Modifiers::SHIFT,
                 phase: egui::TouchPhase::Move,
             },

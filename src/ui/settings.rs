@@ -1113,6 +1113,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let turn_at_pointer = gettext(locale, "Turn the map about the pointer");
     // Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
     let turn_reversed = gettext(locale, "Ctrl turns the map clockwise");
+    // Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+    let alt_hold = gettext(locale, "Hold Alt to turn about the pointer");
     let player_bar_vis_click = gettext(locale, "Click player bar to change visualizer");
     // Follow system's own light and dark palettes. Omarchy's palette already
     // follows the desktop, so they are offered only without it.
@@ -1764,7 +1766,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             turn_at_pointer.clone(),
             gettext(
                 locale,
-                "The map turns about the pointer, and about its middle with Alt held. Off, the other way round.",
+                "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round.",
             ),
         ),
         RowText::new(
@@ -1772,6 +1774,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             gettext(
                 locale,
                 "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise.",
+            ),
+        ),
+        RowText::new(
+            alt_hold.clone(),
+            gettext(
+                locale,
+                "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which.",
             ),
         ),
     ];
@@ -2489,6 +2498,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                     &mut app.settings.home.map_turn_reversed,
                 )
                 .changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &home_map, &home_rows[7], |ui| {
+                if widgets::switch(ui, &palette, &alt_hold, &mut app.settings.home.map_alt_hold)
+                    .changed()
                 {
                     changed = true;
                 }

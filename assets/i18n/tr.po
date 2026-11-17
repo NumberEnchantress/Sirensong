@@ -5409,8 +5409,8 @@ msgid "Turn the map about the pointer"
 msgstr "Haritayı işaretçinin çevresinde döndür"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "Harita işaretçinin çevresinde, Alt basılıyken ortasının çevresinde döner. Kapalıyken tersi."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "Harita işaretçinin çevresinde döner, Alt onu merkezdeki düğüme geçirir. Kapalıyken tersi."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5420,3 +5420,22 @@ msgstr "Ctrl haritayı saat yönünde döndürür"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl ve tekerlek haritayı saat yönünde, Shift saat yönünün tersine döndürür. Kapalıyken Shift saat yönünde döndürür."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "İşaretçinin çevresinde döndürmek için Alt'ı basılı tut"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt, haritanın neyin çevresinde döndüğünü yalnızca basılı tutulurken değiştirir. Kapalıyken haritanın üzerinde her Alt basışı merkez ile işaretçi arasında geçiş yapar ve haritanın köşesi hangisi olduğunu gösterir."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "İşaretçinin çevresinde döner"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Merkezin çevresinde döner"

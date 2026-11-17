@@ -5381,8 +5381,8 @@ msgid "Turn the map about the pointer"
 msgstr "Vrid kartan runt pekaren"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "Kartan vrids runt pekaren, och runt sin mitt med Alt nedtryckt. När den är av är det tvärtom."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "Kartan vrids runt pekaren, och Alt växlar till mittnoden. När den är av är det tvärtom."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5392,3 +5392,22 @@ msgstr "Ctrl vrider kartan medurs"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl och hjulet vrider kartan medurs, och Skift moturs. När den är av vrider Skift den medurs."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Håll in Alt för att vrida runt pekaren"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt ändrar vad kartan vrids runt bara så länge den hålls in. När den är av växlar varje tryck på Alt över kartan mellan mitten och pekaren, och kartans hörn visar vilket."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "Vrids runt pekaren"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Vrids runt mitten"

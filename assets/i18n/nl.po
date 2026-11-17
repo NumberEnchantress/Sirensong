@@ -5412,8 +5412,8 @@ msgid "Turn the map about the pointer"
 msgstr "Kaart rond de aanwijzer draaien"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "De kaart draait rond de aanwijzer, en met Alt ingedrukt rond het midden. Staat dit uit, dan andersom."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "De kaart draait rond de aanwijzer, en Alt zet hem om naar het middelste knooppunt. Staat dit uit, dan andersom."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5423,3 +5423,22 @@ msgstr "Ctrl draait de kaart met de klok mee"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl en het wieltje draaien de kaart met de klok mee, Shift tegen de klok in. Staat dit uit, dan draait Shift hem met de klok mee."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Alt ingedrukt houden om rond de aanwijzer te draaien"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt verandert alleen zolang je hem ingedrukt houdt waaromheen de kaart draait. Staat dit uit, dan wisselt elke druk op Alt boven de kaart tussen het midden en de aanwijzer, en de hoek van de kaart zegt welke."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "Draait rond de aanwijzer"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Draait rond het midden"

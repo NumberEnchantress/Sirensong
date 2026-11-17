@@ -123,10 +123,11 @@ fn turns_with(modifiers: egui::Modifiers) -> bool {
 }
 
 /// How far the wheel turned the map this frame, in points, clockwise on
-/// screen: with Shift held clockwise and with Ctrl counter-clockwise, or
-/// the other way round with `reversed`, however far the wheel moved either
-/// way. Read from the wheel's own events, before egui makes Ctrl's wheel a
-/// zoom and Shift's a sideways scroll.
+/// screen: with Shift held, scrolling down turns it clockwise and up
+/// counter-clockwise; with Ctrl, the other way round; and both the other
+/// way again with `reversed`. Read from the wheel's own events, before egui
+/// makes Ctrl's wheel a zoom and Shift's a sideways scroll; a wheel the
+/// system has already turned sideways counts the same.
 fn turning_scroll(input: &egui::InputState, line: f32, page: f32, reversed: bool) -> f32 {
     input
         .events
@@ -143,10 +144,12 @@ fn turning_scroll(input: &egui::InputState, line: f32, page: f32, reversed: bool
                     egui::MouseWheelUnit::Line => line,
                     egui::MouseWheelUnit::Page => page,
                 };
-                let clockwise = f32::from(u8::from(modifiers.shift))
+                // egui's wheel is positive scrolled up; Shift's down is
+                // clockwise.
+                let shift_way = f32::from(u8::from(modifiers.shift))
                     - f32::from(u8::from(modifiers.ctrl || modifiers.command));
-                let way = if reversed { -clockwise } else { clockwise };
-                Some(delta.x.abs().max(delta.y.abs()) * scale * way)
+                let way = if reversed { -shift_way } else { shift_way };
+                Some(-(delta.y + delta.x) * scale * way)
             }
             _ => None,
         })
@@ -1513,10 +1516,39 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         }
     }
 
+    // Alt chooses what the map turns about: pressed over the map it
+    // switches between the centre node and the pointer, or, with Hold Alt
+    // chosen, it does so only while held. The choice is the session's, for
+    // both maps.
+    let home = app.settings.home;
+    let (alt_now, over_map) = (
+        ui.input(|input| input.modifiers.alt),
+        ui.rect_contains_pointer(rect),
+    );
+    let alt_was_id = egui::Id::new("map-turn-alt-was-down");
+    let alt_toggled_id = egui::Id::new("map-turn-alt-toggled");
+    let alt_was = ui
+        .data(|data| data.get_temp::<bool>(alt_was_id))
+        .unwrap_or(false);
+    ui.data_mut(|data| data.insert_temp(alt_was_id, alt_now));
+    if !home.map_alt_hold && alt_now && !alt_was && over_map {
+        let toggled = ui
+            .data(|data| data.get_temp::<bool>(alt_toggled_id))
+            .unwrap_or(false);
+        ui.data_mut(|data| data.insert_temp(alt_toggled_id, !toggled));
+    }
+    let alt_on = if home.map_alt_hold {
+        alt_now
+    } else {
+        ui.data(|data| data.get_temp::<bool>(alt_toggled_id))
+            .unwrap_or(false)
+    };
+    let about_pointer = alt_on != home.map_turn_at_pointer;
+
     // Zoom about the pointer with the wheel or a pinch, here and not the
     // page. With Shift or Ctrl held the wheel turns the map instead, as a
-    // trackpad's two-finger twist does: about the map's middle, or about
-    // the pointer with Alt held (the other way round by the setting).
+    // trackpad's two-finger twist does: about the centre node, or about
+    // the pointer as Alt chooses.
     if let Some(pointer) = ui
         .ctx()
         .pointer_hover_pos()
@@ -1525,16 +1557,11 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         let line = ui
             .ctx()
             .options(|options| options.input_options.line_scroll_speed);
-        let home = app.settings.home;
-        let (scroll, pinch, held, alt, twist, turning, plain_wheel) = ui.input(|input| {
+        let (scroll, pinch, held, twist, turning, plain_wheel) = ui.input(|input| {
             (
                 input.smooth_scroll_delta.y,
                 pinch_only(input),
                 turns_with(input.modifiers),
-                input.modifiers.alt
-                    || input.events.iter().any(|event| {
-                        matches!(event, egui::Event::MouseWheel { modifiers, .. } if modifiers.alt)
-                    }),
                 input.rotation_delta(),
                 turning_scroll(input, line, rect.height(), home.map_turn_reversed),
                 input.events.iter().any(|event| {
@@ -1549,10 +1576,16 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         }
         let held = held || state.camera.turning;
         let from_centre = pointer - rect.center();
-        let pivot = if alt != home.map_turn_at_pointer {
+        // The centre node: the root, where it is on screen now.
+        let root = nodes
+            .first()
+            .and_then(|node| state.drawn.get(&node.key))
+            .map_or(Vec2::ZERO, |drawn| drawn.at);
+        let pivot = if about_pointer {
             from_centre
         } else {
-            Vec2::ZERO
+            state.camera.pan
+                + egui::emath::Rot2::from_angle(state.camera.turn) * (root * state.camera.zoom)
         };
         // A twist follows the fingers as they move; the wheel's turn is
         // owed and eased in below.
@@ -2143,6 +2176,22 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     } else if escaped || released || ui.input(|input| !input.pointer.primary_down()) {
         state.moving = None;
     }
+    // A quiet note in the map's corner of what it turns about now, so the
+    // Alt choice shows without trying it.
+    let note = if about_pointer {
+        // Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+        gettext(locale, "Turns about the pointer")
+    } else {
+        // Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+        gettext(locale, "Turns about the centre")
+    };
+    ui.painter().with_clip_rect(rect).text(
+        rect.left_bottom() + vec2(10.0, -8.0),
+        egui::Align2::LEFT_BOTTOM,
+        note,
+        theme::regular(11.5),
+        palette.dim.gamma_multiply(0.8),
+    );
     if moving {
         ui.ctx().request_repaint();
     }

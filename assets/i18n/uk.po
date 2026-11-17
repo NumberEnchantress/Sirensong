@@ -5448,8 +5448,8 @@ msgid "Turn the map about the pointer"
 msgstr "Повертати мапу навколо вказівника"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "Мапа повертається навколо вказівника, а з затиснутим Alt — навколо центру. Якщо вимкнено, навпаки."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "Мапа повертається навколо вказівника, а Alt перемикає її на центральний вузол. Якщо вимкнено, навпаки."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5459,3 +5459,22 @@ msgstr "Ctrl повертає мапу за годинниковою стріл�
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl і коліщатко повертають мапу за годинниковою стрілкою, а Shift — проти. Якщо вимкнено, Shift повертає її за годинниковою стрілкою."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Утримувати Alt для повороту навколо вказівника"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt змінює центр повороту мапи, лише поки його утримують. Якщо вимкнено, кожне натискання Alt над мапою перемикає між центром і вказівником, а в куті мапи видно, що вибрано."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "Поворот навколо вказівника"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Поворот навколо центру"

@@ -5261,8 +5261,8 @@ msgid "Turn the map about the pointer"
 msgstr "繞指標旋轉地圖"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "地圖繞指標旋轉，按住 Alt 時繞中心旋轉。關閉時相反。"
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "地圖繞指標旋轉，按 Alt 切換為繞中心節點旋轉。關閉時相反。"
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5272,3 +5272,22 @@ msgstr "Ctrl 順時針旋轉地圖"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl 加滾輪順時針旋轉地圖，Shift 逆時針。關閉時，Shift 順時針旋轉。"
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "按住 Alt 時繞指標旋轉"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "僅在按住 Alt 時改變地圖的旋轉中心。關閉時，在地圖上每按一次 Alt 會在中心和指標之間切換，地圖角落會顯示目前方式。"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "繞指標旋轉"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "繞中心旋轉"

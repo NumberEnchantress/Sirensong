@@ -122,6 +122,9 @@ pub struct HomeSettings {
     /// Ctrl and the wheel turn the map clockwise and Shift counter-
     /// clockwise; off, the other way round.
     pub map_turn_reversed: bool,
+    /// Alt chooses the pointer only while held; off, each press switches
+    /// between the centre node and the pointer.
+    pub map_alt_hold: bool,
 }
 
 impl Default for HomeSettings {
@@ -141,6 +144,7 @@ impl Default for HomeSettings {
             map_highlight: true,
             map_turn_at_pointer: false,
             map_turn_reversed: false,
+            map_alt_hold: false,
         }
     }
 }

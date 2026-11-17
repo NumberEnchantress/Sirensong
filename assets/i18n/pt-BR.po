@@ -5407,8 +5407,8 @@ msgid "Turn the map about the pointer"
 msgstr "Girar o mapa em torno do ponteiro"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "O mapa gira em torno do ponteiro e, segurando Alt, em torno do centro. Desativado, o contrário."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "O mapa gira em torno do ponteiro, e Alt muda para o nó central. Desativado, o contrário."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5418,3 +5418,22 @@ msgstr "Ctrl gira o mapa no sentido horário"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl e a roda giram o mapa no sentido horário, e Shift no anti-horário. Desativado, Shift o gira no sentido horário."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Segurar Alt para girar em torno do ponteiro"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt muda em torno de que o mapa gira só enquanto estiver pressionado. Desativado, cada toque em Alt sobre o mapa alterna entre o centro e o ponteiro, e o canto do mapa mostra qual."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "Gira em torno do ponteiro"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Gira em torno do centro"

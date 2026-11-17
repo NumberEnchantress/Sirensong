@@ -5338,8 +5338,8 @@ msgid "Turn the map about the pointer"
 msgstr "포인터를 중심으로 지도 회전"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "지도가 포인터를 중심으로 회전하고, Alt를 누르면 가운데를 중심으로 회전합니다. 끄면 반대입니다."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "지도가 포인터를 중심으로 회전하고, Alt로 가운데 노드 중심으로 바뀝니다. 끄면 반대입니다."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5349,3 +5349,22 @@ msgstr "Ctrl로 지도를 시계 방향으로 회전"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl과 휠로 지도를 시계 방향으로, Shift로 반시계 방향으로 회전합니다. 끄면 Shift가 시계 방향으로 회전합니다."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Alt를 누르고 있을 때만 포인터 중심으로 회전"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt를 누르고 있는 동안에만 지도의 회전 중심이 바뀝니다. 끄면 지도 위에서 Alt를 누를 때마다 가운데와 포인터가 바뀌고, 지도 모서리에 어느 쪽인지 표시됩니다."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "포인터 중심으로 회전"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "가운데 중심으로 회전"

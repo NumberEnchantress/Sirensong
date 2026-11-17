@@ -5440,8 +5440,8 @@ msgid "Turn the map about the pointer"
 msgstr "Obracaj mapę wokół wskaźnika"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "Mapa obraca się wokół wskaźnika, a z wciśniętym Alt wokół środka. Wyłączone: na odwrót."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "Mapa obraca się wokół wskaźnika, a Alt przełącza ją na środkowy węzeł. Wyłączone: na odwrót."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5451,3 +5451,22 @@ msgstr "Ctrl obraca mapę zgodnie z ruchem wskazówek zegara"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl i kółko obracają mapę zgodnie z ruchem wskazówek zegara, a Shift przeciwnie. Wyłączone: Shift obraca ją zgodnie z ruchem wskazówek zegara."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Przytrzymaj Alt, aby obracać wokół wskaźnika"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt zmienia, wokół czego obraca się mapa, tylko gdy jest przytrzymany. Wyłączone: każde naciśnięcie Alt nad mapą przełącza między środkiem a wskaźnikiem, a róg mapy pokazuje, które jest aktywne."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "Obrót wokół wskaźnika"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Obrót wokół środka"

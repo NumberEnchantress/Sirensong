@@ -17425,7 +17425,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 44";
+pub const FORK_VERSION: &str = "mod 45";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -19350,8 +19350,8 @@ mod tests {
             (stored_width(&ctx) - 300.0).abs() < 1.0,
             "the returning panel draws at the narrowed width"
         );
-        // Below the side panel minimum the panel still draws at its own
-        // minimum, but the remembered width stays at the column floor, so
+        // At the column's floor the panel draws that narrow too (it narrows
+        // to a column of covers), and the remembered width stays there, so
         // reopening fullscreen shows the narrowed column again.
         app.settings.queue_width = crate::ui::queue::FULLSCREEN_COLUMN_MIN;
         panel(&mut app, &ctx);
@@ -19360,8 +19360,11 @@ mod tests {
             "the returning panel keeps the floor width"
         );
         assert!(
-            (stored_width(&ctx) - crate::theme::SIDE_PANEL_MIN_WIDTH).abs() < 1.0,
-            "the panel draws at its own minimum"
+            (stored_width(&ctx)
+                - crate::ui::queue::FULLSCREEN_COLUMN_MIN.max(crate::ui::queue::QUEUE_NARROWEST))
+            .abs()
+                < 1.0,
+            "the panel draws at the floor width"
         );
         app.backend.shutdown();
     }

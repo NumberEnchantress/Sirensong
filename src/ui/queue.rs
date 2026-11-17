@@ -34,12 +34,33 @@ pub fn page(app: &mut App, ui: &mut egui::Ui) {
     contents(app, ui, false);
 }
 
+/// How narrow the Queue panel can be dragged: a column of covers, which is
+/// what its rows show below [`widgets::COVERS_ONLY_BELOW`].
+pub(crate) const QUEUE_NARROWEST: f32 = 88.0;
+
+/// Whether the queue's column is narrow enough to show its songs' covers
+/// alone, without its headings.
+fn covers_only(ui: &egui::Ui) -> bool {
+    ui.available_width() < widgets::COVERS_ONLY_BELOW
+}
+
+/// A gap with a faint line in place of a heading, for a column of covers.
+fn heading_rule(ui: &mut egui::Ui, palette: &theme::Palette) {
+    ui.add_space(4.0);
+    ui.painter().hline(
+        ui.max_rect().x_range().shrink(6.0),
+        ui.cursor().top(),
+        egui::Stroke::new(1.0, palette.outline),
+    );
+    ui.add_space(6.0);
+}
+
 pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     let palette = app.palette;
     let fit = super::yielding_panel(
         ui.ctx(),
         "queue-panel",
-        theme::SIDE_PANEL_MIN_WIDTH..=560.0,
+        QUEUE_NARROWEST..=560.0,
         app.settings.queue_width,
         ui.available_width() - super::topbar::least_width(ui.ctx()),
     );
@@ -68,21 +89,10 @@ pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         let mut picked = None;
         let mut close = false;
         let mut save = false;
-        egui::Sides::new().shrink_left().show(
-            ui,
-            |ui| {
-                ui.add_space(4.0);
-                picked = widgets::chips(
-                    ui,
-                    &palette,
-                    &[
-                        (QueueTab::Queue, &gettext(app.locale, "Queue")),
-                        (QueueTab::Recents, &gettext(app.locale, "Recent")),
-                    ],
-                    tab,
-                );
-            },
-            |ui| {
+        // Narrowed to a column of covers, the panel keeps only its close
+        // button above them.
+        if covers_only(ui) {
+            ui.vertical_centered(|ui| {
                 close = theme::icon_button(
                     ui,
                     Icon::X,
@@ -92,9 +102,36 @@ pub fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                     &gettext(app.locale, "Close"),
                 )
                 .clicked();
-                save = save_button(ui, &palette, offer_save, app.locale);
-            },
-        );
+            });
+        } else {
+            egui::Sides::new().shrink_left().show(
+                ui,
+                |ui| {
+                    ui.add_space(4.0);
+                    picked = widgets::chips(
+                        ui,
+                        &palette,
+                        &[
+                            (QueueTab::Queue, &gettext(app.locale, "Queue")),
+                            (QueueTab::Recents, &gettext(app.locale, "Recent")),
+                        ],
+                        tab,
+                    );
+                },
+                |ui| {
+                    close = theme::icon_button(
+                        ui,
+                        Icon::X,
+                        18.0,
+                        palette.secondary,
+                        palette.text,
+                        &gettext(app.locale, "Close"),
+                    )
+                    .clicked();
+                    save = save_button(ui, &palette, offer_save, app.locale);
+                },
+            );
+        }
         if let Some(tab) = picked {
             app.actions.push(Action::SetQueueTab(tab));
         }
@@ -395,7 +432,8 @@ fn contents(app: &mut App, ui: &mut egui::Ui, compact: bool) {
     };
     // Where the songs come from, above the song itself. A radio has no
     // page, so its name is plain text.
-    if let Some(from) = app.playing_from().filter(|_| current.is_some()) {
+    let narrow = covers_only(ui);
+    if let Some(from) = app.playing_from().filter(|_| current.is_some() && !narrow) {
         ui.horizontal(|ui| {
             theme::text(
                 ui,
@@ -417,13 +455,15 @@ fn contents(app: &mut App, ui: &mut egui::Ui, compact: bool) {
         ui.add_space(10.0);
     }
     if let Some(current) = current.as_ref() {
-        theme::text(
-            ui,
-            gettext(app.locale, "Now playing"),
-            theme::semibold(14.0),
-            palette.text,
-        );
-        ui.add_space(4.0);
+        if !narrow {
+            theme::text(
+                ui,
+                gettext(app.locale, "Now playing"),
+                theme::semibold(14.0),
+                palette.text,
+            );
+            ui.add_space(4.0);
+        }
         let context = RowContext::Uris(Arc::from([current.uri().to_string()]));
         widgets::track_row(
             ui,
@@ -481,22 +521,26 @@ fn contents(app: &mut App, ui: &mut egui::Ui, compact: bool) {
     if queued_len > 0 {
         // The trash sits with the songs it removes: only this section is
         // the user's to clear, the context below plays itself.
-        ui.horizontal(|ui| {
-            theme::text(
-                ui,
-                gettext(
-                    app.locale,
-                    // Translators: Songs added manually, before the current playlist or album continues.
-                    "Playing next",
-                ),
-                theme::semibold(14.0),
-                palette.text,
-            );
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                clear_button(app, ui);
+        if narrow {
+            heading_rule(ui, &palette);
+        } else {
+            ui.horizontal(|ui| {
+                theme::text(
+                    ui,
+                    gettext(
+                        app.locale,
+                        // Translators: Songs added manually, before the current playlist or album continues.
+                        "Playing next",
+                    ),
+                    theme::semibold(14.0),
+                    palette.text,
+                );
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    clear_button(app, ui);
+                });
             });
-        });
-        ui.add_space(4.0);
+            ui.add_space(4.0);
+        }
         if reorderable && egui::DragAndDrop::has_payload_of_type::<DragTrack>(ui.ctx()) {
             widgets::scroll_during_drag(ui);
         }
@@ -589,17 +633,21 @@ fn contents(app: &mut App, ui: &mut egui::Ui, compact: bool) {
     // row on it belongs to Next up, which plays from the context and is never
     // rewritten. The player bar's Queue button still takes the drop.
     if queue_len > queued_len {
-        theme::text(
-            ui,
-            gettext(
-                app.locale,
-                // Translators: Upcoming songs from the current playlist or album, after manually queued songs.
-                "Next up",
-            ),
-            theme::semibold(14.0),
-            palette.text,
-        );
-        ui.add_space(4.0);
+        if narrow {
+            heading_rule(ui, &palette);
+        } else {
+            theme::text(
+                ui,
+                gettext(
+                    app.locale,
+                    // Translators: Upcoming songs from the current playlist or album, after manually queued songs.
+                    "Next up",
+                ),
+                theme::semibold(14.0),
+                palette.text,
+            );
+            ui.add_space(4.0);
+        }
         widgets::virtual_rows(ui, queue_len - queued_len, row_height, |ui, index| {
             queue_row(app, ui, queued_len + index, compact, 0.0);
         });

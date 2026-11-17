@@ -5450,8 +5450,8 @@ msgid "Turn the map about the pointer"
 msgstr "Faire pivoter la carte autour du pointeur"
 
 #: src/ui/settings.rs
-msgid "The map turns about the pointer, and about its middle with Alt held. Off, the other way round."
-msgstr "La carte pivote autour du pointeur, et autour de son centre avec Alt enfoncée. Désactivé, l’inverse."
+msgid "The map turns about the pointer, and Alt switches it to the centre node. Off, the other way round."
+msgstr "La carte pivote autour du pointeur, et Alt la fait pivoter autour du nœud central. Désactivé, l’inverse."
 
 #. Translators: A setting: Ctrl and the scroll wheel turn the playlist map clockwise, and Shift counter-clockwise.
 #: src/ui/settings.rs
@@ -5461,3 +5461,22 @@ msgstr "Ctrl fait pivoter la carte dans le sens horaire"
 #: src/ui/settings.rs
 msgid "Ctrl and the wheel turn the map clockwise, and Shift counter-clockwise. Off, Shift turns it clockwise."
 msgstr "Ctrl et la molette font pivoter la carte dans le sens horaire, et Maj dans le sens antihoraire. Désactivé, Maj la fait pivoter dans le sens horaire."
+
+#. Translators: A setting: the Alt key chooses what the playlist map turns about only while it is held, instead of each press switching.
+#: src/ui/settings.rs
+msgid "Hold Alt to turn about the pointer"
+msgstr "Maintenir Alt pour pivoter autour du pointeur"
+
+#: src/ui/settings.rs
+msgid "Alt changes what the map turns about only while held. Off, each press of Alt over the map switches between the centre and the pointer, and the map's corner says which."
+msgstr "Alt change ce autour de quoi la carte pivote seulement tant qu’elle est maintenue. Désactivé, chaque appui sur Alt au-dessus de la carte alterne entre le centre et le pointeur, et le coin de la carte indique lequel."
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the mouse pointer.
+#: src/ui/playlist_map.rs
+msgid "Turns about the pointer"
+msgstr "Pivote autour du pointeur"
+
+#. Translators: A small note in the corner of the playlist map: turning it now turns about the node at its centre.
+#: src/ui/playlist_map.rs
+msgid "Turns about the centre"
+msgstr "Pivote autour du centre"

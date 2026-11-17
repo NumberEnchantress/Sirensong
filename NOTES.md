@@ -484,6 +484,23 @@ record its own decisions and three rounds of adversarial grading.
   jumping; the total per notch is unchanged. A trackpad twist still
   follows the fingers directly.
 
+### Turning, round three, 17 November 2026 (mod 45)
+
+- **Requested by the user:** with Shift, scrolling down turns clockwise
+  and up counter-clockwise; Ctrl the other way (`turning_scroll` now
+  follows the wheel's sign; `map_turn_reversed` still swaps).
+- The map turns about its centre node (the root, as drawn now), not the
+  middle of the pane. Alt is a toggle by default: a press over the map
+  switches to turning about the pointer and back, kept for the session in
+  egui's temporary data for both maps; `HomeSettings::map_alt_hold` makes
+  it work only while held. A dim note in the map's bottom-left corner says
+  which ("Turns about the pointer" or "Turns about the centre").
+- **The Queue's column of covers:** the panel could not be dragged below
+  `SIDE_PANEL_MIN_WIDTH` (280), so mod 42's covers-only rows (below 150)
+  never showed there. It now narrows to `QUEUE_NARROWEST` (88); below
+  `COVERS_ONLY_BELOW` it shows only its close button and faint rules in
+  place of its headings.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

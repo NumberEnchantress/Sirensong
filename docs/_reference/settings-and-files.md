@@ -611,12 +611,15 @@ Zoom in a magnifying glass and Only selected a focus frame. Pointing at one
 names it.
 
 Scroll or pinch to zoom and drag the background to move. Scroll with Shift
-held to turn the map clockwise and with Ctrl held to turn it
-counter-clockwise, whichever way the wheel moves, or twist two fingers on a
-trackpad. It turns about its middle, and about the pointer with Alt held as
-well; names stay upright as it turns. In Settings, **Turn the map about the
-pointer** swaps the middle and the pointer, and **Ctrl turns the map
-clockwise** swaps the two directions. Double-click the
+held to turn the map: down turns it clockwise, up counter-clockwise. With
+Ctrl held it is the other way round. A trackpad's two-finger twist turns it
+too, and names stay upright as it turns. It turns about the centre node,
+which stays where it is; press Alt over the map to turn it about the pointer
+instead, and press it again to go back. A note in the map's corner says
+which. In Settings, **Hold Alt to turn about the pointer** makes Alt work
+only while held, **Turn the map about the pointer** swaps the centre and
+the pointer, and **Ctrl turns the map clockwise** swaps the directions.
+Double-click the
 background to see everything at once, and again to go back to the focus;
 the view also fits itself to the focus whenever it changes, until you move
 it. Click a node to open it (in Circles, a folder by its name, so the space
@@ -656,7 +659,7 @@ and the Library's too while it has none of its own), `"sidebar_map_layout"`
 (the Library's), `"same_map_layout"`, `"both_maps"` (One map at a time off),
 `"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`, and
 `"map_search"`, `"map_highlight"`, `"map_turn_at_pointer"` and
-`"map_turn_reversed"` (both `false`).
+`"map_turn_reversed"` and `"map_alt_hold"` (all `false`).
 
 **Time listened**, beside the layouts, makes each node's area grow with
 the time you listened to what it plays: the songs played from that
