@@ -407,6 +407,8 @@ main fields are:
 | `lyrics_scale` | `1.0` | The lyrics' words as a share of their usual size, from 0.6 to 2.5; Ctrl and the wheel over the lyrics change it |
 | `stack_side_panels` | `true` | **Side panels side by side**: the Queue, Lyrics and Listening activity panels can stay open together |
 | `side_panels` | Queue, Lyrics, Listening activity, all `right` | Each side panel's `panel` (`queue`, `lyrics`, `friends`) and `edge` (`left` or `right`), in order from the window's edge, set by dragging a panel's grip |
+| `start_in_folder` | `false` | **Start in a folder**: the Library opens inside `start_folder` when Sirensong starts |
+| `start_folder` | none | The id of the folder the Library opens in at launch; a folder gone since leaves it at the top |
 | `search_log_button` | `false` | A **Search log** button on Home, beside the map's choices or under the greeting, that opens the searches kept |
 | `search_log` | `false` | **Keep a search log**: what each search showed, the last 1,000 searches, kept in `search-log.json` on this computer only |
 | `search_default` | `"all"` | The results a new search opens on: `all`, `songs`, `artists`, `albums`, `playlists`, `podcasts` or `episodes` |

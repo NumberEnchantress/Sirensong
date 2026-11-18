@@ -669,6 +669,12 @@ pub struct Settings {
     pub stack_side_panels: bool,
     /// Where each side panel stands ([`side_panel_places`] reads it).
     pub side_panels: Vec<PanelPlace>,
+    /// The Library opens inside [`Settings::start_folder`] when Sirensong
+    /// starts, rather than at the top.
+    pub start_in_folder: bool,
+    /// The folder the Library opens in at launch, by its id, while
+    /// [`Settings::start_in_folder`] is on; a folder gone since is ignored.
+    pub start_folder: Option<String>,
     /// How large the lyrics' words are, as a share of their usual size:
     /// Ctrl and the wheel over them change it ([`lyrics_scale`]).
     pub lyrics_scale: f32,
@@ -879,6 +885,8 @@ impl Default for Settings {
             search_log_button: false,
             stack_side_panels: true,
             lyrics_scale: 1.0,
+            start_in_folder: false,
+            start_folder: None,
             side_panels: side_panel_places(&[]),
             library_sort: std::collections::BTreeMap::new(),
             library_by_you: false,

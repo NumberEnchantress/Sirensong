@@ -1018,6 +1018,9 @@ pub struct App {
     /// The folder the sidebar's playlists are opened into, by rootlist id;
     /// `None` shows the whole library.
     pub library_folder: Option<String>,
+    /// The Library has yet to open in the launch folder, once its folders
+    /// are known.
+    start_folder_pending: bool,
     /// A newer release than this build, once GitHub has said so.
     pub update: Option<crate::updates::Release>,
     last_update_check: Option<Instant>,
@@ -1665,6 +1668,7 @@ impl App {
             pending_pastes: Vec::new(),
             collapsed_folders: session.collapsed_folders.clone(),
             library_folder: None,
+            start_folder_pending: true,
             update: None,
             last_update_check: None,
             update_checking: false,
@@ -6561,6 +6565,24 @@ impl App {
         ) {
             self.pin_edits += 1;
             self.backend.send(Command::SetPin { uri, pinned });
+        }
+    }
+
+    /// Once this run knows the Library's folders, open the one chosen to
+    /// start in, if that setting is on and the folder is still there;
+    /// otherwise stay at the top, quietly. It happens once a run.
+    fn open_start_folder(&mut self) {
+        if !self.start_folder_pending || self.shown_tree().is_empty() {
+            return;
+        }
+        self.start_folder_pending = false;
+        if !self.settings.start_in_folder {
+            return;
+        }
+        if let Some(id) = self.settings.start_folder.clone()
+            && crate::folders::folder_span(self.shown_tree(), &id).is_some()
+        {
+            self.library_folder = Some(id);
         }
     }
 
@@ -16978,6 +17000,7 @@ impl App {
         let ctx = &ctx;
         // Before anything draws, so nothing real is drawn first.
         self.sync_vacuum(ctx);
+        self.open_start_folder();
         self.keep_library_tree(false);
         self.keep_playlist_copies();
         self.search_log
@@ -17425,7 +17448,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 46";
+pub const FORK_VERSION: &str = "mod 47";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;
@@ -26152,6 +26175,45 @@ mod tests {
             "no repeated refresh on ready updates"
         );
         app.backend.shutdown();
+    }
+
+    /// Start in a folder, off by default, opens the chosen folder once the
+    /// Library's folders are known, once a run; a folder that is gone
+    /// leaves the Library at the top, quietly.
+    #[test]
+    fn the_library_starts_in_the_chosen_folder() {
+        use crate::player::RootlistEntry;
+        let tree = || {
+            vec![
+                RootlistEntry::FolderStart {
+                    id: "f1".to_string(),
+                    name: "Techno".to_string(),
+                },
+                RootlistEntry::FolderEnd,
+            ]
+        };
+        let older: crate::settings::Settings = serde_json::from_str("{}").unwrap();
+        assert!(!older.start_in_folder && older.start_folder.is_none());
+        for (on, chosen, opens) in [
+            (false, Some("f1"), None),
+            (true, Some("f1"), Some("f1")),
+            (true, Some("gone"), None),
+            (true, None, None),
+        ] {
+            let mut app = test_app(&format!("start-folder-{on}-{chosen:?}"));
+            app.settings.start_in_folder = on;
+            app.settings.start_folder = chosen.map(str::to_string);
+            app.open_start_folder();
+            assert_eq!(app.library_folder, None, "waits for the folders");
+            app.rootlist = tree();
+            app.open_start_folder();
+            assert_eq!(app.library_folder.as_deref(), opens, "{on} {chosen:?}");
+            // Once a run: leaving the folder is not undone.
+            app.library_folder = None;
+            app.open_start_folder();
+            assert_eq!(app.library_folder, None);
+            app.backend.shutdown();
+        }
     }
 
     /// With side panels side by side off, friend activity takes the right

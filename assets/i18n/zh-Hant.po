@@ -5291,3 +5291,26 @@ msgstr "繞指標旋轉"
 #: src/ui/playlist_map.rs
 msgid "Turns about the centre"
 msgstr "繞中心旋轉"
+
+#. Translators: A setting: when Sirensong opens, the Library starts inside a chosen folder instead of at the top.
+#: src/ui/settings.rs
+msgid "Start in a folder"
+msgstr "從資料夾開始"
+
+#. Translators: A setting: the folder the Library starts in when Sirensong opens.
+#: src/ui/settings.rs
+msgid "Folder to start in"
+msgstr "起始資料夾"
+
+#: src/ui/settings.rs
+msgid "When Sirensong opens, the Library starts inside the folder chosen below instead of at the top. If that folder is gone, it starts at the top."
+msgstr "開啟 Sirensong 時，資料庫從下方選擇的資料夾內開始，而不是從最上層開始。如果該資料夾已不存在，則從最上層開始。"
+
+#: src/ui/settings.rs
+msgid "The Library folder Sirensong opens in."
+msgstr "Sirensong 開啟時所在的資料庫資料夾。"
+
+#. Translators: The folder setting before a folder is chosen, or after the chosen one was removed.
+#: src/ui/settings.rs
+msgid "Choose a folder"
+msgstr "選擇資料夾"

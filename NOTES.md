@@ -505,6 +505,15 @@ record its own decisions and three rounds of adversarial grading.
   for the centre node, an outlined arrow pointer for the pointer. Its old
   words are its tooltip and its name for screen readers.
 
+### Start in a folder, 18 November 2026 (mod 47)
+
+- **Requested by the user, off by default:** `Settings::start_in_folder`
+  and `start_folder` (a folder id) in Library & Home > Library, the folder
+  chosen from a list indented by depth. `App::open_start_folder` runs at
+  the top of each frame until the shown tree first has rows, then once:
+  it opens the folder if the setting is on and `folder_span` still finds
+  it, and otherwise leaves the Library at the top without a word.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

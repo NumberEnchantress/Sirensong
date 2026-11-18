@@ -1552,6 +1552,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let keep_in_step = gettext(locale, "Keep in step with Spotify");
     // Translators: A setting: what happens when Sirensong custom order and the Spotify library were both rearranged while apart.
     let both_changed = gettext(locale, "When both changed");
+    // Translators: A setting: when Sirensong opens, the Library starts inside a chosen folder instead of at the top.
+    let start_in = gettext(locale, "Start in a folder");
+    // Translators: A setting: the folder the Library starts in when Sirensong opens.
+    let start_folder = gettext(locale, "Folder to start in");
     let mut library_rows = [
         RowText::new(
             keep_in_step.clone(),
@@ -1566,6 +1570,17 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 locale,
                 "When Sirensong custom order and your Spotify library were both rearranged apart: show both and choose, take Spotify's, or keep this computer's and send it to Spotify.",
             ),
+        ),
+        RowText::new(
+            start_in.clone(),
+            gettext(
+                locale,
+                "When Sirensong opens, the Library starts inside the folder chosen below instead of at the top. If that folder is gone, it starts at the top.",
+            ),
+        ),
+        RowText::new(
+            start_folder.clone(),
+            gettext(locale, "The Library folder Sirensong opens in."),
         ),
     ];
 
@@ -1734,6 +1749,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     }
     if !app.settings.library_sync {
         library_rows[1].needs = Some(needs_on(locale, &keep_in_step));
+        library_rows[3].needs = Some(needs_on(locale, &start_in));
     }
     if !app.settings.custom_titlebar {
         appearance_rows[16].needs = Some(needs_on(locale, &custom_titlebar));
@@ -2375,6 +2391,56 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                             changed = true;
                         }
                     }
+                });
+            });
+            filtered_row(ui, &palette, &needle, &library, &library_rows[2], |ui| {
+                if widgets::switch(ui, &palette, &start_in, &mut app.settings.start_in_folder)
+                    .changed()
+                {
+                    changed = true;
+                }
+            });
+            filtered_row(ui, &palette, &needle, &library, &library_rows[3], |ui| {
+                let folders = crate::folders::folders(app.shown_tree());
+                // Translators: The folder setting before a folder is chosen, or after the chosen one was removed.
+                let none = gettext(locale, "Choose a folder");
+                let selected = app
+                    .settings
+                    .start_folder
+                    .as_ref()
+                    .and_then(|id| folders.iter().find(|folder| &folder.id == id))
+                    .map_or_else(|| none.to_string(), |folder| folder.name.clone());
+                ui.add_enabled_ui(app.settings.start_in_folder, |ui| {
+                    ui.with_layout(Layout::top_down(Align::Max), |ui| {
+                        let response = egui::ComboBox::from_id_salt("start_folder")
+                            .selected_text(selected.as_str())
+                            .width(200.0_f32.min(ui.available_width()))
+                            .show_ui(ui, |ui| {
+                                for folder in &folders {
+                                    let chosen =
+                                        app.settings.start_folder.as_ref() == Some(&folder.id);
+                                    // Each level of folder a step further in.
+                                    let label = format!(
+                                        "{}{}",
+                                        "    ".repeat(folder.depth),
+                                        folder.name
+                                    );
+                                    if ui.selectable_label(chosen, label).clicked() && !chosen {
+                                        app.settings.start_folder = Some(folder.id.clone());
+                                        changed = true;
+                                    }
+                                }
+                            });
+                        response.response.widget_info(|| {
+                            let mut info = egui::WidgetInfo::labeled(
+                                egui::WidgetType::ComboBox,
+                                ui.is_enabled(),
+                                start_folder.as_ref(),
+                            );
+                            info.current_text_value = Some(selected.clone());
+                            info
+                        });
+                    });
                 });
             });
             // Translators: Adds a folder of songs to local files.

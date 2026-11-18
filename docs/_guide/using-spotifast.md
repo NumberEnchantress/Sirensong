@@ -528,6 +528,10 @@ A folder's arrow opens or closes it in place; selecting the rest of the row
 opens the folder on its own, as in Spotify, listing only what it holds, with
 **Back** above it to return to the folder around it or to your whole library.
 In the grid, a folder is a card that opens the same way.
+To have the Library open inside one folder whenever Sirensong starts, turn on
+**Start in a folder** in **Settings > Library & Home > Library** and choose the
+folder under it. If that folder is later removed, the Library starts at the
+top as usual.
 Inside an opened folder, a new **Folder** from the **+** button goes inside it,
 and a playlist dragged below the last row stays in it. A folder's subtitle
 counts the playlists and folders it holds itself, as Spotify's does.
@@ -967,10 +971,10 @@ use your own Client ID, authorize it again in Settings as well.
 ## This fork's version
 
 The window title, and the taskbar's, end with Sirensong's version and the
-Spotifast release it is built on, such as `Sirensong mod 46 · Spotifast 0.17.1`,
+Spotifast release it is built on, such as `Sirensong mod 47 · Spotifast 0.17.1`,
 after the playing song. With
 **Custom title bar** on the window has no title, so **Show version**, in
-Settings → Appearance, puts `0.17.1 · mod 46` in the top bar instead, beside
+Settings → Appearance, puts `0.17.1 · mod 47` in the top bar instead, beside
 the update button; in a narrow window it gives way before anything else
 there.
 

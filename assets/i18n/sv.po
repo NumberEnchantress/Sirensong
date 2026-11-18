@@ -5411,3 +5411,26 @@ msgstr "Vrids runt pekaren"
 #: src/ui/playlist_map.rs
 msgid "Turns about the centre"
 msgstr "Vrids runt mitten"
+
+#. Translators: A setting: when Sirensong opens, the Library starts inside a chosen folder instead of at the top.
+#: src/ui/settings.rs
+msgid "Start in a folder"
+msgstr "Starta i en mapp"
+
+#. Translators: A setting: the folder the Library starts in when Sirensong opens.
+#: src/ui/settings.rs
+msgid "Folder to start in"
+msgstr "Mapp att starta i"
+
+#: src/ui/settings.rs
+msgid "When Sirensong opens, the Library starts inside the folder chosen below instead of at the top. If that folder is gone, it starts at the top."
+msgstr "När Sirensong öppnas börjar biblioteket i mappen som väljs nedan i stället för högst upp. Finns mappen inte längre börjar det högst upp."
+
+#: src/ui/settings.rs
+msgid "The Library folder Sirensong opens in."
+msgstr "Biblioteksmappen som Sirensong öppnas i."
+
+#. Translators: The folder setting before a folder is chosen, or after the chosen one was removed.
+#: src/ui/settings.rs
+msgid "Choose a folder"
+msgstr "Välj en mapp"

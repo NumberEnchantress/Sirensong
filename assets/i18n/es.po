@@ -5451,3 +5451,26 @@ msgstr "Gira alrededor del puntero"
 #: src/ui/playlist_map.rs
 msgid "Turns about the centre"
 msgstr "Gira alrededor del centro"
+
+#. Translators: A setting: when Sirensong opens, the Library starts inside a chosen folder instead of at the top.
+#: src/ui/settings.rs
+msgid "Start in a folder"
+msgstr "Empezar en una carpeta"
+
+#. Translators: A setting: the folder the Library starts in when Sirensong opens.
+#: src/ui/settings.rs
+msgid "Folder to start in"
+msgstr "Carpeta de inicio"
+
+#: src/ui/settings.rs
+msgid "When Sirensong opens, the Library starts inside the folder chosen below instead of at the top. If that folder is gone, it starts at the top."
+msgstr "Al abrir Sirensong, la biblioteca empieza dentro de la carpeta elegida abajo en lugar de arriba del todo. Si esa carpeta ya no existe, empieza arriba."
+
+#: src/ui/settings.rs
+msgid "The Library folder Sirensong opens in."
+msgstr "La carpeta de la biblioteca en la que se abre Sirensong."
+
+#. Translators: The folder setting before a folder is chosen, or after the chosen one was removed.
+#: src/ui/settings.rs
+msgid "Choose a folder"
+msgstr "Elige una carpeta"
