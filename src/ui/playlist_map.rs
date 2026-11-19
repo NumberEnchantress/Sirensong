@@ -32,6 +32,9 @@ pub struct MapState {
     camera: Camera,
     /// The layout last worked out, and what it was worked out from.
     cache: Option<(u64, Vec<Place>)>,
+    /// In the relation graph, the related pairs of the layout last worked
+    /// out, by their place in its nodes, with their strength from 0 to 1.
+    edges: Vec<(usize, usize, f32)>,
     hovered: Option<String>,
     /// What the view was last fitted to, to fit it again when that changes.
     fitted: Option<u64>,
@@ -1182,6 +1185,8 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool, search: bool, choices: 
     let tree = gettext(locale, "Tree");
     // Translators: Home map layout: each folder a circle around what it holds.
     let circles = gettext(locale, "Circles");
+    // Translators: Home map layout: the playlists placed by the songs they share, related ones joined and closer.
+    let relations = gettext(locale, "Relations");
     // Translators: Home map toggle: make each playlist, album or folder as large as the time listened to it.
     let by_listening = gettext(locale, "Time listened");
     // Translators: Home map: what to do with the rest of the Library while a folder is open.
@@ -1205,7 +1210,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool, search: bool, choices: 
     let layouts = if side {
         0.0
     } else {
-        named(&tree) + named(&circles) + 2.0 * 6.0 + 10.0
+        named(&tree) + named(&circles) + named(&relations) + 3.0 * 6.0 + 10.0
     };
     let words = layouts
         + named(&by_listening)
@@ -1239,6 +1244,12 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, side: bool, search: bool, choices: 
             if choice(ui, Icon::MapCircles, &circles, layout == MapLayout::Circles) {
                 app.actions.push(Action::SetMapLayout {
                     layout: MapLayout::Circles,
+                    side: false,
+                });
+            }
+            if choice(ui, Icon::Network, &relations, layout == MapLayout::Graph) {
+                app.actions.push(Action::SetMapLayout {
+                    layout: MapLayout::Graph,
                     side: false,
                 });
             }
@@ -1471,7 +1482,13 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         (ui.available_height() - 4.0 - below).max(160.0)
     } else {
         let above = ui.cursor().top() - ui.max_rect().top();
-        (ui.clip_rect().height() - above - 24.0).max(360.0)
+        // The relation graph's own choices sit under it.
+        let below = if app.map_layout(false) == MapLayout::Graph {
+            RELATION_BAR
+        } else {
+            0.0
+        };
+        (ui.clip_rect().height() - above - 24.0 - below).max(360.0)
     };
     let (rect, background) =
         ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::click_and_drag());
@@ -1480,7 +1497,39 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
 
     let layout = app.map_layout(side);
     let circles = layout == MapLayout::Circles;
-    let nodes = graph(app, side);
+    let tree = layout == MapLayout::Tree;
+    let relating = layout == MapLayout::Graph;
+    let nodes = if relating {
+        relation_nodes(graph(app, side))
+    } else {
+        graph(app, side)
+    };
+    // The relation graph reads the songs of what it shows, a page at a
+    // time, until it has them all.
+    let wanted: Vec<(String, u32)> = if relating {
+        nodes
+            .iter()
+            .filter_map(|node| match &node.kind {
+                Kind::Item(Page::Playlist(id)) => Some((id.clone(), node.songs.unwrap_or(0))),
+                _ => None,
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    if relating
+        && app.relation_songs.asked.is_none()
+        && wanted.iter().any(|(id, total)| {
+            !app.relation_songs.failed.contains(id)
+                && app
+                    .relation_songs
+                    .songs
+                    .get(id)
+                    .is_none_or(|(read_at, _)| read_at != total)
+        })
+    {
+        app.actions.push(Action::WantRelationSongs(wanted.clone()));
+    }
     let mut state = std::mem::take(if side {
         &mut app.sidebar_map
     } else {
@@ -1490,11 +1539,24 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     // the corners either: past the view's half-diagonal.
     let short = (rect.width().min(rect.height()) - 56.0).max(40.0);
     let outside = (rect.width().hypot(rect.height()) / short * 1.15 * 10.0).round() / 10.0;
-    let shape = shape_of(&nodes, layout, outside);
+    let mut shape = shape_of(&nodes, layout, outside);
+    if relating {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        shape.hash(&mut hasher);
+        app.relation_songs.read_count(&wanted).hash(&mut hasher);
+        app.settings.home.map_relation.hash(&mut hasher);
+        shape = hasher.finish();
+    }
     let reshaped = state.cache.as_ref().is_none_or(|(held, _)| *held != shape);
     if reshaped {
         let places = if circles {
             nested(&nodes, outside)
+        } else if relating {
+            let (places, edges) =
+                relation_places(&nodes, &app.relation_songs, app.settings.home.map_relation);
+            state.edges = edges;
+            places
         } else {
             radial(&nodes, outside)
         };
@@ -1777,9 +1839,29 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
     };
     let root_at = order.first().map_or(Vec2::ZERO, |(drawn, _)| drawn.at);
 
+    // The relation graph's edges: a line for each related pair, stronger
+    // and thicker the more they share.
+    if relating {
+        for &(i, j, weight) in &state.edges {
+            let (Some(a), Some(b)) = (
+                nodes.get(i).and_then(|node| state.drawn.get(&node.key)),
+                nodes.get(j).and_then(|node| state.drawn.get(&node.key)),
+            ) else {
+                continue;
+            };
+            let presence = a.shown.min(b.shown);
+            let colour = palette
+                .secondary
+                .gamma_multiply((0.15 + 0.55 * weight) * presence);
+            child.painter().line_segment(
+                [screen(a.at), screen(b.at)],
+                Stroke::new(0.6 + 2.2 * weight, colour),
+            );
+        }
+    }
     // The tree's branches: out from the parent, round its ring, and out to
     // the child, thicker the nearer the root.
-    if !circles {
+    if tree {
         for (drawn, node) in &order {
             if node.children.is_empty() {
                 continue;
@@ -2025,7 +2107,7 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
                 // Outward on screen, so a name reads away from its branch
                 // whichever way the map is turned.
                 let outward = (spin * (drawn.at - from)).normalized();
-                let (at, align) = if circles || node.holds() || !outward.is_finite() {
+                let (at, align) = if !tree || node.holds() || !outward.is_finite() {
                     (centre + vec2(0.0, radius + 4.0), egui::Align2::CENTER_TOP)
                 } else if outward.x >= 0.0 {
                     (centre + outward * (radius + 5.0), egui::Align2::LEFT_CENTER)
@@ -2252,11 +2334,141 @@ fn draw(app: &mut App, ui: &mut egui::Ui, side: bool) {
         ui.add_space(6.0);
         let top = ui.cursor().top();
         toolbar(app, ui, side, false, true);
+        if relating {
+            relation_bar(app, ui, &wanted);
+        }
         let drawn = ui.min_rect().bottom() - top;
         ui.data_mut(|data| data.insert_temp(choices_id, drawn.max(0.0)));
     } else {
         app.playlist_map = state;
+        if relating {
+            ui.add_space(6.0);
+            relation_bar(app, ui, &wanted);
+        }
     }
+}
+
+/// The room the relation graph's choices take under the map on Home.
+const RELATION_BAR: f32 = 40.0;
+
+/// The relation graph's nodes: the playlists in focus alone, with no tree
+/// between them, the most songs first.
+fn relation_nodes(nodes: Vec<Node>) -> Vec<Node> {
+    let mut kept: Vec<Node> = nodes
+        .into_iter()
+        .filter(|node| node.focus && matches!(node.kind, Kind::Item(Page::Playlist(_))))
+        .map(|mut node| {
+            node.parent = None;
+            node.children = Vec::new();
+            node.depth = 1;
+            node.away = false;
+            node
+        })
+        .collect();
+    kept.sort_by(|a, b| b.songs.cmp(&a.songs).then_with(|| a.key.cmp(&b.key)));
+    kept
+}
+
+/// Where the relation graph places `nodes`, and its related pairs with
+/// their strength from 0 to 1. A playlist whose songs are not read yet
+/// relates to nothing, so it waits further out until they are.
+fn relation_places(
+    nodes: &[Node],
+    songs: &crate::relations::RelationSongs,
+    mode: crate::settings::RelationMode,
+) -> (Vec<Place>, Vec<(usize, usize, f32)>) {
+    let none = std::collections::HashSet::new();
+    let sets: Vec<&std::collections::HashSet<String>> = nodes
+        .iter()
+        .map(|node| match &node.kind {
+            Kind::Item(Page::Playlist(id)) => songs.songs.get(id).map_or(&none, |(_, set)| set),
+            _ => &none,
+        })
+        .collect();
+    let keys: Vec<&str> = nodes.iter().map(|node| node.key.as_str()).collect();
+    // A unit of a few of the largest playlist's widths, so the weakest
+    // relation leaves room between them.
+    let largest = nodes.iter().map(|node| node.radius).fold(1.0_f32, f32::max);
+    let unit = largest * 6.0;
+    let at = crate::relations::layout(&keys, &sets, mode, unit);
+    let table = crate::relations::strengths(&sets, mode);
+    let strongest = table.iter().flatten().copied().fold(0.0_f32, f32::max);
+    let mut edges = Vec::new();
+    for i in 0..nodes.len() {
+        for j in i + 1..nodes.len() {
+            if table[i][j] > 0.0 && strongest > 0.0 {
+                edges.push((i, j, table[i][j] / strongest));
+            }
+        }
+    }
+    let places = nodes
+        .iter()
+        .zip(at)
+        .map(|(node, at)| Place {
+            at,
+            radius: node.radius,
+            elbow: 0.0,
+        })
+        .collect();
+    (places, edges)
+}
+
+/// Under the relation graph: how it measures relations, and how far it
+/// has read the playlists' songs.
+fn relation_bar(app: &mut App, ui: &mut egui::Ui, wanted: &[(String, u32)]) {
+    use crate::settings::RelationMode;
+    let palette = app.palette;
+    let locale = app.locale;
+    let mode = app.settings.home.map_relation;
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing = vec2(6.0, 6.0);
+        // Translators: The relation graph's choice of how to measure how related two playlists are.
+        theme::text(
+            ui,
+            gettext(locale, "Closer by:"),
+            theme::regular(12.5),
+            palette.dim,
+        );
+        for (choice, label) in [
+            // Translators: Relation graph: two playlists are closer the more songs they share.
+            (RelationMode::Absolute, gettext(locale, "Songs shared")),
+            // Translators: Relation graph: two playlists are closer the larger a share of each the other holds.
+            (RelationMode::Relative, gettext(locale, "Share of each")),
+        ] {
+            let chosen = mode == choice;
+            let response = theme::soft_button(ui, &palette, None, &label, chosen);
+            response.widget_info(|| {
+                egui::WidgetInfo::selected(
+                    egui::WidgetType::RadioButton,
+                    true,
+                    chosen,
+                    label.as_ref(),
+                )
+            });
+            if response.clicked() && !chosen {
+                app.actions.push(Action::SetMapRelation(choice));
+            }
+        }
+        let read = app.relation_songs.read_count(wanted);
+        let failed = wanted
+            .iter()
+            .filter(|(id, _)| app.relation_songs.failed.contains(id))
+            .count();
+        if read + failed < wanted.len() {
+            ui.add_space(10.0);
+            theme::text(
+                ui,
+                // Translators: Relation graph: how many playlists' songs have been read so far. {read} and {total} are counts.
+                gettext(locale, "Reading songs: {read} of {total} playlists")
+                    .replace("{read}", &read.to_string())
+                    .replace("{total}", &wanted.len().to_string()),
+                theme::regular(12.5),
+                palette.dim,
+            );
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(250));
+        }
+    });
 }
 
 /// A branch of the round tree from a parent at `from` to a child at `to`,

@@ -321,6 +321,12 @@ pub enum ApiRequest {
         offset: u32,
         generation: u64,
     },
+    /// A page of a playlist's songs for the relation graph, which keeps
+    /// only their URIs; the rows on screen stay untouched.
+    PlaylistSongs {
+        id: String,
+        offset: u32,
+    },
     CreatePlaylist {
         name: String,
         public: bool,
@@ -504,6 +510,7 @@ impl ApiRequest {
                 | Self::HiddenSongs { .. }
                 | Self::MyPlaylists { .. }
                 | Self::PlaylistSample { .. }
+                | Self::PlaylistSongs { .. }
                 | Self::Contains { .. }
         )
     }
@@ -585,6 +592,11 @@ pub enum ApiResponse {
     PlaylistSample {
         id: String,
         generation: u64,
+        result: ApiResult<Page<PlaylistItem>>,
+    },
+    PlaylistSongs {
+        id: String,
+        offset: u32,
         result: ApiResult<Page<PlaylistItem>>,
     },
     PlaylistCreated(ApiResult<Playlist>),
@@ -5685,6 +5697,7 @@ fn operation_for(api: &ApiGateway, request: &ApiRequest) -> Operation {
         ApiRequest::Playlist { id, .. } => Operation::PlaylistMetadata(api.playlist_access(id)),
         ApiRequest::PlaylistItems { id, .. }
         | ApiRequest::PlaylistSample { id, .. }
+        | ApiRequest::PlaylistSongs { id, .. }
         | ApiRequest::CheckPlaylistDuplicates {
             playlist_id: id, ..
         } => Operation::PlaylistItems(api.playlist_access(id)),
@@ -5758,6 +5771,11 @@ fn observe_playlists(api: &ApiGateway, response: &ApiResponse) {
             ..
         }
         | ApiResponse::PlaylistSample {
+            id,
+            result: Err(error),
+            ..
+        }
+        | ApiResponse::PlaylistSongs {
             id,
             result: Err(error),
             ..
@@ -6269,6 +6287,11 @@ async fn handle(
             result: routed!(playlist_items(&id, offset, PLAYLIST_PAGE_SIZE)),
             id,
             generation,
+        },
+        ApiRequest::PlaylistSongs { id, offset } => ApiResponse::PlaylistSongs {
+            result: routed!(playlist_items(&id, offset, PLAYLIST_PAGE_SIZE)),
+            id,
+            offset,
         },
         ApiRequest::CreatePlaylist {
             name,
@@ -6871,7 +6894,8 @@ fn session_read(request: &ApiRequest) -> Option<SessionRead<'_>> {
             id,
             offset: *offset,
         },
-        ApiRequest::PlaylistSample { id, offset, .. } => SessionRead::Sample {
+        ApiRequest::PlaylistSample { id, offset, .. }
+        | ApiRequest::PlaylistSongs { id, offset } => SessionRead::Sample {
             id,
             offset: *offset,
         },
@@ -6931,6 +6955,13 @@ fn session_response(request: &ApiRequest, answer: SessionAnswer) -> Option<ApiRe
             ApiResponse::PlaylistSample {
                 id: id.clone(),
                 generation: *generation,
+                result,
+            }
+        }
+        (ApiRequest::PlaylistSongs { id, offset }, SessionAnswer::Rows(result)) => {
+            ApiResponse::PlaylistSongs {
+                id: id.clone(),
+                offset: *offset,
                 result,
             }
         }

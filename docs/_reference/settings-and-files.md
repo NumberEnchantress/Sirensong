@@ -612,6 +612,19 @@ their icons alone: Tree and Circles their views, Time listened headphones,
 Zoom in a magnifying glass and Only selected a focus frame. Pointing at one
 names it.
 
+**Relations**, beside Tree and Circles, shows the playlists in view (the
+whole Library, or the open folder) on their own, placed by the songs they
+share. Two playlists that share a song are joined by a line, thicker and
+shorter the more they share; the weakest relation sets the length, a
+stronger one sits proportionally closer, and playlists that share nothing
+stay further apart than any relation. **Closer by:** under the map measures
+a relation by **Songs shared**, the number in common, or **Share of each**,
+the average of the share of each playlist the other holds. To know the
+songs, Sirensong reads each playlist a page at a time while the view is
+open, one after another, and says how far it has got; the songs are kept
+until Sirensong closes, and a playlist is read again only when its song
+count changes.
+
 Scroll or pinch to zoom and drag the background to move. Scroll with Shift
 held to turn the map: down turns it clockwise, up counter-clockwise. With
 Ctrl held it is the other way round. A trackpad's two-finger twist turns it
@@ -662,7 +675,9 @@ and the Library's too while it has none of its own), `"sidebar_map_layout"`
 (the Library's), `"same_map_layout"`, `"both_maps"` (One map at a time off),
 `"map_folder"` and `"map_filters"`, each `"zoom"` or `"only"`, and
 `"map_search"`, `"map_highlight"`, `"map_turn_at_pointer"` and
-`"map_turn_reversed"` and `"map_alt_hold"` (all `false`).
+`"map_turn_reversed"` and `"map_alt_hold"` (all `false`), and
+`"map_relation"`, `"absolute"` or `"relative"`, for Relations. A map
+layout of `"graph"` is Relations.
 
 **Time listened**, beside the layouts, makes each node's area grow with
 the time you listened to what it plays: the songs played from that

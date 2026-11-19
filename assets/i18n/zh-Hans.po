@@ -5308,3 +5308,34 @@ msgstr "Sirensong 打开时所在的资料库文件夹。"
 #: src/ui/settings.rs
 msgid "Choose a folder"
 msgstr "选择文件夹"
+
+#. Translators: Library sidebar view: the playlists placed by the songs they share, related ones joined and closer.
+#: src/ui/sidebar.rs
+msgid "Show as relations"
+msgstr "以关系显示"
+
+#. Translators: Home map layout: the playlists placed by the songs they share, related ones joined and closer.
+#: src/ui/playlist_map.rs
+msgid "Relations"
+msgstr "关系"
+
+#. Translators: The relation graph's choice of how to measure how related two playlists are.
+#: src/ui/playlist_map.rs
+msgid "Closer by:"
+msgstr "远近依据："
+
+#. Translators: Relation graph: two playlists are closer the more songs they share.
+#: src/ui/playlist_map.rs
+msgid "Songs shared"
+msgstr "共有歌曲数"
+
+#. Translators: Relation graph: two playlists are closer the larger a share of each the other holds.
+#: src/ui/playlist_map.rs
+msgid "Share of each"
+msgstr "各自占比"
+
+#. Translators: Relation graph: how many playlists' songs have been read so far. {read} and {total} are counts.
+#: src/ui/playlist_map.rs
+#, rust-format
+msgid "Reading songs: {read} of {total} playlists"
+msgstr "正在读取歌曲：{total} 个歌单中的 {read} 个"

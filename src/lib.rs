@@ -51,6 +51,7 @@ pub mod player;
 pub mod playlist_cover;
 pub mod power;
 pub mod prerelease;
+pub mod relations;
 pub mod resample;
 pub mod search_log;
 pub mod session_reads;

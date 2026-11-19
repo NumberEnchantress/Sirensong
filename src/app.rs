@@ -1021,6 +1021,8 @@ pub struct App {
     /// The Library has yet to open in the launch folder, once its folders
     /// are known.
     start_folder_pending: bool,
+    /// The songs of the playlists the relation graph shows, as read.
+    pub relation_songs: crate::relations::RelationSongs,
     /// A newer release than this build, once GitHub has said so.
     pub update: Option<crate::updates::Release>,
     last_update_check: Option<Instant>,
@@ -1669,6 +1671,7 @@ impl App {
             collapsed_folders: session.collapsed_folders.clone(),
             library_folder: None,
             start_folder_pending: true,
+            relation_songs: crate::relations::RelationSongs::default(),
             update: None,
             last_update_check: None,
             update_checking: false,
@@ -6586,6 +6589,19 @@ impl App {
         }
     }
 
+    /// Hand the app an answer from Spotify, as the backend would.
+    #[cfg(test)]
+    pub(crate) fn answer(&mut self, response: ApiResponse) {
+        self.handle_api(response);
+    }
+
+    /// Ask for the relation graph's next page of songs, if none is waiting.
+    fn ask_relation_songs(&mut self) {
+        if let Some((id, offset)) = self.relation_songs.next_page() {
+            self.backend.api(ApiRequest::PlaylistSongs { id, offset });
+        }
+    }
+
     /// An opened folder that is gone, removed here or elsewhere, leaves
     /// the Library at the top, so it never reopens by surprise.
     fn forget_missing_library_folder(&mut self) {
@@ -10187,6 +10203,33 @@ impl App {
                 if self.table_sorts.contains_key(&Page::Playlist(id.clone())) {
                     self.load_more(Page::Playlist(id));
                 }
+            }
+            ApiResponse::PlaylistSongs { id, offset, result } => {
+                match result {
+                    Ok(page) => {
+                        let step = if page.limit > 0 {
+                            page.limit
+                        } else {
+                            page.items.len().max(1) as u32
+                        };
+                        let end = offset + step;
+                        let more = if page.total > 0 {
+                            end < page.total
+                        } else {
+                            page.next.is_some()
+                        };
+                        let uris = page
+                            .items
+                            .iter()
+                            .filter_map(|row| row.item.as_ref())
+                            .map(|item| item.uri().to_string())
+                            .collect();
+                        self.relation_songs
+                            .receive(&id, offset, uris, more.then_some(end));
+                    }
+                    Err(_) => self.relation_songs.fail(&id),
+                }
+                self.ask_relation_songs();
             }
             ApiResponse::PlaylistSample {
                 id,
@@ -14852,6 +14895,14 @@ impl App {
                     self.refresh_friends();
                 }
             }
+            Action::SetMapRelation(mode) => {
+                self.settings.home.map_relation = mode;
+                self.settings_dirty = true;
+            }
+            Action::WantRelationSongs(wanted) => {
+                self.relation_songs.want(&wanted);
+                self.ask_relation_songs();
+            }
             Action::SetLyricsScale(scale) => {
                 self.settings.lyrics_scale = crate::settings::lyrics_scale(scale);
                 self.settings_dirty = true;
@@ -17448,7 +17499,7 @@ fn increase_playlist_total(playlist: &mut Playlist, added: u32) {
 
 /// This fork's own version, after Spotifast's: one more each round of
 /// changes it ships.
-pub const FORK_VERSION: &str = "mod 48";
+pub const FORK_VERSION: &str = "mod 49";
 
 /// What `vacuum_built` holds while Vacuum is off.
 const VACUUM_OFF: u64 = 0;

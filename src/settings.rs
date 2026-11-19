@@ -125,6 +125,8 @@ pub struct HomeSettings {
     /// Alt chooses the pointer only while held; off, each press switches
     /// between the centre node and the pointer.
     pub map_alt_hold: bool,
+    /// How the relation graph measures relations.
+    pub map_relation: RelationMode,
 }
 
 impl Default for HomeSettings {
@@ -145,6 +147,7 @@ impl Default for HomeSettings {
             map_turn_at_pointer: false,
             map_turn_reversed: false,
             map_alt_hold: false,
+            map_relation: RelationMode::Absolute,
         }
     }
 }
@@ -309,6 +312,20 @@ pub enum MapLayout {
     Tree,
     /// Each folder a circle around all it holds.
     Circles,
+    /// The playlists alone, placed by the songs they share: related ones
+    /// joined and closer, the more they share.
+    Graph,
+}
+
+/// How the relation graph measures two playlists' relation.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RelationMode {
+    /// The number of songs they share.
+    #[default]
+    Absolute,
+    /// The average of the share of each that the other holds.
+    Relative,
 }
 
 /// What the Home map does with what lies outside its focus, the open

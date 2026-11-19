@@ -1458,6 +1458,11 @@ pub enum Action {
     ToggleLyricsPanel,
     /// Show or hide what friends are listening to, in the right panel.
     ToggleFriendsPanel,
+    /// The relation graph shows these playlists, each with its song
+    /// count: read the songs of any not yet read.
+    WantRelationSongs(Vec<(String, u32)>),
+    /// How the relation graph measures relations.
+    SetMapRelation(crate::settings::RelationMode),
     /// The lyrics' words at this share of their usual size.
     SetLyricsScale(f32),
     /// Move a side panel to an edge of the window, before the `index`th

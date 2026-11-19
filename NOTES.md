@@ -525,6 +525,28 @@ record its own decisions and three rounds of adversarial grading.
   (`views_below`) rather than folding into a menu; the menu is left only
   for a sidebar too narrow for the views at all.
 
+### The relation graph, 19 November 2026 (mod 49)
+
+- **Requested by the user:** `MapLayout::Graph`, shown as Relations on
+  Home and in the Library's views. `relation_nodes` keeps the playlists in
+  focus alone; `relations::layout` places them by stress majorization
+  (SMACOF) toward `relations::distances`: the weakest relation one unit
+  (six of the largest node's radii), a relation `k` times as strong `1/k`
+  of that, and unrelated pairs `APART` (1.6) units. The start comes from
+  each key, so the same library draws the same way; the most related
+  playlist sits at the middle.
+- Two measures (`RelationMode`, `HomeSettings::map_relation`): Absolute,
+  the songs shared, and Relative, the average of shared/A and shared/B.
+  Edges are drawn for every related pair, width and strength by their
+  share of the strongest.
+- Songs come from `ApiRequest::PlaylistSongs`, routed like
+  `PlaylistSample` (session first), one page at a time through
+  `relations::RelationSongs`, only while the graph is drawn; each read
+  whole is kept for the run under its song count. A playlist that fails is
+  left out for the run. Not kept on disk yet, so a large library is read
+  again each run; the on-disk playlist caches are not used for it yet.
+- With five views the narrowest sidebar's views went missing: the check for a line of their own measured the header's leftover width. It now measures the sidebar's (`line_width`).
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the

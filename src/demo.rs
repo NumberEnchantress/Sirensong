@@ -9817,6 +9817,73 @@ mod tests {
         app.backend.shutdown();
     }
 
+    /// The relation graph reads each playlist's songs a page at a time and
+    /// places playlists that share more of them closer: two that share
+    /// most, one that shares a song, and the rest that share none.
+    #[test]
+    fn the_relation_graph_places_playlists_by_the_songs_they_share() {
+        use crate::api::models::{Page, PlayableItem, PlaylistItem, Track};
+        use crate::backend::ApiResponse;
+        use crate::settings::MapLayout;
+        let (ctx, mut app) = accessible_app("relation-graph");
+        apply_flags(&mut app, None, Some("playlist-map,folders"));
+        app.settings.home.map_layout = MapLayout::Graph;
+        let songs_of = |id: &str| -> Vec<String> {
+            let named: &[&str] = match id {
+                "pl1" => &["a", "b", "c", "d"],
+                "pl2" => &["a", "b", "c", "e"],
+                "pl3" => &["a", "x1", "x2"],
+                _ => &[],
+            };
+            if named.is_empty() {
+                vec![format!("only-{id}")]
+            } else {
+                named.iter().map(|song| song.to_string()).collect()
+            }
+        };
+        settled_map(&ctx, &mut app, vec![]);
+        let mut answered = 0;
+        for _ in 0..60 {
+            accessible_frame(&ctx, &mut app, vec![]);
+            let Some((id, offset)) = app.relation_songs.asked.clone() else {
+                break;
+            };
+            let items = songs_of(&id)
+                .into_iter()
+                .map(|song| PlaylistItem {
+                    item: Some(PlayableItem::Track(Track {
+                        uri: format!("spotify:track:{song}"),
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                })
+                .collect::<Vec<_>>();
+            let total = items.len() as u32;
+            app.answer(ApiResponse::PlaylistSongs {
+                id,
+                offset,
+                result: Ok(Page {
+                    items,
+                    total,
+                    limit: 100,
+                    offset,
+                    next: None,
+                }),
+            });
+            answered += 1;
+        }
+        assert!(answered >= 4, "each playlist was asked for: {answered}");
+        assert!(app.relation_songs.asked.is_none(), "all read");
+        let tree = settled_map(&ctx, &mut app, vec![]);
+        let at = |name: &str| map_node(&tree, name).expect(name).center();
+        let near = (at("Late night focus") - at("Sunday morning")).length();
+        let one = (at("Late night focus") - at("Running 2026")).length();
+        let none = (at("Late night focus") - at("Release Radar")).length();
+        assert!(near < one, "three shared sit closer than one: {near} {one}");
+        assert!(one < none, "one shared closer than none: {one} {none}");
+        app.backend.shutdown();
+    }
+
     /// A notch of the wheel turns the map over a few frames, not at once,
     /// and comes to the same turn in the end.
     #[test]

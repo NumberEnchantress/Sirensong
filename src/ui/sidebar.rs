@@ -2363,16 +2363,24 @@ enum LibraryView {
     Grid,
     Circles,
     Tree,
+    Graph,
 }
 
 impl LibraryView {
-    const ALL: [Self; 4] = [Self::List, Self::Grid, Self::Circles, Self::Tree];
+    const ALL: [Self; 5] = [
+        Self::List,
+        Self::Grid,
+        Self::Circles,
+        Self::Tree,
+        Self::Graph,
+    ];
 
     fn of(app: &App) -> Self {
         if app.sidebar_map_shown() {
             match app.map_layout(true) {
                 crate::settings::MapLayout::Circles => Self::Circles,
                 crate::settings::MapLayout::Tree => Self::Tree,
+                crate::settings::MapLayout::Graph => Self::Graph,
             }
         } else if app.settings.sidebar_grid {
             Self::Grid
@@ -2387,6 +2395,7 @@ impl LibraryView {
             Self::Grid => Icon::LayoutGrid,
             Self::Circles => Icon::MapCircles,
             Self::Tree => Icon::MapTree,
+            Self::Graph => Icon::Network,
         }
     }
 
@@ -2398,6 +2407,8 @@ impl LibraryView {
             Self::Circles => gettext(locale, "Show as circles"),
             // Translators: Library sidebar view: the playlist map as a round tree, each level of folders a ring further out.
             Self::Tree => gettext(locale, "Show as tree"),
+            // Translators: Library sidebar view: the playlists placed by the songs they share, related ones joined and closer.
+            Self::Graph => gettext(locale, "Show as relations"),
         }
     }
 
@@ -2416,6 +2427,13 @@ impl LibraryView {
             Self::Tree => [
                 Action::SetMapLayout {
                     layout: MapLayout::Tree,
+                    side: true,
+                },
+                Action::SetLibraryMap(true),
+            ],
+            Self::Graph => [
+                Action::SetMapLayout {
+                    layout: MapLayout::Graph,
                     side: true,
                 },
                 Action::SetLibraryMap(true),
@@ -2451,8 +2469,10 @@ fn view_toggle(app: &mut App, ui: &mut egui::Ui, in_menu: bool) {
             vec2(VIEW_CELL, rect.height() - 4.0),
         );
         // One map at a time: while Home shows its map, the Library's waits.
-        let blocked = matches!(view, LibraryView::Circles | LibraryView::Tree)
-            && !app.settings.home.both_maps
+        let blocked = matches!(
+            view,
+            LibraryView::Circles | LibraryView::Tree | LibraryView::Graph
+        ) && !app.settings.home.both_maps
             && app.home_map_shown();
         let label = if blocked {
             // Translators: Hover text on the Library's map views while Home shows the playlist map, with one map at a time.
@@ -2591,6 +2611,8 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             + 8.0
     };
     let mut views_below = false;
+    // The whole width a line of their own would have.
+    let line_width = ui.available_width();
     ui.horizontal(|ui| {
         ui.add_space(6.0);
         theme::icon(ui, Icon::Library, 22.0, palette.secondary);
@@ -2620,7 +2642,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                 2.0 * (HEADER_ICON + theme::ICON_BUTTON_PAD) + 3.0 * ui.spacing().item_spacing.x;
             if ui.available_width() >= VIEW_TOGGLE_WIDTH + others + heading_room {
                 view_toggle(app, ui, false);
-            } else if ui.max_rect().width() >= VIEW_TOGGLE_WIDTH + 12.0 {
+            } else if line_width >= VIEW_TOGGLE_WIDTH + 12.0 {
                 views_below = true;
             } else {
                 // Translators: Library sidebar button: choose to show the Library as rows, cover cards or the playlist map.
