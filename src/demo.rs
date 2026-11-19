@@ -4387,11 +4387,11 @@ mod tests {
         app.backend.shutdown();
     }
 
-    /// In a tall window Home and Search each have a row; in a smaller one
-    /// they share one row with their names; in a short one, as icons, still
-    /// named for screen readers.
+    /// Home and Search always share one row: with their names while both
+    /// fit, tall window or short, and as icons, still named for screen
+    /// readers, in a sidebar too narrow for the names.
     #[test]
-    fn a_short_sidebar_puts_home_and_search_on_one_row() {
+    fn home_and_search_always_share_one_row() {
         use egui::accesskit::Role;
         let (ctx, mut app) = accessible_app("sidebar-short");
         let rows = |app: &mut App, height: f32| {
@@ -4404,28 +4404,19 @@ mod tests {
             let named = painted.iter().any(|text| text == "Home");
             (at("Home"), at("Search"), named)
         };
-        let (home, search, named) = rows(&mut app, 1100.0);
-        assert!(named, "a tall sidebar names Home");
-        assert!(
-            search.y0 >= home.y1,
-            "Search below Home: {home:?} {search:?}"
-        );
-
+        for height in [1100.0, 800.0, 540.0] {
+            let (home, search, named) = rows(&mut app, height);
+            assert!(named, "{height}: names fit, so Home is named");
+            assert_eq!(home.y0, search.y0, "{height}: one row");
+            assert!(
+                search.x0 >= home.x1,
+                "{height}: Search beside Home: {home:?} {search:?}"
+            );
+        }
+        app.settings.sidebar_width = crate::ui::SIDEBAR_MIN_WIDTH;
         let (home, search, named) = rows(&mut app, 800.0);
-        assert!(named, "a smaller sidebar still names Home");
-        assert_eq!(home.y0, search.y0, "one row");
-        assert!(
-            search.x0 >= home.x1,
-            "Search beside Home: {home:?} {search:?}"
-        );
-
-        let (home, search, named) = rows(&mut app, 540.0);
-        assert!(!named, "a short sidebar shows Home as an icon");
-        assert_eq!(home.y0, search.y0, "one row");
-        assert!(
-            search.x0 >= home.x1,
-            "Search beside Home: {home:?} {search:?}"
-        );
+        assert_eq!(home.y0, search.y0, "narrow: one row");
+        assert!(!named || search.x0 >= home.x1, "narrow: still side by side");
         app.backend.shutdown();
     }
 
@@ -4492,28 +4483,26 @@ mod tests {
             node.role() == Role::Button && node.label() == Some("Discover Weekly")
         }));
 
-        // The narrowest sidebar has no room for four: one button for the
-        // current view opens them.
+        // The narrowest sidebar has no room for the views beside the
+        // heading: they take a line of their own under it, full size and
+        // still one click each.
         app.settings.sidebar_width = crate::ui::SIDEBAR_MIN_WIDTH;
         let tree = accessible_frame(&ctx, &mut app, vec![]);
-        assert!(chosen(&tree).is_empty(), "the views wait in the menu");
-        let view = accessible_node(&tree, "Show as", Role::Button);
-        accessible_frame(
-            &ctx,
-            &mut app,
-            vec![accessible_action(view, AccessibleAction::Click, None)],
-        );
-        let tree = choose(&mut app, "Show as grid");
-        assert!(app.settings.sidebar_grid);
-        assert!(
+        let tree = accessible_frame(&ctx, &mut app, vec![]);
+        assert_eq!(chosen(&tree), ["Show as list"], "the views stay in view");
+        let bounds = |tree: &egui::accesskit::TreeUpdate, label: &str, role: Role| {
+            let id = accessible_node(tree, label, role);
             tree.nodes
                 .iter()
-                .all(|(_, node)| node.role() != Role::RadioButton
-                    || !node
-                        .label()
-                        .is_some_and(|label| label.starts_with("Show as"))),
-            "choosing a view closes the menu, from a screen reader too"
-        );
+                .find(|(node, _)| *node == id)
+                .and_then(|(_, node)| node.bounds())
+                .expect("placed")
+        };
+        let hide = bounds(&tree, "Hide sidebar (Ctrl+B)", Role::Button);
+        let grid = bounds(&tree, "Show as grid", Role::RadioButton);
+        assert!(grid.y0 >= hide.y1, "under the heading: {hide:?} {grid:?}");
+        choose(&mut app, "Show as grid");
+        assert!(app.settings.sidebar_grid);
         app.backend.shutdown();
     }
 

@@ -2287,40 +2287,8 @@ fn playlist_entry(
     }
 }
 
-fn nav_row(
-    ui: &mut egui::Ui,
-    palette: &Palette,
-    icon: Icon,
-    label: &str,
-    active: bool,
-) -> egui::Response {
-    let (rect, response) = ui.allocate_exact_size(vec2(ui.available_width(), 40.0), Sense::click());
-    if ui.is_rect_visible(rect) {
-        let color = if active || response.hovered() {
-            palette.text
-        } else {
-            palette.secondary
-        };
-        let icon_rect =
-            Rect::from_center_size(pos2(rect.left() + 22.0, rect.center().y), Vec2::splat(22.0));
-        icon.image(color, 22.0).paint_at(ui, icon_rect);
-        ui.painter().text(
-            pos2(rect.left() + 46.0, rect.center().y),
-            egui::Align2::LEFT_CENTER,
-            label,
-            theme::bold(15.0),
-            color,
-        );
-    }
-    response.widget_info(|| {
-        egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), active, label)
-    });
-    theme::focus_ring(ui, &response);
-    response
-}
-
-/// Home or Search half a row wide, for a sidebar too short for a row each:
-/// its icon and, while `named`, its name beside it. The name stays its
+/// Home or Search, half a row wide: its icon and, while `named`, its name
+/// beside it. The name stays its
 /// tooltip and the name screen readers say.
 fn nav_icon(
     ui: &mut egui::Ui,
@@ -2372,11 +2340,6 @@ const ICONS_ONLY_BELOW: f32 = 300.0;
 /// The sidebar's inner margins, left and right together.
 const SIDEBAR_MARGIN_X: f32 = 20.0;
 
-/// Below this height the sidebar puts Home and Search on one row, with
-/// their names where both fit.
-const COMPACT_SIDEBAR: f32 = 760.0;
-/// Below this height Home and Search show their icons alone.
-const SHORT_SIDEBAR: f32 = 480.0;
 /// The room between a nav item's icon and its name.
 const NAV_GAP: f32 = 8.0;
 
@@ -2463,16 +2426,18 @@ impl LibraryView {
 }
 
 /// The width of one view in [`view_toggle`].
-const VIEW_CELL: f32 = 23.0;
+const VIEW_CELL: f32 = 28.0;
 /// The width [`view_toggle`] takes.
-const VIEW_TOGGLE_WIDTH: f32 = VIEW_CELL * 4.0 + 4.0;
+const VIEW_TOGGLE_WIDTH: f32 = VIEW_CELL * LibraryView::ALL.len() as f32 + 4.0;
+/// The size of the icons in the Library's header.
+const HEADER_ICON: f32 = 19.0;
 
-/// The four views side by side, the current one filled: one click to any.
+/// The views side by side, the current one filled: one click to any.
 /// In a menu, choosing one closes it, by key as well as by pointer.
 fn view_toggle(app: &mut App, ui: &mut egui::Ui, in_menu: bool) {
     let palette = app.palette;
     let current = LibraryView::of(app);
-    let (rect, _) = ui.allocate_exact_size(vec2(VIEW_TOGGLE_WIDTH, 28.0), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(VIEW_TOGGLE_WIDTH, 34.0), Sense::hover());
     if ui.is_rect_visible(rect) {
         ui.painter()
             .rect_filled(rect, rect.height() / 2.0, palette.surface);
@@ -2531,7 +2496,7 @@ fn view_toggle(app: &mut App, ui: &mut egui::Ui, in_menu: bool) {
             } else {
                 palette.secondary
             };
-            theme::paint_icon(ui, view.icon(), cell, 15.0, color);
+            theme::paint_icon(ui, view.icon(), cell, HEADER_ICON, color);
         }
         theme::focus_ring(ui, &response);
         if response.on_hover_text(label.as_ref()).clicked() {
@@ -2554,50 +2519,39 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
     ui.add_space(4.0);
     let home = gettext(locale, "Home");
     let search = gettext(locale, "Search");
-    if ui.available_height() < COMPACT_SIDEBAR {
-        // A smaller sidebar keeps its room for the Library: Home and Search
-        // share one row, with their names while both fit, and as icons
-        // when it is short or narrow.
-        let named = ui.available_height() >= SHORT_SIDEBAR
-            && nav_names_fit(ui, ui.available_width(), [&home, &search]);
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 0.0;
-            let width = ui.available_width() / 2.0;
-            if nav_icon(
-                ui,
-                &palette,
-                Icon::House,
-                &home,
-                page == Page::Home,
-                width,
-                named,
-            )
-            .clicked()
-            {
-                app.actions.push(Action::Open(Page::Home));
-            }
-            if nav_icon(
-                ui,
-                &palette,
-                Icon::Search,
-                &search,
-                page == Page::Search,
-                width,
-                named,
-            )
-            .clicked()
-            {
-                app.actions.push(Action::FocusSearch);
-            }
-        });
-    } else {
-        if nav_row(ui, &palette, Icon::House, &home, page == Page::Home).clicked() {
+    // Home and Search share one row, with their names while both fit and
+    // as icons when the sidebar is too narrow for them.
+    let named = nav_names_fit(ui, ui.available_width(), [&home, &search]);
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 0.0;
+        let width = ui.available_width() / 2.0;
+        if nav_icon(
+            ui,
+            &palette,
+            Icon::House,
+            &home,
+            page == Page::Home,
+            width,
+            named,
+        )
+        .clicked()
+        {
             app.actions.push(Action::Open(Page::Home));
         }
-        if nav_row(ui, &palette, Icon::Search, &search, page == Page::Search).clicked() {
+        if nav_icon(
+            ui,
+            &palette,
+            Icon::Search,
+            &search,
+            page == Page::Search,
+            width,
+            named,
+        )
+        .clicked()
+        {
             app.actions.push(Action::FocusSearch);
         }
-    }
+    });
     ui.add_space(10.0);
     ui.painter().hline(
         ui.max_rect().x_range().shrink(4.0),
@@ -2623,6 +2577,20 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
 
     let mut focus_search = false;
 
+    // The views go on the header's line while it has room for them and the
+    // heading too; otherwise on a line of their own just under it, so they
+    // stay full size and one click away.
+    let heading_room = {
+        let heading = gettext(locale, "Library");
+        ui.painter()
+            .layout_no_wrap(heading.to_string(), theme::bold(15.0), palette.text)
+            .size()
+            .x
+            + 6.0
+            + 22.0
+            + 8.0
+    };
+    let mut views_below = false;
     ui.horizontal(|ui| {
         ui.add_space(6.0);
         theme::icon(ui, Icon::Library, 22.0, palette.secondary);
@@ -2632,7 +2600,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             if theme::icon_button(
                 ui,
                 Icon::PanelLeft,
-                16.0,
+                HEADER_ICON,
                 palette.secondary,
                 palette.text,
                 super::keys::platform_shortcut(
@@ -2648,16 +2616,19 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             // as a tree, side by side so any is one click away. Where the
             // header has no room for all four, one button for the current
             // view opens them.
-            let others = 2.0 * (16.0 + theme::ICON_BUTTON_PAD) + 3.0 * ui.spacing().item_spacing.x;
-            if ui.available_width() >= VIEW_TOGGLE_WIDTH + others {
+            let others =
+                2.0 * (HEADER_ICON + theme::ICON_BUTTON_PAD) + 3.0 * ui.spacing().item_spacing.x;
+            if ui.available_width() >= VIEW_TOGGLE_WIDTH + others + heading_room {
                 view_toggle(app, ui, false);
+            } else if ui.max_rect().width() >= VIEW_TOGGLE_WIDTH + 12.0 {
+                views_below = true;
             } else {
                 // Translators: Library sidebar button: choose to show the Library as rows, cover cards or the playlist map.
                 let view = gettext(locale, "Show as");
                 let response = theme::icon_button(
                     ui,
                     LibraryView::of(app).icon(),
-                    16.0,
+                    HEADER_ICON,
                     palette.secondary,
                     palette.text,
                     &view,
@@ -2672,7 +2643,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                 let response = theme::icon_button(
                     ui,
                     Icon::Plus,
-                    16.0,
+                    HEADER_ICON,
                     palette.secondary,
                     palette.text,
                     &gettext(locale, "Create a playlist or folder"),
@@ -2710,7 +2681,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             } else if theme::icon_button(
                 ui,
                 Icon::Plus,
-                16.0,
+                HEADER_ICON,
                 palette.secondary,
                 palette.text,
                 &gettext(locale, "Create a playlist"),
@@ -2727,7 +2698,7 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
                 && theme::icon_button(
                     ui,
                     Icon::Search,
-                    16.0,
+                    HEADER_ICON,
                     palette.secondary,
                     palette.text,
                     &gettext(locale, "Search Your Library"),
@@ -2761,6 +2732,13 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
             });
         });
     });
+    if views_below {
+        ui.add_space(4.0);
+        ui.horizontal(|ui| {
+            ui.add_space(6.0);
+            view_toggle(app, ui, false);
+        });
+    }
     ui.add_space(6.0);
 
     ui.horizontal_wrapped(|ui| {

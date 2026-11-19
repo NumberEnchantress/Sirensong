@@ -514,6 +514,17 @@ record its own decisions and three rounds of adversarial grading.
   it opens the folder if the setting is on and `folder_span` still finds
   it, and otherwise leaves the Library at the top without a word.
 
+### One line for Home and Search, 19 November 2026 (mod 48)
+
+- **Requested by the user:** Home and Search always share one row
+  (`nav_icon`), named where both names fit (`nav_names_fit`) and as icons
+  otherwise; the old two-row layout and its height thresholds are gone.
+- The Library header's icons are larger: `HEADER_ICON` 19 (was 16) and
+  `VIEW_CELL` 28 (was 23). When the header has no room for the views and
+  the heading together, the views take a line of their own under it
+  (`views_below`) rather than folding into a menu; the menu is left only
+  for a sidebar too narrow for the views at all.
+
 ### Still open
 
 - Soloist, not verified here: whether Spotify's Soloist player shows the
